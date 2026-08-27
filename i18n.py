@@ -143,6 +143,10 @@ STRINGS = {
         "fr": "Type de surface (simulation capteurs SIG)",
         "en": "Surface type (simulated GIS sensor feed)",
     },
+    "solar_telemetry_toggle_label": {
+        "fr": "Activer le flux météo solaire Open-Meteo",
+        "en": "Enable Open-Meteo solar weather feed",
+    },
     "surf_pure_desert_sand": {"fr": "Sable désertique pur", "en": "Pure desert sand"},
     "surf_silicon_pv_panels": {"fr": "Panneaux PV en silicium", "en": "Silicon PV panels"},
     "surf_hybrid_assembly_zone": {"fr": "Zone d'assemblage hybride", "en": "Hybrid assembly zone"},

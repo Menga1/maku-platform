@@ -13,7 +13,7 @@ from data_feeds import (
     simulate_datacenter_telemetry,
     simulate_tunnel_telemetry,
 )
-from i18n import t
+from i18n import language_selector, t
 from risk_engine import (
     calculate_datacenter_kinetic_risk,
     calculate_high_rise_kinetic_risk,
@@ -35,6 +35,14 @@ MODULES = {
     "underground": {"key": "underground", "header": "underground_header", "caption": "underground_caption", "title": "Underground (Tunnel/Metro)"},
     "highrise": {"key": "highrise", "header": "highrise_header", "caption": "highrise_caption", "title": "High-Rise (Vertical Urban)"},
     "datacenter": {"key": "datacenter", "header": "datacenter_header", "caption": "datacenter_caption", "title": "Data Center (Controlled Critical Environment)"},
+}
+
+TELEMETRY_LABEL_KEYS = {
+    "solar": "solar_telemetry_toggle_label",
+    "offshore": "offshore_telemetry_toggle_label",
+    "underground": "iot_tunnel_toggle_label",
+    "highrise": "crane_telemetry_toggle_label",
+    "datacenter": "dc_telemetry_toggle_label",
 }
 
 
@@ -74,7 +82,7 @@ def _manual_inputs(module: str, lang: str) -> dict:
 
 
 def _telemetry(module: str, lang: str, mode: str) -> dict | None:
-    armed = render_stream_arm_toggle(st, lang, module, t(f"{module}_telemetry_toggle_label", lang))
+    armed = render_stream_arm_toggle(st, lang, module, t(TELEMETRY_LABEL_KEYS[module], lang))
     if mode != "auto" or not armed:
         if mode == "auto":
             render_stream_not_armed_note(st, lang)
@@ -109,7 +117,7 @@ def _assessment(module: str, inputs: dict) -> dict:
     return calculate_datacenter_kinetic_risk(**inputs)
 
 
-def _merge_telemetry(module: str, data: dict) -> dict:
+def _merge_telemetry(module: str, base_inputs: dict, data: dict) -> dict:
     mappings = {
         "solar": {"temperature_2m": "ambient_temp", "shortwave_radiation": "ghi"},
         "offshore": {"temperature_2m": "ambient_temp", "relative_humidity_2m": "relative_humidity", "wind_speed_10m_kn": "wind_speed"},
@@ -117,7 +125,7 @@ def _merge_telemetry(module: str, data: dict) -> dict:
         "highrise": {},
         "datacenter": {},
     }
-    result = dict(data)
+    result = dict(base_inputs)
     for source, target in mappings[module].items():
         if source in data:
             result[target] = data[source]
@@ -126,15 +134,15 @@ def _merge_telemetry(module: str, data: dict) -> dict:
 
 def render_module_page(module: str) -> None:
     config = MODULES[module]
-    lang = st.session_state.get("lang", "fr")
+    lang = language_selector(st)
     st.title(t(config["header"], lang))
     st.caption(t(config["caption"], lang))
 
     mode = render_data_mode_selector(st, lang, module)
-    telemetry = _telemetry(module, lang, mode)
     inputs = _manual_inputs(module, lang)
+    telemetry = _telemetry(module, lang, mode)
     if telemetry:
-        inputs = _merge_telemetry(module, telemetry)
+        inputs = _merge_telemetry(module, inputs, telemetry)
         st.subheader(t(f"{module}_realtime_header", lang))
     else:
         st.subheader(t(f"{module}_env_data_header", lang))
