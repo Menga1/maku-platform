@@ -1,4 +1,4 @@
-Final version# MAKU — Multi-Environment AI for Kinetic Risk Assessment
+# MAKU — Multi-Environment AI for Kinetic Risk Assessment
 ### in Mega-Underground, Offshore, and Solar Construction & MEP — expanded to High-Rise and Data Center environments
 
 A Streamlit MVP with **five** environment-specific risk modules, each driven by
