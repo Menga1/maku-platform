@@ -21,7 +21,7 @@ LOGO_CROQUIS_PATH = "logo_croquis.png"
 # across every page), then the rest of the shared shell.
 # ---------------------------------------------------------------------------
 if os.path.exists(LOGO_CROQUIS_PATH):
-    st.sidebar.image(LOGO_CROQUIS_PATH, use_container_width=True, caption="The Five Worlds of MAKU")
+    st.sidebar.image(LOGO_CROQUIS_PATH, width="stretch", caption="The Five Worlds of MAKU")
 
 lang = language_selector(st)
 
@@ -33,7 +33,7 @@ st.sidebar.markdown("---")
 # Main dashboard
 # ---------------------------------------------------------------------------
 if os.path.exists(LOGO_MODERNE_PATH):
-    st.image(LOGO_MODERNE_PATH, use_container_width=True)
+    st.image(LOGO_MODERNE_PATH, width="stretch")
 
 st.title(t("app_title", lang))
 st.caption(t("app_tagline", lang))

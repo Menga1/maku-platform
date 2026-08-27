@@ -1,4 +1,4 @@
-# MAKU — Multi-Environment AI for Kinetic Risk Assessment
+Final version# MAKU — Multi-Environment AI for Kinetic Risk Assessment
 ### in Mega-Underground, Offshore, and Solar Construction & MEP — expanded to High-Rise and Data Center environments
 
 A Streamlit MVP with **five** environment-specific risk modules, each driven by
@@ -116,16 +116,14 @@ ceiling-void space (asphyxiation/accidental-discharge risk).
 
 ## Scope note for your capstone report
 
-This MVP **simulates** the real-time data feeds described in the architecture
-(satellite GHI/albedo, offshore buoy telemetry, subsurface GIS/OEL sensors,
-multi-level building anemometers/BIM, rack-level IoT thermal mapping) via
-manual inputs and sliders, rather than integrating live APIs — that level of
-systems integration is beyond a capstone timeline. The architecture is built so
-each module's inputs are a thin, swappable layer: replacing sliders with a live
-data source later is a data-plumbing change, not a change to the risk logic
-itself. It's worth stating this explicitly in your report as "MVP with
-simulated inputs, designed for live-data extension" — assessors will read that
-as engineering maturity, not a shortcut.
+The solar and offshore modules can read live Open-Meteo forecast and marine
+data when their automatic feeds are armed. The underground, high-rise, and data
+center modules use bounded simulated telemetry because their specialist sensor
+feeds are not publicly available here; every module also supports manual
+inputs. Each input layer is thin and swappable, so connecting production
+telemetry later does not require changing the risk logic. This remains an MVP:
+validate every feed, threshold, and operational response with the responsible
+HSE and engineering teams before using it on a real site.
 
 The Lee arc-flash equation and the wind power-law profile are recognized,
 published methods used here for early-stage/illustrative hazard screening —
