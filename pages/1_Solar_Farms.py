@@ -1,4 +1,4 @@
-pages/1_Solar_Farms."""
+"""
 MAKU - Solar (Desert) page
 UI only. All calculations come from risk_engine.calculate_solar_albedo_heat_risk
 (Mathematical Isolation rule - no formulas live in this file).
