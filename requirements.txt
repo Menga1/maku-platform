@@ -1,0 +1,14 @@
+streamlit>=1.37
+requests>=2.31
+pytest>=8.0
+fpdf2>=2.7
+pandas>=2.0
+openpyxl>=3.1
+arabic-reshaper>=3.0
+python-bidi>=0.4
+streamlit-js-eval>=0.1.7
+gTTS>=2.5
+numpy>=1.24
+anthropic>=0.34
+psycopg2-binary>=2.9  # only used when DATABASE_URL points at Postgres/Supabase; SQLite needs nothing extra
+bcrypt>=4.0  # password hashing at rest (auth.py) - see auth.hash_password()
