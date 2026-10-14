@@ -8,11 +8,12 @@ showErrorDetails = "none"
 headless = true
 port = 8501
 address = "0.0.0.0"
-# TLS terminates at Caddy; Streamlit only listens on the private network.
-# CORS ON: only the MAKU domain may call the server / open its WebSocket.
-# The allowed origin and hosts are written per deployment from MAKU_DOMAIN by
-# configure_streamlit.py (run by docker-entrypoint.sh) into ~/.streamlit/config.toml.
-enableCORS = true
+# CORS: off here so the app also runs unchanged on Streamlit Community Cloud.
+# The Docker deployment turns it ON from the command line (Dockerfile CMD:
+# --server.enableCORS=true) and docker-entrypoint.sh -> configure_streamlit.py
+# writes the allowed origin and hosts for MAKU_DOMAIN, so in production only
+# https://<MAKU_DOMAIN> may open the WebSocket.
+enableCORS = false
 enableXsrfProtection = true
 maxUploadSize = 10
 enableStaticServing = false
