@@ -1,0 +1,223 @@
+# Builds the MAKU mobile shell and uploads it to
+#   - Google Play  -> Internal testing track
+#   - App Store    -> TestFlight
+# on every push to main that changes the mobile app, or on demand from the
+# Actions tab ("Run workflow"). Setup: docs/MOBILE_CI.md.
+#
+# A job whose store secrets are not configured yet is skipped with a warning
+# (not failed), so web-only work is never blocked by store setup.
+name: Deploy mobile apps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # The shell loads https://maku.ae, so web (Python) changes go live without
+      # a store build. Only changes to the native shell need a new binary.
+      - "mobile/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Which store(s) to build for"
+        type: choice
+        options: [both, android, ios]
+        default: both
+      android_build_only:
+        description: "Android one-time: build the signed AAB only (for the first manual upload to Play Console)"
+        type: boolean
+        default: false
+      ios_setup_signing:
+        description: "iOS one-time setup: create the App ID capabilities, certificate and profile first"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-mobile
+  cancel-in-progress: false # never kill a half-finished store upload
+
+env:
+  NODE_VERSION: "22"
+  RUBY_VERSION: "3.4"
+
+jobs:
+  android:
+    name: Android -> Play internal testing
+    if: github.event_name == 'push' || inputs.platform != 'ios'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+      PLAY_RELEASE_STATUS: ${{ vars.PLAY_RELEASE_STATUS || 'completed' }}
+      PLAY_BUILD_ONLY: ${{ inputs.android_build_only && 'true' || 'false' }}
+    steps:
+      - name: Check store secrets
+        id: secrets
+        working-directory: .
+        run: |
+          required="ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD"
+          [ "$PLAY_BUILD_ONLY" = "true" ] || required="PLAY_SERVICE_ACCOUNT_JSON $required"
+          missing=""; count=0
+          for name in $required; do
+            count=$((count + 1))
+            [ -z "${!name}" ] && missing="$missing $name"
+          done
+          if [ "$(echo $missing | wc -w)" -eq "$count" ]; then
+            echo "::warning title=Android upload skipped::No Google Play secrets configured yet - see docs/MOBILE_CI.md"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          elif [ -n "$missing" ]; then
+            echo "::error title=Android secrets incomplete::Missing:$missing (see docs/MOBILE_CI.md)"
+            exit 1
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.secrets.outputs.ready == 'true'
+
+      - uses: actions/setup-node@v7
+        if: steps.secrets.outputs.ready == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - uses: actions/setup-java@v6
+        if: steps.secrets.outputs.ready == 'true'
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v6
+        if: steps.secrets.outputs.ready == 'true'
+
+      - uses: ruby/setup-ruby@v1
+        if: steps.secrets.outputs.ready == 'true'
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: mobile
+
+      - name: Generate the Android project
+        if: steps.secrets.outputs.ready == 'true'
+        run: |
+          npm ci --no-audit --no-fund
+          npm run check
+          npm run add:android
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+          else
+            echo "::warning::GOOGLE_SERVICES_JSON not set - this build has push notifications disabled"
+          fi
+          npx cap sync android
+
+      - name: Restore the upload keystore
+        if: steps.secrets.outputs.ready == 'true'
+        run: |
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+
+      - name: Build and upload to Google Play (internal)
+        if: steps.secrets.outputs.ready == 'true'
+        run: bundle exec fastlane android internal
+
+      - name: Keep the signed AAB as a download
+        if: steps.secrets.outputs.ready == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: maku-android-aab
+          path: mobile/android/app/build/outputs/bundle/release/*.aab
+          retention-days: 14
+
+      - name: Remove the keystore
+        if: always() && steps.secrets.outputs.ready == 'true'
+        run: rm -f "$RUNNER_TEMP/upload.jks"
+
+  ios:
+    name: iOS -> TestFlight
+    if: github.event_name == 'push' || inputs.platform != 'android'
+    runs-on: macos-26 # Xcode 26 (iOS 26 SDK), required for App Store uploads since April 2026
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+      GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
+      FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: "120"
+      FASTLANE_XCODE_LIST_TIMEOUT: "120"
+    steps:
+      - name: Check store secrets
+        id: secrets
+        working-directory: .
+        run: |
+          required="ASC_KEY_ID ASC_ISSUER_ID ASC_PRIVATE_KEY APPLE_TEAM_ID MATCH_GIT_URL MATCH_PASSWORD MATCH_GIT_BASIC_AUTHORIZATION"
+          missing=""; count=0
+          for name in $required; do
+            count=$((count + 1))
+            [ -z "${!name}" ] && missing="$missing $name"
+          done
+          if [ "$(echo $missing | wc -w)" -eq "$count" ]; then
+            echo "::warning title=iOS upload skipped::No App Store secrets configured yet - see docs/MOBILE_CI.md"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          elif [ -n "$missing" ]; then
+            echo "::error title=iOS secrets incomplete::Missing:$missing (see docs/MOBILE_CI.md)"
+            exit 1
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.secrets.outputs.ready == 'true'
+
+      - uses: actions/setup-node@v7
+        if: steps.secrets.outputs.ready == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - uses: ruby/setup-ruby@v1
+        if: steps.secrets.outputs.ready == 'true'
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: mobile
+
+      - name: Generate the iOS project
+        if: steps.secrets.outputs.ready == 'true'
+        run: |
+          xcodebuild -version
+          npm ci --no-audit --no-fund
+          npm run check
+          npm run add:ios
+          if [ -n "$GOOGLE_SERVICE_INFO_PLIST" ]; then
+            printf '%s' "$GOOGLE_SERVICE_INFO_PLIST" > ios/App/App/GoogleService-Info.plist
+          else
+            echo "::warning::GOOGLE_SERVICE_INFO_PLIST not set - this build has push notifications disabled"
+          fi
+
+      - name: One-time signing setup
+        if: steps.secrets.outputs.ready == 'true' && inputs.ios_setup_signing
+        run: bundle exec fastlane ios signing
+
+      - name: Build and upload to TestFlight
+        if: steps.secrets.outputs.ready == 'true'
+        run: bundle exec fastlane ios beta

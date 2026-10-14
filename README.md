@@ -42,6 +42,7 @@ python -m pytest -q test_app.py                           # 284 tests
 | `scripts/migrate_sqlite_to_postgres.py` | One-time data migration with audit-chain verification |
 | `Dockerfile`, `docker-compose.yml`, `deploy/` | Production stack: app, PostgreSQL, Caddy (TLS), nightly backups, legal pages, store verification files |
 | `mobile/` | Capacitor 8 shell for iOS and Android |
+| `mobile/fastlane/`, `.github/workflows/deploy.yml` | Automatic uploads to Google Play internal testing and TestFlight ([`docs/MOBILE_CI.md`](docs/MOBILE_CI.md)) |
 
 ## Engineering basis of the core formulas
 

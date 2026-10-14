@@ -1,0 +1,8 @@
+# iOS code signing with fastlane match.
+# Certificates and the App Store provisioning profile live, encrypted with
+# MATCH_PASSWORD, in a separate PRIVATE GitHub repository (MATCH_GIT_URL).
+# match also reads MATCH_GIT_BASIC_AUTHORIZATION from the environment.
+git_url(ENV["MATCH_GIT_URL"].to_s)
+storage_mode("git")
+type("appstore")
+app_identifier(["ae.maku.app"])

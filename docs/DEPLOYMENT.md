@@ -200,6 +200,8 @@ docker compose up -d app        # push is enabled automatically when the file ex
 
 ## 6. Android build (any Windows/macOS/Linux computer)
 
+> **No computer build needed:** GitHub Actions can build and upload both apps for you (no Mac required). See [`MOBILE_CI.md`](MOBILE_CI.md). Sections 6 and 7 are the manual alternative.
+
 Install **Node.js 22 LTS** and **Android Studio Otter (2025.2.1) or newer**.
 
 ```bash

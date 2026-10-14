@@ -30,3 +30,9 @@ secrets/*
 !secrets/.gitkeep
 mobile/android/
 mobile/ios/
+# Fastlane output
+mobile/build/
+mobile/vendor/
+mobile/fastlane/report.xml
+mobile/fastlane/README.md
+mobile/fastlane/test_output/

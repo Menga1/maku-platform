@@ -1,0 +1,4 @@
+source "https://rubygems.org"
+
+# Release automation for the MAKU iOS / Android shell. See docs/MOBILE_CI.md.
+gem "fastlane", "~> 2.241"

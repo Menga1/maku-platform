@@ -1,0 +1,192 @@
+# MAKU mobile release lanes - run by .github/workflows/deploy.yml.
+#
+#   bundle exec fastlane android internal   signed AAB  -> Google Play internal testing
+#   bundle exec fastlane ios signing        one-time: App ID capabilities + match certificate/profile
+#   bundle exec fastlane ios beta           signed IPA  -> TestFlight
+#
+# The native projects (android/, ios/) are generated on every run by
+# `npm run add:android` / `npm run add:ios`; they are not committed.
+# Version name = "version" in mobile/package.json. Build numbers are always
+# "highest already uploaded + 1", read from the stores, so they never collide.
+# Every secret arrives as an environment variable; see docs/MOBILE_CI.md.
+require "json"
+
+APP_ID = "ae.maku.app"
+# fastlane parses this file from inside mobile/fastlane/.
+MOBILE_ROOT = File.expand_path("..", Dir.pwd)
+unless File.exist?(File.join(MOBILE_ROOT, "package.json"))
+  UI.user_error!("Run fastlane from the mobile/ folder (expected #{MOBILE_ROOT}/package.json)")
+end
+require File.join(MOBILE_ROOT, "fastlane", "ios_project.rb")
+
+def app_version
+  JSON.parse(File.read(File.join(MOBILE_ROOT, "package.json"))).fetch("version")
+end
+
+def require_env!(*names)
+  missing = names.select { |n| ENV[n].to_s.strip.empty? }
+  return if missing.empty?
+
+  UI.user_error!("Missing GitHub secret(s): #{missing.join(', ')}. See docs/MOBILE_CI.md.")
+end
+
+default_platform(:android)
+
+# ===================================================================== Android
+platform :android do
+  desc "Build a signed release AAB and upload it to Google Play internal testing"
+  lane :internal do
+    # PLAY_BUILD_ONLY=true: build the signed AAB without talking to Google Play.
+    # Needed once, because Play only accepts API uploads after the very first
+    # AAB has been uploaded by hand in Play Console.
+    build_only = ENV["PLAY_BUILD_ONLY"] == "true"
+    require_env!("ANDROID_KEYSTORE_PATH", "ANDROID_KEYSTORE_PASSWORD", "ANDROID_KEY_ALIAS", "ANDROID_KEY_PASSWORD")
+    require_env!("PLAY_SERVICE_ACCOUNT_JSON") unless build_only
+    json_key = ENV["PLAY_SERVICE_ACCOUNT_JSON"]
+    track = ENV.fetch("PLAY_TRACK", "internal")
+    android_dir = File.join(MOBILE_ROOT, "android")
+    UI.user_error!("android/ is missing - run `npm run add:android` first") unless File.directory?(android_dir)
+
+    # Version code: one above anything on any track (Play rejects reuse forever).
+    if build_only
+      version_code = 1
+    else
+      used = %w[internal alpha beta production].flat_map do |t|
+        google_play_track_version_codes(package_name: APP_ID, track: t, json_key_data: json_key)
+      end
+      version_code = (used.max || 0) + 1
+    end
+    UI.message("Version #{app_version} (#{version_code})#{build_only ? ' - build only, no upload' : ''}")
+
+    gradle_file = File.join(android_dir, "app", "build.gradle")
+    src = File.read(gradle_file)
+    unless src.match?(/versionCode\s+\d+/) && src.match?(/versionName\s+"[^"]*"/)
+      UI.user_error!("Could not find versionCode/versionName in #{gradle_file}")
+    end
+    File.write(gradle_file, src.sub(/versionCode\s+\d+/, "versionCode #{version_code}")
+                               .sub(/versionName\s+"[^"]*"/, %(versionName "#{app_version}")))
+
+    gradle(
+      project_dir: android_dir,
+      task: "bundle",
+      build_type: "Release",
+      print_command: false, # keeps the signing passwords out of the log
+      properties: {
+        "android.injected.signing.store.file" => ENV["ANDROID_KEYSTORE_PATH"],
+        "android.injected.signing.store.password" => ENV["ANDROID_KEYSTORE_PASSWORD"],
+        "android.injected.signing.key.alias" => ENV["ANDROID_KEY_ALIAS"],
+        "android.injected.signing.key.password" => ENV["ANDROID_KEY_PASSWORD"]
+      }
+    )
+
+    aab = lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH]
+    if build_only
+      UI.success("Signed AAB ready: #{aab} - download it from the workflow run's Artifacts")
+      next
+    end
+
+    upload_to_play_store(
+      package_name: APP_ID,
+      json_key_data: json_key,
+      track: track,
+      aab: aab,
+      # "draft" until the app has had its first release rolled out by hand in
+      # Play Console; "completed" afterwards (GitHub variable PLAY_RELEASE_STATUS).
+      release_status: ENV.fetch("PLAY_RELEASE_STATUS", "completed"),
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+end
+
+# ========================================================================= iOS
+platform :ios do
+  XCODEPROJ = File.join(MOBILE_ROOT, "ios", "App", "App.xcodeproj")
+
+  private_lane :asc_api_key do
+    require_env!("ASC_KEY_ID", "ASC_ISSUER_ID", "ASC_PRIVATE_KEY")
+    app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_content: ENV["ASC_PRIVATE_KEY"],
+      duration: 1200
+    )
+  end
+
+  desc "One-time: register the App ID with Push + Associated Domains, create the distribution certificate and profile"
+  lane :signing do
+    require_env!("APPLE_TEAM_ID", "MATCH_GIT_URL", "MATCH_PASSWORD", "MATCH_GIT_BASIC_AUTHORIZATION")
+    api_key = asc_api_key
+
+    bundle = Spaceship::ConnectAPI::BundleId.find(APP_ID) ||
+             Spaceship::ConnectAPI::BundleId.create(name: "MAKU", identifier: APP_ID,
+                                                    platform: Spaceship::ConnectAPI::Platform::IOS)
+    enabled = bundle.get_capabilities.map(&:capability_type)
+    [Spaceship::ConnectAPI::BundleIdCapability::Type::PUSH_NOTIFICATIONS,
+     Spaceship::ConnectAPI::BundleIdCapability::Type::ASSOCIATED_DOMAINS].each do |cap|
+      if enabled.include?(cap)
+        UI.message("App ID #{APP_ID}: #{cap} already enabled")
+      else
+        bundle.update_capability(cap, enabled: true)
+        UI.success("App ID #{APP_ID}: #{cap} enabled")
+      end
+    end
+
+    setup_ci
+    # force: regenerate the profile so it picks up the capabilities above
+    # (re-running this lane is safe; it never revokes the certificate).
+    match(type: "appstore", readonly: false, force: true, api_key: api_key, app_identifier: APP_ID,
+          team_id: ENV["APPLE_TEAM_ID"])
+  end
+
+  desc "Build a signed IPA and upload it to TestFlight"
+  lane :beta do
+    require_env!("APPLE_TEAM_ID", "MATCH_GIT_URL", "MATCH_PASSWORD", "MATCH_GIT_BASIC_AUTHORIZATION")
+    UI.user_error!("ios/ is missing - run `npm run add:ios` first") unless File.directory?(XCODEPROJ)
+    api_key = asc_api_key
+
+    setup_ci # temporary keychain, so CI never touches a login keychain
+    match(type: "appstore", readonly: true, api_key: api_key, app_identifier: APP_ID,
+          team_id: ENV["APPLE_TEAM_ID"])
+    profile = ENV[Match::Utils.environment_variable_name_profile_name(app_identifier: APP_ID, type: "appstore")]
+
+    UI.message("Shared Xcode scheme written") if MakuIosProject.ensure_shared_scheme(XCODEPROJ)
+    UI.message("Push entitlement set to production") if MakuIosProject.use_production_push_environment(XCODEPROJ)
+    plist = MakuIosProject.add_google_service_plist(XCODEPROJ)
+    UI.important("GoogleService-Info.plist not provided - this build has push notifications disabled") if plist == :missing
+
+    update_code_signing_settings(
+      path: XCODEPROJ,
+      targets: ["App"],
+      use_automatic_signing: false,
+      team_id: ENV["APPLE_TEAM_ID"],
+      bundle_identifier: APP_ID,
+      code_sign_identity: "Apple Distribution",
+      profile_name: profile
+    )
+
+    build_number = latest_testflight_build_number(api_key: api_key, app_identifier: APP_ID,
+                                                  initial_build_number: 0) + 1
+    UI.message("Version #{app_version} (#{build_number})")
+
+    build_app(
+      project: XCODEPROJ,
+      scheme: "App",
+      configuration: "Release",
+      export_method: "app-store",
+      export_options: { provisioningProfiles: { APP_ID => profile } },
+      output_directory: File.join(MOBILE_ROOT, "build"),
+      output_name: "MAKU.ipa",
+      clean: true,
+      xcargs: "MARKETING_VERSION=#{app_version} CURRENT_PROJECT_VERSION=#{build_number}"
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      ipa: lane_context[SharedValues::IPA_OUTPUT_PATH],
+      skip_waiting_for_build_processing: true # internal testers get it once Apple finishes processing
+    )
+  end
+end
