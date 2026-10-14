@@ -247,211 +247,26 @@ def _language_instruction(lang: str) -> str:
 # Rule-based hierarchy of controls (always available, no API dependency)
 # ---------------------------------------------------------------------------
 
-def solar_controls(result: dict) -> list:
-    band = result["risk_band"]
-    controls = []
-    if band in ("Moderate", "High", "Extreme"):
-        controls += [
-            "Shift high-exertion tracker/module installation to early morning or late afternoon windows",
-            "Enforce ACGIH work/rest cycle per calculated action level; increase rest ratio if margin exceeded",
-            "Mandatory shaded rest areas / cooling stations within 100m of active work fronts",
-            "Buddy system + heat-illness spotters; mandatory electrolyte replacement schedule",
-        ]
-    if band in ("High", "Extreme"):
-        controls += [
-            "Escalate to HSE manager: consider suspending non-critical outdoor MEP tasks during peak GHI hours",
-            "Reflective/ventilated PPE for crews working adjacent to panel rows (elevated radiant load)",
-        ]
-    if not controls:
-        controls = ["Maintain standard heat-safety protocol; monitor GHI/temp trend for escalation"]
-    return controls
+# The rules themselves live in maku_core/controls.py (no Streamlit), where
+# each control is also tagged with the hazards it reduces and its level in
+# the hierarchy of controls - needed for the residual-risk calculation. These
+# wrappers return the same recommendation texts as before.
+from maku_core import controls as _core_controls  # noqa: E402
 
 
-def offshore_controls(result: dict) -> list:
-    controls = []
-    band = result["risk_band"]
-    if band in ("Moderate", "High", "Extreme"):
-        controls += [
-            "Adjust welding/pipe-fitting shift rotations per Humidex band; shorten exposure intervals",
-            "Increase hydration monitoring; enclosed-space heat retention areas need forced ventilation checks",
-        ]
-    if result["wind_risk_status"] != "Normal Operations":
-        controls.append(f"Wind risk status: {result['wind_risk_status']}")
-    if result["safety_override"]:
-        controls.insert(0, "SAFETY OVERRIDE: suspend crane/lifting and welding ops until conditions recheck")
-    if not controls:
-        controls = ["Maintain standard marine HSE protocol; monitor wind/humidex trend"]
-    return controls
+def _texts(rule):
+    return lambda result: [c.text for c in rule(result)]
 
 
-def underground_controls(result: dict) -> list:
-    controls = []
-    band = result["risk_band"]
-    if result["safety_override"]:
-        controls.append("SAFETY OVERRIDE: halt non-essential high-voltage MEP cabling work until conditions recheck")
-    if result["gas_exceeds"]:
-        controls.append("CO OEL exceeded - evacuate face area, verify forced ventilation, re-test before re-entry")
-    if result["dust_exceeds"]:
-        controls.append("PM2.5 OEL exceeded - mandatory respiratory PPE upgrade, water suppression, re-test")
-    if band in ("MODERATE", "HIGH", "CRITICAL"):
-        controls.append("Reduce work/rest ratio for MEP electrical crews; rotate more frequently as heat trend rises")
-    if band in ("HIGH", "CRITICAL"):
-        controls.append("Prioritize temporary ventilation deployment ahead of permanent system commissioning")
-    if not controls:
-        controls = ["Maintain standard underground HSE protocol; continue OEL and heat monitoring cadence"]
-    return controls
-
-
-def high_rise_controls(result: dict) -> list:
-    controls = []
-    band = result["risk_band"]
-    if result["safety_override"]:
-        controls.append(
-            "SAFETY OVERRIDE: suspend all crane lifts and external-wall/curtain-wall installation "
-            "until scaled wind drops below the 30-knot threshold"
-        )
-    if band in ("HIGH", "CRITICAL"):
-        controls += [
-            "Notify tower crane operator and site HSE manager of current floor-level scaled wind readings",
-            "Recheck tie-off points and suspended-access rigging before resuming work at height",
-        ]
-    if band == "MODERATE":
-        controls.append("Delay non-critical curtain-wall/riser lifts to the next confirmed calm window")
-    if not controls:
-        controls = ["Maintain standard at-height wind-monitoring protocol; recheck anemometer feed each shift"]
-    return controls
-
-
-def data_center_controls(result: dict) -> list:
-    controls = []
-    if result["arc_flash_danger"]:
-        controls.append(
-            "DANGER: arc-flash incident energy exceeds 40 cal/cm2 - "
-            "de-energize equipment before any work; no PPE category permits live work"
-        )
-    if result.get("arc_flash_study_required") and result.get("energized_work_planned", True):
-        controls.append(
-            "Arc-flash incident energy is UNKNOWN: no energized work until the equipment's arc-flash "
-            "label or a current arc-flash study (IEEE 1584) confirms incident energy and the required arc rating; "
-            "otherwise establish an electrically safe work condition (lock-out/tag-out, test before touch)"
-        )
-    elif result.get("arc_flash_ppe") and not result["arc_flash_danger"] and result.get("arc_flash_energy_cal"):
-        controls.append(f"Arc-flash PPE for energized work: {result['arc_flash_ppe']} "
-                        f"(source: {result.get('arc_flash_source', 'n/a')})")
-    if result["confined_armed_danger"]:
-        controls.append(
-            "Confined ceiling-void space + armed clean-agent suppression: disarm/isolate "
-            "the system and atmosphere-test (O2/asphyxiant risk) before entry"
-        )
-    if result["thermal_differential"] >= 15.0:
-        controls.append(
-            "Hot/cold-aisle thermal differential elevated - rotate commissioning crews "
-            "more frequently, hydrate, reduce continuous hot-aisle dwell time"
-        )
-    if result["safety_override"]:
-        controls.insert(0, "SAFETY OVERRIDE: halt non-essential commissioning work in this zone until conditions are rechecked")
-    if not controls:
-        controls = ["Maintain standard data-center commissioning HSE protocol; continue thermal, arc-flash, and confined-space monitoring cadence"]
-    return controls
-
-
-def wind_energy_controls(result: dict) -> list:
-    controls = []
-    if result["safety_override"]:
-        controls.append(
-            "SAFETY OVERRIDE: halt all blade/nacelle access and crane operations "
-            "until wind, lightning, or sea-state conditions clear"
-        )
-    if "STOP WORK" in result["lightning_status"]:
-        controls.append(
-            "30-30 rule triggered: evacuate exposed work-at-height positions immediately; "
-            "do not resume outdoor work until 30 minutes after the last observed strike"
-        )
-    if result["risk_band"] in ("HIGH", "CRITICAL") and "STOP WORK" not in result["lightning_status"]:
-        controls.append("Restrict blade/nacelle access to essential tasks only; recheck anemometer trend before each climb")
-    if result["is_offshore"] and "Suspended" in result["ctv_transfer_status"]:
-        controls.append("Suspend all crew-transfer-vessel personnel transfers until significant wave height drops below the transfer limit")
-    if result["is_offshore"] and "Restricted" in result["ctv_transfer_status"]:
-        controls.append("Limit CTV transfers to essential personnel only; brief crew on sea-state trend")
-    if not controls:
-        controls = ["Maintain standard wind-energy HSE protocol; continue hub-height wind, lightning, and sea-state monitoring"]
-    return controls
-
-
-def mining_quarrying_controls(result: dict) -> list:
-    controls = []
-    if result["safety_override"]:
-        controls.insert(0, "SAFETY OVERRIDE: halt exposure until silica, noise, or vibration levels are brought under control")
-    if result["silica_exceeds_oel"]:
-        controls.append(
-            "Respirable crystalline silica exceeds the OEL - mandatory water suppression/wet-cutting, "
-            "upgrade respiratory PPE, rotate crews away from the quarry face"
-        )
-    if result["noise_dose_pct"] >= 100:
-        controls.append(
-            f"Noise dose at {result['noise_dose_pct']}% of the permissible 8-hour limit - "
-            "mandatory hearing protection, reduce continuous exposure duration, isolate/enclose plant noise sources where feasible"
-        )
-    if result["vibration_exceeds_limit"]:
-        controls.append(
-            "Whole-body vibration A(8) exceeds the EU exposure limit value - remove operator from "
-            "the machine immediately, inspect seat/suspension, reduce daily operating hours"
-        )
-    elif result["vibration_exceeds_action"]:
-        controls.append("Whole-body vibration A(8) exceeds the action value - schedule maintenance on seat/suspension, monitor exposure hours")
-    if not controls:
-        controls = ["Maintain standard mining/quarrying HSE protocol; continue silica, noise, and vibration monitoring cadence"]
-    return controls
-
-
-def marine_port_controls(result: dict) -> list:
-    controls = []
-    if result["safety_override"]:
-        controls.insert(0, "SAFETY OVERRIDE: halt marine/port access work until tide clearance or hardware capacity conditions are rechecked")
-    if result["tide_clearance_margin_m"] <= 0.3:
-        controls.append("Tide clearance margin critical - halt underside/pile-driving access work until tide recedes to a safe margin")
-    elif result["tide_clearance_margin_m"] <= 0.8:
-        controls.append("Tide clearance margin restricted - limit access to essential monitored tasks, recheck tide tables before each shift")
-    if result["night_amplified"]:
-        controls.append("Task-area illuminance below the OSHA 1926.56 minimum for night operations - deploy additional lighting before resuming work")
-    if result["hardware_remaining_capacity_pct"] < 85.0:
-        controls.append(
-            f"Splash-zone hardware estimated at {result['hardware_remaining_capacity_pct']}% of rated capacity - "
-            "schedule a certified structural inspection before continued use; consider derating safe working load"
-        )
-    if not controls:
-        controls = ["Maintain standard marine/port HSE protocol; continue tide, lighting, and hardware-condition monitoring"]
-    return controls
-
-
-def heat_stress_controls(result: dict) -> list:
-    """HSE audit corrective action - Occupational Heat-Stress Upgrade
-    (calculate_iso7243_heat_stress()). Recommendations are driven by the
-    same fields the advanced heat-stress panel already displays
-    (recommended_work_rest_ratio, requires_physiological_monitoring), so
-    there is no second, disconnected judgment call here - just plain-
-    language translation of what the calculation already determined."""
-    controls = []
-    if result["safety_override"]:
-        if result.get("requires_physiological_monitoring"):
-            controls.insert(0, "SAFETY OVERRIDE: vapor-barrier/limited-use PPE requires direct physiological "
-                                "monitoring (e.g. core temperature, heart-rate recovery) - a WBGT table lookup "
-                                "alone is not sufficient authorization to continue work in this ensemble")
-        else:
-            controls.insert(0, "STOP WORK: no ACGIH-compliant work/rest ratio exists at this workload/clothing/"
-                                "acclimatization combination, even at 25/75 - reduce workload category, change "
-                                "clothing, or wait for cooler conditions before resuming")
-    elif result.get("recommended_work_rest_ratio") not in (None, "100/0"):
-        controls.append(
-            f"Adopt a {result['recommended_work_rest_ratio']} work/rest cycle to stay within the ACGIH TLV "
-            f"action limit for this workload category and clothing ensemble"
-        )
-    if not result.get("acclimatized"):
-        controls.append("Worker is not marked as heat-acclimatized - apply a graduated acclimatization schedule "
-                         "(ACGIH recommends progressive exposure over ~1-2 weeks) before assigning full workload")
-    if not controls:
-        controls = ["Maintain standard heat-stress protocol; recheck WBGT/clothing/workload if conditions change"]
-    return controls
+solar_controls = _texts(_core_controls.solar)
+offshore_controls = _texts(_core_controls.offshore)
+underground_controls = _texts(_core_controls.underground)
+high_rise_controls = _texts(_core_controls.high_rise)
+data_center_controls = _texts(_core_controls.data_center)
+wind_energy_controls = _texts(_core_controls.wind_energy)
+mining_quarrying_controls = _texts(_core_controls.mining_quarrying)
+marine_port_controls = _texts(_core_controls.marine_port)
+heat_stress_controls = _texts(_core_controls.heat_stress)
 
 
 CONTROLS_MAP = {

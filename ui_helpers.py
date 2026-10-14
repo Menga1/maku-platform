@@ -176,6 +176,8 @@ def _build_report_pdf(
     body(f"Corporate / Project: {'_' * 40}")
     body(f"Site / Client: {'_' * 44}")
     body(f"Generated: {generated_at}")
+    if (result or {}).get("methodology_version"):
+        body(f"MAKU risk methodology: v{result['methodology_version']}")
 
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_fill_color(255, 244, 214)
@@ -427,6 +429,8 @@ def render_official_report(
         + "</li>"
         for entry in bibliography
     )
+    methodology_html = (f"<p><strong>MAKU risk methodology:</strong> v{escape(str(result['methodology_version']))}</p>\n"
+                        if result.get("methodology_version") else "")
     simulated_html = (
         "<div style='background:#b00020;color:#fff;padding:12px;border-radius:6px;font-weight:800;"
         f"text-align:center'>⚠️ {escape(SIMULATED_DATA_MESSAGE)}</div>"
@@ -448,7 +452,7 @@ font-weight:600;margin:16px 0}}
 <p><strong>Corporate / Project:</strong> ______________________________</p>
 <p><strong>Site / Client:</strong> ____________________________________</p>
 <p><strong>Generated:</strong> {escape(generated_at)}</p>
-<div class="hse-disclaimer">⚠️ {escape(HSE_DISCLAIMER_TEXT)}</div>
+{methodology_html}<div class="hse-disclaimer">⚠️ {escape(HSE_DISCLAIMER_TEXT)}</div>
 {simulated_html}
 <h2>Current Assessment</h2><table>{metrics or '<tr><td>No assessment metrics supplied</td></tr>'}</table>
 {risk_matrix_section_html}
@@ -642,9 +646,9 @@ def render_residual_risk_comparison(st_module, initial_matrix: dict | None, resi
     """Displays the Initial Risk -> Applied Controls -> Residual Risk
     comparison: the two aggregate_risk_matrix()-shaped dicts side by side,
     plus the explicit, non-fabricated methodology note (residual risk
-    reduces LIKELIHOOD only, never severity - see
-    risk_matrix.apply_controls_residual_risk()'s own docstring for the
-    full reasoning). No-ops when either matrix is missing/empty."""
+    reduces LIKELIHOOD only, and only for the hazards each applied control
+    addresses - see maku_core/residual.py). No-ops when either matrix is
+    missing/empty."""
     if not initial_matrix or not initial_matrix.get("hazards") or not residual_matrix:
         return
     heading = "Risque initial -> Contrôles appliqués -> Risque résiduel" if lang == "fr" \
@@ -669,17 +673,29 @@ def render_residual_risk_comparison(st_module, initial_matrix: dict | None, resi
         st_module.write(f"**{residual_matrix.get('overall_band', '')}**")
 
     n_applied = residual_matrix.get("controls_applied_count", 0)
-    reduction = residual_matrix.get("likelihood_reduction_applied", 0)
+    credited = residual_matrix.get("credited") or {}
+    uncredited = residual_matrix.get("uncredited_controls") or []
+    version = residual_matrix.get("methodology_version", "")
     if n_applied > 0:
+        for hazard, ids in credited.items():
+            st_module.caption(f"✓ {hazard}: {', '.join(ids)}")
+        if not credited:
+            st_module.caption(
+                "Les contrôles sélectionnés ne visent aucun des aléas évalués : aucun crédit de réduction."
+                if lang == "fr" else
+                "The selected controls don't address any assessed hazard, so no reduction is credited.")
         st_module.caption(
-            (f"{n_applied} contrôle(s) appliqué(s) - réduction de probabilité de {reduction} point(s) sur l'aléa "
-             f"dominant. La gravité n'est jamais réduite par des contrôles administratifs/EPI - seule une mesure "
-             f"d'ingénierie/élimination/substitution le justifierait.")
+            (f"Méthode {version} : un contrôle ne réduit que les aléas qu'il cible. Élimination (arrêt, "
+             "consignation, évacuation) → probabilité « rare » ; ingénierie, mesures administratives, EPI → "
+             "−1 chacun. La gravité n'est jamais réduite.")
             if lang == "fr" else
-            (f"{n_applied} control(s) applied - likelihood reduced by {reduction} point(s) on the governing "
-             f"hazard. Severity is never reduced by administrative/PPE controls alone - only an engineering/"
-             f"elimination/substitution measure would justify that.")
+            (f"Method {version}: a control only reduces the hazards it addresses. Elimination (stop work, "
+             "de-energize, evacuate) → likelihood 'rare'; engineering, administrative, PPE → −1 each. "
+             "Severity is never reduced.")
         )
+        if uncredited:
+            st_module.caption(("Sans effet sur les aléas évalués : " if lang == "fr" else
+                               "No effect on the assessed hazards: ") + ", ".join(uncredited))
     else:
         st_module.caption(
             "Aucun contrôle sélectionné - le risque résiduel est identique au risque initial."

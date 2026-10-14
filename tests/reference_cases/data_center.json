@@ -1,0 +1,103 @@
+{
+  "module": "data_center",
+  "country": "USA",
+  "note": "expected.fields with a hand-calculation basis were computed from the published formula, independently of risk_engine.py. risk_band / safety_override are MAKU's own thresholds and are regression baselines until a competent HSE reviewer signs them off (review_status).",
+  "cases": [
+    {
+      "id": "lee-480V-20kA-6cyc",
+      "description": "Lee screening, 480 V, 20 kA, 0.1 s, 455 mm",
+      "inputs": {
+        "hot_aisle_temp": 32,
+        "ceiling_void_confined": false,
+        "gas_system_armed": false,
+        "voltage_kv": 0.48,
+        "fault_current_ka": 20,
+        "clearing_time_s": 0.1,
+        "working_distance_mm": 455
+      },
+      "expected": {
+        "risk_band": "MODERATE",
+        "safety_override": false,
+        "fields": {
+          "arc_flash_energy_cal": [
+            2.374,
+            0.01
+          ]
+        }
+      },
+      "basis": "hand calculation, Lee (1982) formula: 5.12e5 x 0.48 x 20 x 0.1 / 455^2",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    },
+    {
+      "id": "lee-480V-50kA-30cyc",
+      "description": "Lee screening, 480 V, 50 kA, 0.5 s, 455 mm",
+      "inputs": {
+        "hot_aisle_temp": 32,
+        "ceiling_void_confined": false,
+        "gas_system_armed": false,
+        "voltage_kv": 0.48,
+        "fault_current_ka": 50,
+        "clearing_time_s": 0.5,
+        "working_distance_mm": 455
+      },
+      "expected": {
+        "risk_band": "CRITICAL",
+        "safety_override": false,
+        "fields": {
+          "arc_flash_energy_cal": [
+            29.678,
+            0.05
+          ]
+        }
+      },
+      "basis": "hand calculation, Lee (1982) formula: 5.12e5 x 0.48 x 50 x 0.5 / 455^2",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    },
+    {
+      "id": "label-45cal-danger",
+      "description": "Equipment label 45 cal/cm2: above 40 cal/cm2, no live work",
+      "inputs": {
+        "hot_aisle_temp": 32,
+        "ceiling_void_confined": false,
+        "gas_system_armed": false,
+        "label_incident_energy_cal": 45
+      },
+      "expected": {
+        "risk_band": "CRITICAL",
+        "safety_override": true,
+        "fields": {
+          "arc_flash_energy_cal": [
+            45.0,
+            0.0
+          ]
+        }
+      },
+      "basis": "label value is used as-is (NFPA 70E 130.5(H))",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    },
+    {
+      "id": "unknown-ie",
+      "description": "No label, no fault data: incident energy unknown, study required",
+      "inputs": {
+        "hot_aisle_temp": 32,
+        "ceiling_void_confined": true,
+        "gas_system_armed": true
+      },
+      "expected": {
+        "risk_band": "CRITICAL",
+        "safety_override": true,
+        "fields": {}
+      },
+      "basis": "rule: unknown incident energy must never be estimated from load",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    }
+  ]
+}

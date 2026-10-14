@@ -160,6 +160,11 @@ def aggregate_risk_matrix(hazards: list[dict]) -> dict:
 
 def apply_controls_residual_risk(risk_matrix: dict, num_controls_applied: int) -> dict:
     """
+    DEPRECATED - methodology 1.x, kept only so old reports can be reproduced.
+    It credits every applied control against the governing hazard whatever
+    the control addresses. The application uses maku_core.residual
+    (methodology 2.0.0) instead - see docs/METHODOLOGY.md section 3.
+
     HSE audit corrective action - 2-stage risk workflow: Initial Risk ->
     Applied Controls -> Calculated Residual Risk. Given an already-computed
     initial risk_matrix (an aggregate_risk_matrix() result), models the

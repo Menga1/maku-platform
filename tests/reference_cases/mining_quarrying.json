@@ -1,0 +1,77 @@
+{
+  "module": "mining_quarrying",
+  "country": "USA",
+  "note": "expected.fields with a hand-calculation basis were computed from the published formula, independently of risk_engine.py. risk_band / safety_override are MAKU's own thresholds and are regression baselines until a competent HSE reviewer signs them off (review_status).",
+  "cases": [
+    {
+      "id": "noise-95dBA-8h",
+      "description": "95 dB(A) for 8 h, OSHA 90 dB / 5 dB exchange",
+      "inputs": {
+        "respirable_silica_ugm3": 20,
+        "measured_noise_dba": 95,
+        "noise_exposure_hours": 8,
+        "measured_vibration_aw_ms2": 0.3,
+        "vibration_exposure_hours": 8
+      },
+      "expected": {
+        "risk_band": "CRITICAL",
+        "safety_override": true,
+        "fields": {
+          "noise_dose_pct": [
+            200.0,
+            0.5
+          ]
+        }
+      },
+      "basis": "hand calculation, 29 CFR 1910.95 App. A: D = 100 x 8 / (8 / 2^((95-90)/5))",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    },
+    {
+      "id": "wbv-1.0-4h",
+      "description": "a_w 1.0 m/s2 for 4 h",
+      "inputs": {
+        "respirable_silica_ugm3": 20,
+        "measured_noise_dba": 80,
+        "noise_exposure_hours": 8,
+        "measured_vibration_aw_ms2": 1.0,
+        "vibration_exposure_hours": 4
+      },
+      "expected": {
+        "risk_band": "HIGH",
+        "safety_override": false,
+        "fields": {
+          "vibration_a8_ms2": [
+            0.707,
+            0.005
+          ]
+        }
+      },
+      "basis": "hand calculation, A(8) = a_w x sqrt(T/8) (ISO 2631-1)",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    },
+    {
+      "id": "silica-over-oel",
+      "description": "Silica 80 ug/m3 (OSHA PEL 50)",
+      "inputs": {
+        "respirable_silica_ugm3": 80,
+        "measured_noise_dba": 80,
+        "noise_exposure_hours": 8,
+        "measured_vibration_aw_ms2": 0.3,
+        "vibration_exposure_hours": 8
+      },
+      "expected": {
+        "risk_band": "CRITICAL",
+        "safety_override": true,
+        "fields": {}
+      },
+      "basis": "regression baseline",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    }
+  ]
+}

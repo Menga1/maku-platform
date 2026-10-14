@@ -1,0 +1,83 @@
+{
+  "module": "high_rise",
+  "country": "USA",
+  "note": "expected.fields with a hand-calculation basis were computed from the published formula, independently of risk_engine.py. risk_band / safety_override are MAKU's own thresholds and are regression baselines until a competent HSE reviewer signs them off (review_status).",
+  "cases": [
+    {
+      "id": "floor40-suburban",
+      "description": "15 kn at 10 m, floor 40 x 3.5 m = 140 m, suburban alpha 0.25",
+      "inputs": {
+        "ground_wind_speed_knots": 15,
+        "floor_level": 40,
+        "crane_load_mass_tons": 5,
+        "terrain": "suburban"
+      },
+      "expected": {
+        "risk_band": "CRITICAL",
+        "safety_override": false,
+        "fields": {
+          "scaled_wind_speed": [
+            29.02,
+            0.05
+          ],
+          "working_height_m": [
+            140.0,
+            0.0
+          ]
+        }
+      },
+      "basis": "hand calculation, power law V = 15 x (140/10)^0.25",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    },
+    {
+      "id": "floor60-urban",
+      "description": "20 kn at 10 m, floor 60 x 3.5 m = 210 m, urban centre alpha 0.33",
+      "inputs": {
+        "ground_wind_speed_knots": 20,
+        "floor_level": 60,
+        "crane_load_mass_tons": 2,
+        "terrain": "urban_centre"
+      },
+      "expected": {
+        "risk_band": "CRITICAL",
+        "safety_override": true,
+        "fields": {
+          "scaled_wind_speed": [
+            54.62,
+            0.05
+          ]
+        }
+      },
+      "basis": "hand calculation, power law V = 20 x (210/10)^0.33",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    },
+    {
+      "id": "measured-overrides-model",
+      "description": "Measured wind at working height replaces the model",
+      "inputs": {
+        "ground_wind_speed_knots": 10,
+        "floor_level": 50,
+        "crane_load_mass_tons": 10,
+        "measured_hook_wind_knots": 33
+      },
+      "expected": {
+        "risk_band": "CRITICAL",
+        "safety_override": true,
+        "fields": {
+          "scaled_wind_speed": [
+            33.0,
+            0.0
+          ]
+        }
+      },
+      "basis": "rule: a measurement at working height takes precedence",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    }
+  ]
+}

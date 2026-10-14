@@ -1,0 +1,47 @@
+{
+  "module": "marine_port",
+  "country": "USA",
+  "note": "expected.fields with a hand-calculation basis were computed from the published formula, independently of risk_engine.py. risk_band / safety_override are MAKU's own thresholds and are regression baselines until a competent HSE reviewer signs them off (review_status).",
+  "cases": [
+    {
+      "id": "night-low-tide",
+      "description": "Tide 0.2 m vs 1.0 m clearance, night, 20 lx, 20-year hardware",
+      "inputs": {
+        "current_tide_level_m": 0.2,
+        "required_min_clearance_m": 1.0,
+        "is_night_operation": true,
+        "measured_illuminance_lux": 20,
+        "hardware_years_in_service": 20
+      },
+      "expected": {
+        "risk_band": "CRITICAL",
+        "safety_override": true,
+        "fields": {}
+      },
+      "basis": "regression baseline",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    },
+    {
+      "id": "day-safe",
+      "description": "Tide 2.5 m vs 1.0 m clearance, day, new hardware",
+      "inputs": {
+        "current_tide_level_m": 2.5,
+        "required_min_clearance_m": 1.0,
+        "is_night_operation": false,
+        "measured_illuminance_lux": 500,
+        "hardware_years_in_service": 2
+      },
+      "expected": {
+        "risk_band": "LOW",
+        "safety_override": false,
+        "fields": {}
+      },
+      "basis": "regression baseline",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    }
+  ]
+}

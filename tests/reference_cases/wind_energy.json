@@ -1,0 +1,43 @@
+{
+  "module": "wind_energy",
+  "country": "USA",
+  "note": "expected.fields with a hand-calculation basis were computed from the published formula, independently of risk_engine.py. risk_band / safety_override are MAKU's own thresholds and are regression baselines until a competent HSE reviewer signs them off (review_status).",
+  "cases": [
+    {
+      "id": "lightning-close",
+      "description": "Offshore, 14 m/s, Hs 2 m, flash-to-bang 10 s",
+      "inputs": {
+        "hub_height_wind_speed_ms": 14,
+        "is_offshore": true,
+        "significant_wave_height_m": 2.0,
+        "flash_to_bang_sec": 10
+      },
+      "expected": {
+        "risk_band": "CRITICAL",
+        "safety_override": true,
+        "fields": {}
+      },
+      "basis": "regression baseline",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    },
+    {
+      "id": "calm-onshore",
+      "description": "Onshore, 8 m/s, no lightning",
+      "inputs": {
+        "hub_height_wind_speed_ms": 8,
+        "is_offshore": false
+      },
+      "expected": {
+        "risk_band": "LOW",
+        "safety_override": false,
+        "fields": {}
+      },
+      "basis": "regression baseline",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "module": "solar",
+  "country": "USA",
+  "note": "expected.fields with a hand-calculation basis were computed from the published formula, independently of risk_engine.py. risk_band / safety_override are MAKU's own thresholds and are regression baselines until a competent HSE reviewer signs them off (review_status).",
+  "cases": [
+    {
+      "id": "hot-panels",
+      "description": "42 degC, GHI 950, UV 9 on PV panels",
+      "inputs": {
+        "ghi": 950,
+        "uv_index": 9,
+        "ambient_temp": 42,
+        "surface_type": "silicon_pv_panels"
+      },
+      "expected": {
+        "risk_band": "Extreme",
+        "safety_override": true,
+        "fields": {}
+      },
+      "basis": "regression baseline",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    },
+    {
+      "id": "mild-sand",
+      "description": "28 degC, GHI 400, UV 4 on sand",
+      "inputs": {
+        "ghi": 400,
+        "uv_index": 4,
+        "ambient_temp": 28,
+        "surface_type": "pure_desert_sand"
+      },
+      "expected": {
+        "risk_band": "Low",
+        "safety_override": false,
+        "fields": {}
+      },
+      "basis": "regression baseline",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    }
+  ]
+}

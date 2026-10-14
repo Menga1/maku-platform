@@ -32,6 +32,7 @@ MAKU_TEST_PG_URL=postgresql://... python -m pytest -q tests/   # + PostgreSQL in
 |---|---|
 | `app.py` | Streamlit entry point: login gate, privacy gate, navigation, the eight module pages |
 | `risk_engine.py` | All risk maths - pure functions, no Streamlit |
+| `maku_core/` | The methodology as a library: validated inputs, `run_assessment()`, hazard-tagged controls, residual risk, methodology version ([`docs/METHODOLOGY.md`](docs/METHODOLOGY.md), [`docs/RISK_ENGINE_API.md`](docs/RISK_ENGINE_API.md)) |
 | `ai_advisor.py` | Rule-based controls + optional Claude briefing (successes cached per API key; failures never cached) |
 | `data_feeds.py` | Live feeds (Open-Meteo, Nominatim, ipapi.co); every payload tagged `is_live`; mocks only in demo mode |
 | `auth.py`, `accounts.py` | Argon2id passwords (bcrypt upgraded at sign-in), lockout, idle timeout, consent, data export, account deletion |
