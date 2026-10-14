@@ -1,0 +1,81 @@
+# =============================================================================
+# MAKU reverse proxy - Caddy 2
+#   * automatic HTTPS (Let's Encrypt) for {$MAKU_DOMAIN}; www redirects to apex
+#   * WebSockets (required by Streamlit) are proxied automatically
+#   * serves the mobile-store verification files with the exact paths and
+#     Content-Type Apple and Google require (no redirects, application/json)
+#   * serves the public legal pages the stores require (privacy policy,
+#     account-deletion request page, support page)
+# =============================================================================
+{
+	email {$ACME_EMAIL}
+}
+
+www.{$MAKU_DOMAIN} {
+	redir https://{$MAKU_DOMAIN}{uri} permanent
+}
+
+{$MAKU_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(self), camera=(self), microphone=()"
+		# The MAKU mobile shell (Capacitor) embeds the app: capacitor://localhost
+		# on iOS, https://localhost on Android. Nobody else may frame it.
+		Content-Security-Policy "frame-ancestors 'self' capacitor://localhost https://localhost"
+		-Server
+	}
+
+	# --- Apple Universal Links / password AutoFill -------------------------
+	@aasa path /.well-known/apple-app-site-association /apple-app-site-association
+	handle @aasa {
+		root * /srv/well-known
+		rewrite * /apple-app-site-association
+		header Content-Type "application/json"
+		header Cache-Control "public, max-age=3600"
+		file_server
+	}
+
+	# --- Android App Links / Trusted Web Activity -------------------------
+	handle /.well-known/assetlinks.json {
+		root * /srv/well-known
+		rewrite * /assetlinks.json
+		header Content-Type "application/json"
+		header Cache-Control "public, max-age=3600"
+		file_server
+	}
+
+	# --- Public legal pages (store listing URLs) --------------------------
+	#   https://{$MAKU_DOMAIN}/legal/privacy
+	#   https://{$MAKU_DOMAIN}/legal/delete-account
+	#   https://{$MAKU_DOMAIN}/legal/support
+	handle_path /legal/* {
+		root * /srv/site
+		try_files {path}.html {path} /index.html
+		file_server
+	}
+	redir /privacy /legal/privacy permanent
+	redir /delete-account /legal/delete-account permanent
+	redir /support /legal/support permanent
+
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	# --- Everything else: the Streamlit application -----------------------
+	handle {
+		reverse_proxy {$MAKU_UPSTREAM:app:8501} {
+			health_uri /_stcore/health
+			health_interval 5s
+			health_timeout 3s
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+		}
+	}
+}

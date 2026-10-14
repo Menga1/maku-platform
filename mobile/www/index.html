@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <!-- frame-src must match MAKU_CONFIG.APP_ORIGIN (checked by `npm run check`).
+       script-src allows inline because Capacitor injects its native bridge. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' capacitor: https://localhost data: blob: 'unsafe-inline'; frame-src https://maku.ae; connect-src 'self' https://maku.ae capacitor: https://localhost; img-src 'self' data: blob:">
+  <title>MAKU</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <!-- Hosted MAKU application -->
+  <iframe id="app-frame" title="MAKU"
+          allow="geolocation; camera; clipboard-write"
+          referrerpolicy="strict-origin-when-cross-origin"></iframe>
+
+  <!-- First-load / reconnecting screen -->
+  <section id="loading" class="screen" aria-live="polite">
+    <img src="img/icon.png" alt="" class="brand-mark">
+    <h1>MAKU</h1>
+    <p id="loading-text" data-i18n="loading">Connecting to MAKU…</p>
+    <div class="spinner" aria-hidden="true"></div>
+  </section>
+
+  <!-- Offline view: last cached assessments, stored on this device -->
+  <section id="offline" class="screen hidden" aria-live="polite">
+    <header class="offline-header">
+      <div>
+        <h1 data-i18n="offlineTitle">No connection</h1>
+        <p id="offline-reason" class="muted" data-i18n="offlineBody">Showing the last assessments saved on this phone. Live data is not available.</p>
+      </div>
+      <button id="retry" class="btn" data-i18n="retry">Try again</button>
+    </header>
+    <div class="banner-warning" data-i18n="offlineWarning">Cached results may be out of date. Re-measure on site before any go / no-go decision.</div>
+    <ol id="history" class="history"></ol>
+    <p id="history-empty" class="muted hidden" data-i18n="historyEmpty">No assessment has been saved on this phone yet. Run one while online and it will be available here.</p>
+    <footer class="emergency" data-i18n="emergency">In an emergency: stop work, make the area safe and follow your site emergency procedure.</footer>
+  </section>
+
+  <div id="toast" class="toast hidden" role="status"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

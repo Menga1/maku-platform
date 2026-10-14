@@ -120,6 +120,7 @@ def _build_report_pdf(
     generated_at: str,
     lang: str,
     evidence: dict | None = None,
+    photos: list[bytes] | None = None,
 ) -> bytes:
     """Builds the actual downloadable PDF (not a browser print-to-PDF of the
     HTML view) using fpdf2, a pure-Python library with no system
@@ -179,6 +180,14 @@ def _build_report_pdf(
     pdf.set_fill_color(255, 244, 214)
     pdf.multi_cell(0, 6, _pdf_safe(HSE_DISCLAIMER_TEXT), border=1, fill=True, new_x="LMARGIN", new_y="NEXT")
     pdf.ln(2)
+    if result.get("data_provenance") == "SIMULATED":
+        pdf.set_font("Helvetica", "B", 12)
+        pdf.set_fill_color(176, 0, 32)
+        pdf.set_text_color(255, 255, 255)
+        pdf.multi_cell(0, 9, _pdf_safe(SIMULATED_DATA_MESSAGE), border=1, fill=True, align="C",
+                       new_x="LMARGIN", new_y="NEXT")
+        pdf.set_text_color(0, 0, 0)
+        pdf.ln(2)
 
     h2("Current Assessment")
     metric_rows = [(k, v) for k, v in result.items() if k not in ("drivers", "risk_matrix")]
@@ -197,6 +206,18 @@ def _build_report_pdf(
     h2("Risk Drivers")
     driver_rows = list(result.get("drivers", {}).items())
     kv_table(driver_rows if driver_rows else [("-", "No driver details supplied")])
+
+    if photos:
+        import io as _io
+        h2(f"Site Photos ({len(photos)})")
+        for idx, photo in enumerate(photos, start=1):
+            try:
+                if pdf.get_y() > 200:
+                    pdf.add_page()
+                pdf.image(_io.BytesIO(photo), w=120)
+                body(f"Photo {idx}")
+            except Exception:  # noqa: BLE001 - a corrupt photo never breaks the report
+                body(f"Photo {idx}: could not be embedded")
 
     h2("Regulatory AI Narrative")
     if use_arabic_narrative:
@@ -405,6 +426,11 @@ def render_official_report(
         + "</li>"
         for entry in bibliography
     )
+    simulated_html = (
+        "<div style='background:#b00020;color:#fff;padding:12px;border-radius:6px;font-weight:800;"
+        f"text-align:center'>⚠️ {escape(SIMULATED_DATA_MESSAGE)}</div>"
+        if result.get("data_provenance") == "SIMULATED" else ""
+    )
     report_html = f"""<!doctype html>
 <html lang="{escape(lang)}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -422,6 +448,7 @@ font-weight:600;margin:16px 0}}
 <p><strong>Site / Client:</strong> ____________________________________</p>
 <p><strong>Generated:</strong> {escape(generated_at)}</p>
 <div class="hse-disclaimer">⚠️ {escape(HSE_DISCLAIMER_TEXT)}</div>
+{simulated_html}
 <h2>Current Assessment</h2><table>{metrics or '<tr><td>No assessment metrics supplied</td></tr>'}</table>
 {risk_matrix_section_html}
 {evidence_section_html}
@@ -442,8 +469,9 @@ font-weight:600;margin:16px 0}}
 
     col_pdf, col_html = st_module.columns(2)
     with col_pdf:
+        site_photos = list(st_module.session_state.get("site_photos", []) or [])
         pdf_bytes = _build_report_pdf(result, narrative, controls, references, bibliography, generated_at, lang,
-                                       evidence=evidence)
+                                       evidence=evidence, photos=site_photos)
         pdf_clicked = st_module.download_button(
             "📄 Télécharger le PDF" if lang == "fr" else "📄 Download PDF",
             data=pdf_bytes,
@@ -451,6 +479,23 @@ font-weight:600;margin:16px 0}}
             mime="application/pdf",
             width='stretch',
         )
+        try:
+            from mobile_bridge import in_mobile_shell, share_file_via_shell
+            if in_mobile_shell():
+                nonce = st_module.session_state.get("_share_pdf_nonce", 0)
+                if st_module.button("📲 " + ("Partager le PDF" if lang == "fr" else "Share PDF"),
+                                    key=f"share_pdf_btn_{nonce}", width="stretch"):
+                    st_module.session_state["_share_pdf_nonce"] = nonce + 1
+                    st_module.session_state["_share_pdf_pending"] = nonce + 1
+                pending = st_module.session_state.get("_share_pdf_pending")
+                if pending:
+                    reply = share_file_via_shell(pdf_bytes, "maku_hse_report.pdf", "MAKU HSE report",
+                                                 key=f"share_pdf_{pending}")
+                    if reply is not None:
+                        st_module.session_state.pop("_share_pdf_pending", None)
+                        pdf_clicked = pdf_clicked or bool(reply.get("ok"))
+        except Exception:  # noqa: BLE001 - sharing is an enhancement, never a blocker
+            pass
     with col_html:
         html_clicked = st_module.download_button(
             "🌐 Télécharger le HTML" if lang == "fr" else "🌐 Download HTML",
@@ -827,6 +872,50 @@ def render_feed_ok_banner(st_module, lang: str, source: str, fetched_at, cache_t
     st_module.success("  \n".join(lines))
 
 
+SIMULATED_DATA_MESSAGE = "SIMULATED DATA — NOT VALID FOR SAFETY DECISIONS"
+
+
+def debug_details_enabled() -> bool:
+    """Technical error details are shown to users only when the operator
+    sets MAKU_DEBUG=1 (never in production)."""
+    return os.environ.get("MAKU_DEBUG", "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def render_simulated_data_banner(st_module, lang: str, source: str = "") -> None:
+    """Prominent red banner for any value that did not come from a real
+    live provider (demo simulator or mock fallback). Rendered with
+    st.error PLUS a full-width red block so it cannot be mistaken for the
+    green LIVE banner even in high-contrast mode or on a small screen."""
+    explanation = (
+        "Ces valeurs proviennent d'un simulateur ou d'un jeu de données de démonstration - "
+        "elles ne sont PAS des mesures réelles. Mesurez sur site avant toute décision."
+        if lang == "fr" else
+        "These values come from a simulator or demonstration dataset - they are NOT real "
+        "measurements. Measure on site before making any decision."
+    )
+    st_module.markdown(
+        "<div role='alert' style='background:#b00020;color:#ffffff;padding:14px 16px;border-radius:8px;"
+        "font-weight:800;font-size:1.05rem;letter-spacing:0.02em;margin:8px 0;border:3px solid #7a0016'>"
+        f"⚠️ {escape(SIMULATED_DATA_MESSAGE)}"
+        f"<div style='font-weight:500;font-size:0.9rem;margin-top:6px'>{escape(explanation)}</div>"
+        + (f"<div style='font-weight:400;font-size:0.8rem;margin-top:4px;opacity:0.9'>{escape(source)}</div>"
+           if source else "")
+        + "</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def render_feed_status_banner(st_module, lang: str, payload: dict, cache_ttl_seconds: int | None = None) -> None:
+    """Single entry point for every feed banner: green LIVE only when the
+    payload is explicitly tagged is_live=True; anything else (missing tag,
+    simulator, mock) gets the red SIMULATED DATA banner."""
+    if payload.get("is_live") is True:
+        render_feed_ok_banner(st_module, lang, payload.get("source", ""), payload.get("fetched_at"),
+                              cache_ttl_seconds=cache_ttl_seconds)
+    else:
+        render_simulated_data_banner(st_module, lang, payload.get("source", ""))
+
+
 def render_feed_error_banner(st_module, lang: str, error_message: str) -> None:
     """Warning banner shown when a live/simulated feed failed and the page
     has safely reverted to manual sliders. The raw error is tucked behind
@@ -835,8 +924,9 @@ def render_feed_error_banner(st_module, lang: str, error_message: str) -> None:
     forecast panel) - see render_data_unavailable_banner() for the
     stricter banner required on a safety-critical auto-mode data path."""
     st_module.warning(t("feed_error_banner", lang))
-    with st_module.expander("Technical details" if lang == "en" else "Détails techniques"):
-        st_module.code(error_message)
+    if debug_details_enabled():
+        with st_module.expander("Technical details" if lang == "en" else "Détails techniques"):
+            st_module.code(error_message)
 
 
 DATA_UNAVAILABLE_MESSAGE = "DATA UNAVAILABLE — MANUAL VERIFICATION REQUIRED."
@@ -861,8 +951,9 @@ def render_data_unavailable_banner(st_module, lang: str, error_message: str, sou
         "The live data feed is unavailable - enter measured values manually below before running "
         "the assessment."
     )
-    with st_module.expander("Technical details" if lang == "en" else "Détails techniques"):
-        st_module.code(error_message)
+    if debug_details_enabled():
+        with st_module.expander("Technical details" if lang == "en" else "Détails techniques"):
+            st_module.code(error_message)
 
 
 def render_db_fatal_banner(st_module, backend_status: dict, lang: str = "fr") -> None:

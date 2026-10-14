@@ -106,8 +106,16 @@ import threading
 import uuid
 from datetime import datetime, timezone
 
+import warnings
+
 import pandas as pd
 from openpyxl import load_workbook
+
+# pandas warns for any DBAPI connection other than sqlite3 (psycopg2 works
+# fine with read_sql_query for these simple parameterised SELECTs).
+warnings.filterwarnings("ignore", message="pandas only supports SQLAlchemy connectable")
+
+import db as _db
 from openpyxl.chart import LineChart, Reference
 
 LOG_SESSION_KEY = "assessment_log"          # legacy in-memory fallback store
@@ -145,7 +153,12 @@ MODULE_KEY_METRIC = {
 }
 
 LOG_COLUMNS = ["timestamp", "module", "risk_band", "safety_override", "key_metric", "primary_hazard",
-               "organization", "project", "site"]
+               "organization", "project", "site", "data_provenance"]
+
+# data_provenance values (see data_feeds.py DATA-PROVENANCE CONTRACT)
+PROVENANCE_MANUAL = "MANUAL"        # values typed/selected by a person on site
+PROVENANCE_LIVE = "LIVE"            # values from a real live provider
+PROVENANCE_SIMULATED = "SIMULATED"  # any input came from a simulator/mock
 ALERT_LOG_COLUMNS = ["timestamp", "worker_or_site_id", "alert_type", "severity", "message", "module",
                       "organization", "project", "site", "organization_id", "project_id", "site_id"]
 AUDIT_LOG_COLUMNS = ["id", "timestamp", "event_type", "actor", "detail",
@@ -290,22 +303,24 @@ class _SqliteBackend:
 
     def __init__(self, path: str) -> None:
         self.path = path
+        self.key = _db.sqlite_url(path)
 
     def connect(self):
-        return sqlite3.connect(self.path, timeout=5)
+        return _db.raw_connection(self.key)
 
 
 class _PostgresBackend:
+    """Pooled Postgres connections via db.py (SQLAlchemy QueuePool with
+    pre-ping). Replaces one-new-socket-per-call psycopg2.connect()."""
     dialect = "postgres"
 
     def __init__(self, url: str) -> None:
-        import psycopg2  # local import: only required when DATABASE_URL is a Postgres URL
-        self._psycopg2 = psycopg2
+        import psycopg2  # noqa: F401 - fail fast (ImportError) if the driver is missing
         self.url = url
+        self.key = url
 
     def connect(self):
-        conn = self._psycopg2.connect(self.url)
-        conn.autocommit = False
+        conn = _db.raw_connection(self.url)
         return conn
 
 
@@ -368,7 +383,11 @@ class _Connection:
     # wrapper - callers use conn.raw for read queries via pandas.
     @property
     def raw(self):
-        return self._conn
+        """The driver-level DBAPI connection (sqlite3/psycopg2), unwrapped
+        from SQLAlchemy's pool proxy - what pandas.read_sql_query expects.
+        Commit/close always go through the pool proxy (self._conn) so the
+        connection is returned to the pool, never closed underneath it."""
+        return getattr(self._conn, "dbapi_connection", None) or self._conn
 
     @property
     def dialect(self) -> str:
@@ -445,6 +464,59 @@ _SITES_DDL = """CREATE TABLE IF NOT EXISTS sites (
     UNIQUE(project_id, name)
 )"""
 
+# ---------------------------------------------------------------------------
+# Accounts, server-side brute-force tracking, privacy consent (auth.py /
+# accounts.py). Stored in the same database as the logs so one backup and one
+# retention policy covers everything.
+# ---------------------------------------------------------------------------
+_USERS_DDL = """CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'supervisor',
+    email TEXT,
+    created_at TEXT NOT NULL,
+    created_by TEXT,
+    last_login_at TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1
+)"""
+
+_LOGIN_ATTEMPTS_DDL = """CREATE TABLE IF NOT EXISTS login_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    client_ip TEXT,
+    attempted_at REAL NOT NULL,
+    succeeded INTEGER NOT NULL DEFAULT 0
+)"""
+
+_USER_CONSENTS_DDL = """CREATE TABLE IF NOT EXISTS user_consents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    purpose TEXT NOT NULL,
+    granted INTEGER NOT NULL,
+    policy_version TEXT NOT NULL,
+    recorded_at TEXT NOT NULL,
+    UNIQUE(username, purpose)
+)"""
+
+_ACCOUNT_DELETIONS_DDL = """CREATE TABLE IF NOT EXISTS account_deletions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username_sha256 TEXT NOT NULL,
+    deleted_at TEXT NOT NULL,
+    requested_via TEXT NOT NULL,
+    rows_deleted INTEGER NOT NULL
+)"""
+
+_DEVICE_TOKENS_DDL = """CREATE TABLE IF NOT EXISTS device_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    token TEXT NOT NULL UNIQUE,
+    platform TEXT NOT NULL,
+    organization TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+)"""
+
 # Additive columns for databases created by an earlier version of this file
 # (pre-hierarchy). SQLite/Postgres both accept "ADD COLUMN IF NOT EXISTS" -
 # guarded in a try/except per-statement anyway since older SQLite versions
@@ -465,32 +537,88 @@ _MIGRATION_STATEMENTS = [
     "ALTER TABLE audit_log ADD COLUMN organization_id INTEGER",
     "ALTER TABLE audit_log ADD COLUMN project_id INTEGER",
     "ALTER TABLE audit_log ADD COLUMN site_id INTEGER",
+    "ALTER TABLE assessment_log ADD COLUMN username TEXT",
+    "ALTER TABLE assessment_log ADD COLUMN data_provenance TEXT",
 ]
+
+_INDEX_STATEMENTS = [
+    "CREATE INDEX IF NOT EXISTS idx_assessment_session ON assessment_log(session_id)",
+    "CREATE INDEX IF NOT EXISTS idx_assessment_ts ON assessment_log(timestamp)",
+    "CREATE INDEX IF NOT EXISTS idx_assessment_org ON assessment_log(organization_id)",
+    "CREATE INDEX IF NOT EXISTS idx_assessment_user ON assessment_log(username)",
+    "CREATE INDEX IF NOT EXISTS idx_alert_ts ON site_alert_log(timestamp)",
+    "CREATE INDEX IF NOT EXISTS idx_alert_org ON site_alert_log(organization_id)",
+    "CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(timestamp)",
+    "CREATE INDEX IF NOT EXISTS idx_projects_org ON projects(organization_id)",
+    "CREATE INDEX IF NOT EXISTS idx_sites_project ON sites(project_id)",
+    "CREATE INDEX IF NOT EXISTS idx_login_attempts_user_time ON login_attempts(username, attempted_at)",
+    "CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time ON login_attempts(client_ip, attempted_at)",
+    "CREATE INDEX IF NOT EXISTS idx_device_tokens_org ON device_tokens(organization)",
+    "CREATE INDEX IF NOT EXISTS idx_device_tokens_user ON device_tokens(username)",
+]
+
+ALL_TABLE_DDL = [
+    _ASSESSMENT_LOG_DDL, _SITE_ALERT_LOG_DDL, _AUDIT_LOG_DDL,
+    _ORGANIZATIONS_DDL, _PROJECTS_DDL, _SITES_DDL,
+    _USERS_DDL, _LOGIN_ATTEMPTS_DDL, _USER_CONSENTS_DDL, _ACCOUNT_DELETIONS_DDL,
+    _DEVICE_TOKENS_DDL,
+]
+
+# Backends whose schema has already been created/migrated in this process.
+_SCHEMA_READY: set[str] = set()
+_SCHEMA_LOCK = threading.Lock()
+
+
+def _existing_columns(conn: "_Connection", table: str) -> set[str]:
+    if conn.dialect == "postgres":
+        cur = conn.execute(
+            "SELECT column_name FROM information_schema.columns WHERE table_name = ?", (table,)
+        )
+        return {row[0] for row in cur.fetchall()}
+    cur = conn.execute(f"PRAGMA table_info({table})")
+    return {row[1] for row in cur.fetchall()}
+
+
+def ensure_schema(conn: "_Connection") -> None:
+    """Creates every table/index and applies additive column migrations.
+    Idempotent and safe on both SQLite and Postgres: missing columns are
+    detected first rather than by letting ALTER TABLE fail - on Postgres a
+    failed statement aborts the whole transaction, so the old
+    try/except-around-ALTER pattern broke every Postgres connection after
+    the first one."""
+    for ddl in ALL_TABLE_DDL:
+        conn.execute(ddl)
+    columns_cache: dict[str, set[str]] = {}
+    for stmt in _MIGRATION_STATEMENTS:
+        parts = stmt.split()
+        table, column = parts[2], parts[5]
+        if table not in columns_cache:
+            columns_cache[table] = _existing_columns(conn, table)
+        if column not in columns_cache[table]:
+            conn.execute(stmt)
+            columns_cache[table].add(column)
+    for stmt in _INDEX_STATEMENTS:
+        conn.execute(stmt)
 
 
 def _get_connection() -> _Connection:
+    """Pooled connection (db.py) with the schema guaranteed to exist. The
+    schema is created/migrated once per backend per process, not on every
+    call."""
     backend = _resolve_backend()
     raw = backend.connect()
     conn = _Connection(raw, backend.dialect)
-    conn.execute(_ASSESSMENT_LOG_DDL)
-    conn.execute(_SITE_ALERT_LOG_DDL)
-    conn.execute(_AUDIT_LOG_DDL)
-    conn.execute(_ORGANIZATIONS_DDL)
-    conn.execute(_PROJECTS_DDL)
-    conn.execute(_SITES_DDL)
-    for stmt in _MIGRATION_STATEMENTS:
-        try:
-            conn.execute(stmt)
-        except Exception:  # noqa: BLE001 - column already exists on every call after the first
-            pass
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_assessment_session ON assessment_log(session_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_assessment_ts ON assessment_log(timestamp)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_assessment_org ON assessment_log(organization_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_alert_ts ON site_alert_log(timestamp)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_alert_org ON site_alert_log(organization_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(timestamp)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_projects_org ON projects(organization_id)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_sites_project ON sites(project_id)")
+    if backend.key not in _SCHEMA_READY:
+        with _SCHEMA_LOCK:
+            if backend.key not in _SCHEMA_READY:
+                try:
+                    ensure_schema(conn)
+                    raw.commit()
+                except Exception:
+                    raw.rollback()
+                    raw.close()
+                    raise
+                _SCHEMA_READY.add(backend.key)
     return conn
 
 
@@ -745,7 +873,9 @@ def log_assessment(st_module, result: dict, organization: str | None = None,
         "organization": organization or ctx["organization"],
         "project": project or ctx["project"],
         "site": site or ctx["site"] or module,
+        "data_provenance": str(result.get("data_provenance") or PROVENANCE_MANUAL),
     }
+    username = st_module.session_state.get("_auth_username") or None
     # Relational hierarchy ids (P0 "MULTI-TENANT ISOLATION ARCHITECTURE"):
     # reuse the session's already-resolved ids from set_org_context() when
     # no explicit organization/project/site override was passed (the
@@ -766,12 +896,12 @@ def log_assessment(st_module, result: dict, organization: str | None = None,
                     """INSERT INTO assessment_log
                        (session_id, timestamp, module, risk_band, safety_override, key_metric,
                         primary_hazard, organization, project, site,
-                        organization_id, project_id, site_id)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        organization_id, project_id, site_id, username, data_provenance)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (session_id, row["timestamp"], row["module"], row["risk_band"],
                      int(row["safety_override"]), row["key_metric"], row["primary_hazard"],
                      row["organization"], row["project"], row["site"],
-                     org_id, proj_id, site_row_id),
+                     org_id, proj_id, site_row_id, username, row["data_provenance"]),
                 )
             return
         except Exception as exc:  # noqa: BLE001 - any backend failure -> handled centrally
@@ -867,13 +997,14 @@ def merge_uploaded_csv(st_module, uploaded_file) -> int:
     from an earlier version of this app - before the hierarchy columns
     existed - still merges cleanly instead of being rejected."""
     uploaded_df = pd.read_csv(uploaded_file)
-    required_columns = [c for c in LOG_COLUMNS if c not in {"organization", "project", "site"}]
+    required_columns = [c for c in LOG_COLUMNS if c not in {"organization", "project", "site", "data_provenance"}]
     missing = set(required_columns) - set(uploaded_df.columns)
     if missing:
         raise ValueError(f"Uploaded file is missing expected columns: {sorted(missing)}")
 
     ctx = get_org_context(st_module)
-    for col, default in (("organization", ctx["organization"]), ("project", ctx["project"]), ("site", ctx["site"])):
+    for col, default in (("organization", ctx["organization"]), ("project", ctx["project"]), ("site", ctx["site"]),
+                         ("data_provenance", PROVENANCE_MANUAL)):
         if col not in uploaded_df.columns:
             uploaded_df[col] = default
         else:
@@ -901,12 +1032,13 @@ def merge_uploaded_csv(st_module, uploaded_file) -> int:
                 conn.executemany(
                     """INSERT INTO assessment_log
                        (session_id, timestamp, module, risk_band, safety_override, key_metric,
-                        primary_hazard, organization, project, site)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        primary_hazard, organization, project, site, username, data_provenance)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     [(session_id, r["timestamp"], r["module"], r["risk_band"],
                       int(r["safety_override"]), r["key_metric"], r["primary_hazard"],
                       r.get("organization") or ctx["organization"], r.get("project") or ctx["project"],
-                      r.get("site") or ctx["site"]) for r in records],
+                      r.get("site") or ctx["site"], st_module.session_state.get("_auth_username") or None,
+                      r.get("data_provenance") or PROVENANCE_MANUAL) for r in records],
                 )
             return added
         except Exception as exc:  # noqa: BLE001
@@ -1025,6 +1157,12 @@ AUDIT_EVENT_REPORT_GENERATED = "REPORT_GENERATED"
 AUDIT_EVENT_THRESHOLD_OVERRIDE = "THRESHOLD_OVERRIDE"
 AUDIT_EVENT_CONFIG_ERROR = "CONFIG_ERROR"
 AUDIT_EVENT_DEPRECATED_CREDENTIAL_FORMAT = "DEPRECATED_CREDENTIAL_FORMAT"
+AUDIT_EVENT_REJECTED_CREDENTIAL_FORMAT = "REJECTED_CREDENTIAL_FORMAT"
+AUDIT_EVENT_USER_CREATED = "USER_CREATED"
+AUDIT_EVENT_PASSWORD_CHANGED = "PASSWORD_CHANGED"
+AUDIT_EVENT_CONSENT_CHANGED = "CONSENT_CHANGED"
+AUDIT_EVENT_DATA_EXPORTED = "PERSONAL_DATA_EXPORTED"
+AUDIT_EVENT_ACCOUNT_DELETED = "ACCOUNT_DELETED"
 
 _GENESIS_HASH = "0" * 64  # the chain's first row's prev_hash - a well-known constant, not a secret
 

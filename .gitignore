@@ -1,0 +1,32 @@
+# Secrets - never commit
+.streamlit/secrets.toml
+.env
+*.pem
+*.p8
+*.p12
+*.keystore
+*.jks
+# Local databases / runtime data
+*.db
+*.db-journal
+*.sqlite3
+backups/
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+# Mobile build output
+mobile/node_modules/
+mobile/android/app/build/
+mobile/ios/App/Pods/
+mobile/ios/App/build/
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+secrets/*
+!secrets/.gitkeep
+mobile/android/
+mobile/ios/

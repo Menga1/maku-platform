@@ -1,0 +1,38 @@
+{
+  "name": "maku-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MAKU native shell for iOS and Android (Capacitor 8). Hosts https://maku.ae and adds native GPS, camera, push alerts and an offline view.",
+  "scripts": {
+    "check": "node scripts/check-config.mjs",
+    "assets": "npx @capacitor/assets generate --iconBackgroundColor '#0c5c63' --iconBackgroundColorDark '#0c5c63' --splashBackgroundColor '#0c5c63' --splashBackgroundColorDark '#0c5c63'",
+    "add:android": "npx cap add android && node scripts/configure-native.mjs android",
+    "add:ios": "npx cap add ios && node scripts/configure-native.mjs ios",
+    "sync": "npm run check && npx cap sync",
+    "open:android": "npx cap open android",
+    "open:ios": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor-firebase/messaging": "8.5.2",
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/camera": "8.2.5",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/filesystem": "8.1.4",
+    "@capacitor/geolocation": "8.2.3",
+    "@capacitor/ios": "8.5.3",
+    "@capacitor/network": "8.0.1",
+    "@capacitor/preferences": "8.0.1",
+    "@capacitor/share": "8.0.3",
+    "@capacitor/splash-screen": "8.0.2",
+    "@capacitor/status-bar": "8.0.4",
+    "firebase": "^12.6.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "3.0.5",
+    "@capacitor/cli": "8.5.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

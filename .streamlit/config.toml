@@ -1,0 +1,30 @@
+[client]
+showSidebarNavigation = true
+# Hide the Streamlit developer menu/toolbar for end users.
+toolbarMode = "minimal"
+showErrorDetails = "none"
+
+[server]
+headless = true
+port = 8501
+address = "0.0.0.0"
+# CORS: off here so the app also runs unchanged on Streamlit Community Cloud.
+# The Docker deployment turns it ON from the command line (Dockerfile CMD:
+# --server.enableCORS=true) and docker-entrypoint.sh -> configure_streamlit.py
+# writes the allowed origin and hosts for MAKU_DOMAIN, so in production only
+# https://<MAKU_DOMAIN> may open the WebSocket.
+enableCORS = false
+enableXsrfProtection = true
+maxUploadSize = 10
+enableStaticServing = false
+fileWatcherType = "none"
+runOnSave = false
+
+[browser]
+gatherUsageStats = false
+
+[logger]
+level = "info"
+
+[theme]
+primaryColor = "#0c5c63"

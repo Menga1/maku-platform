@@ -1,14 +1,17 @@
-streamlit>=1.37
-requests>=2.31
-pytest>=8.0
-fpdf2>=2.7
-pandas>=2.0
-openpyxl>=3.1
-arabic-reshaper>=3.0
-python-bidi>=0.4
-streamlit-js-eval>=0.1.7
-gTTS>=2.5
-numpy>=1.24
-anthropic>=0.34
-psycopg2-binary>=2.9  # only used when DATABASE_URL points at Postgres/Supabase; SQLite needs nothing extra
-bcrypt>=4.0  # password hashing at rest (auth.py) - see auth.hash_password()
+# Runtime dependencies - pinned to the exact versions the 290+ test suite
+# passed against. Upgrade deliberately (bump, run `pytest`, redeploy), never
+# implicitly on a rebuild.
+streamlit==1.65.0
+requests==2.34.2
+fpdf2==2.8.9
+pandas==3.0.5
+numpy==2.5.3
+openpyxl==3.1.5
+arabic-reshaper==3.0.1
+python-bidi==0.6.11
+streamlit-js-eval==1.0.0
+gTTS==2.5.4
+anthropic==1.13.0
+bcrypt==5.0.0
+SQLAlchemy==2.1.4
+psycopg2-binary==2.9.13

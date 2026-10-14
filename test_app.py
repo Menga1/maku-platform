@@ -207,6 +207,37 @@ class TestUnderground:
 # Module 4: High-Rise (Vertical Urban)
 # ---------------------------------------------------------------------------
 
+class TestLeeArcFlash:
+    """Locks the corrected Ralph Lee constant (5.12e5 cal/cm2). The original
+    2.142e3 constant under-reported incident energy ~239-fold."""
+
+    def test_reference_value(self):
+        from risk_engine import lee_arc_flash_incident_energy
+        ie = lee_arc_flash_incident_energy(0.48, 20, 0.1, 455)
+        assert ie == pytest.approx(2.374, rel=0.001)
+
+    def test_constant_is_joules_formula_converted_to_calories(self):
+        from risk_engine import LEE_CAL_PER_CM2
+        assert LEE_CAL_PER_CM2 == pytest.approx(2.142e6 / 4.184, rel=0.001)
+
+    def test_scales_linearly_with_current_and_time_inverse_square_distance(self):
+        from risk_engine import lee_arc_flash_incident_energy as lee
+        base = lee(0.48, 20, 0.1, 455)
+        assert lee(0.48, 40, 0.1, 455) == pytest.approx(2 * base)
+        assert lee(0.48, 20, 0.2, 455) == pytest.approx(2 * base)
+        assert lee(0.48, 20, 0.1, 910) == pytest.approx(base / 4)
+
+    def test_rejects_non_positive_inputs(self):
+        from risk_engine import lee_arc_flash_incident_energy as lee
+        with pytest.raises(ValueError):
+            lee(0, 20, 0.1, 455)
+
+    def test_ppe_category_mapping(self):
+        from risk_engine import arc_flash_ppe_category
+        assert "Category 2" in arc_flash_ppe_category(6.0)
+        assert "DANGER" in arc_flash_ppe_category(41.0)
+
+
 class TestHighRise:
     def test_low_risk_shape(self):
         r = calculate_high_rise_kinetic_risk(ground_wind_speed_knots=8, floor_level=5, crane_load_mass_tons=10)
@@ -219,8 +250,10 @@ class TestHighRise:
         # suspend threshold triggers a safety override that the harmonized
         # USA default does not - proves the profile genuinely drives the
         # engine's decision, not just a cosmetic label.
-        r_usa = calculate_high_rise_kinetic_risk(20.5, 40, 4)
-        r_fr = calculate_high_rise_kinetic_risk(20.5, 40, 4, regulatory_profile=get_regulatory_profile("FRANCE"))
+        # 14.7 kn at 10 m -> ~28.4 kn at floor 40 (140 m, ASCE B alpha 0.25):
+        # above France's 27 kn gate, below the USA default 30 kn gate.
+        r_usa = calculate_high_rise_kinetic_risk(14.7, 40, 4)
+        r_fr = calculate_high_rise_kinetic_risk(14.7, 40, 4, regulatory_profile=get_regulatory_profile("FRANCE"))
         assert r_usa["safety_override"] is False
         assert r_fr["safety_override"] is True
         assert r_usa["regulatory_country_code"] == "USA"
@@ -235,7 +268,7 @@ class TestHighRise:
     def test_light_load_oscillation_escalates_band_without_override(self):
         # Light crane load at moderate scaled wind should push oscillation-driven
         # severity up even while staying under the hard 30-knot override.
-        r = calculate_high_rise_kinetic_risk(ground_wind_speed_knots=18, floor_level=60, crane_load_mass_tons=1)
+        r = calculate_high_rise_kinetic_risk(ground_wind_speed_knots=9, floor_level=40, crane_load_mass_tons=1)
         assert r["scaled_wind_speed"] <= 30.0
         assert r["safety_override"] is False
         assert r["risk_band"] in ("HIGH", "CRITICAL")
@@ -244,6 +277,38 @@ class TestHighRise:
         low = calculate_high_rise_kinetic_risk(ground_wind_speed_knots=15, floor_level=1, crane_load_mass_tons=10)
         high = calculate_high_rise_kinetic_risk(ground_wind_speed_knots=15, floor_level=100, crane_load_mass_tons=10)
         assert high["scaled_wind_speed"] > low["scaled_wind_speed"]
+
+    def test_power_law_matches_published_form(self):
+        # V(z) = V10 * (z/10)^alpha ; floor 100 * 3.5 m = 350 m
+        from risk_engine import WIND_TERRAIN_EXPONENTS
+        r = calculate_high_rise_kinetic_risk(10, 100, 10, terrain="open_country")
+        expected = 10 * (350 / 10) ** WIND_TERRAIN_EXPONENTS["open_country"]
+        assert r["scaled_wind_speed"] == pytest.approx(round(expected, 1))
+        assert r["scaled_wind_speed"] == pytest.approx(17.0, abs=0.05)
+
+    def test_no_longer_exponential_on_supertall_floors(self):
+        # Old model: 10 * e^(0.008*150) = 33.2 kn. Power law (open country) ~18.1 kn.
+        r = calculate_high_rise_kinetic_risk(10, 150, 10, terrain="open_country")
+        assert r["scaled_wind_speed"] < 20.0
+
+    def test_rougher_terrain_amplifies_more_with_height(self):
+        open_c = calculate_high_rise_kinetic_risk(10, 60, 10, terrain="open_country")
+        urban = calculate_high_rise_kinetic_risk(10, 60, 10, terrain="urban_centre")
+        assert urban["scaled_wind_speed"] > open_c["scaled_wind_speed"]
+
+    def test_low_floors_never_reduce_the_10m_reading(self):
+        r = calculate_high_rise_kinetic_risk(12, 1, 10)  # 3.5 m < 10 m reference
+        assert r["scaled_wind_speed"] == pytest.approx(12.0)
+
+    def test_measured_working_height_wind_overrides_model(self):
+        r = calculate_high_rise_kinetic_risk(5, 100, 10, measured_hook_wind_knots=31)
+        assert r["scaled_wind_speed"] == 31
+        assert r["wind_source"] == "Measured at working height"
+        assert r["safety_override"] is True
+
+    def test_unknown_terrain_is_rejected(self):
+        with pytest.raises(ValueError):
+            calculate_high_rise_kinetic_risk(10, 10, 10, terrain="moon")
 
     def test_pipeline_into_ai_advisor(self):
         r = calculate_high_rise_kinetic_risk(ground_wind_speed_knots=20, floor_level=150, crane_load_mass_tons=4)
@@ -263,6 +328,7 @@ class TestDataCenter:
         r = calculate_datacenter_kinetic_risk(
             electrical_load_kw=100, hot_aisle_temp=26,
             ceiling_void_confined=False, gas_system_armed=False,
+            label_incident_energy_cal=2.0,
         )
         _assert_standard_shape(r)
         assert r["risk_band"] == "LOW"
@@ -270,12 +336,48 @@ class TestDataCenter:
 
     def test_arc_flash_danger_forces_override(self):
         r = calculate_datacenter_kinetic_risk(
-            electrical_load_kw=1300, hot_aisle_temp=30,
+            electrical_load_kw=None, hot_aisle_temp=30,
             ceiling_void_confined=False, gas_system_armed=False,
+            label_incident_energy_cal=45.0,
         )
         assert r["arc_flash_danger"] is True
         assert r["safety_override"] is True
         assert r["risk_band"] == "CRITICAL"
+
+    def test_load_kw_never_drives_arc_flash(self):
+        small = calculate_datacenter_kinetic_risk(20, 28, False, False, label_incident_energy_cal=6.0)
+        huge = calculate_datacenter_kinetic_risk(2000, 28, False, False, label_incident_energy_cal=6.0)
+        assert small["arc_flash_energy_cal"] == huge["arc_flash_energy_cal"] == 6.0
+        assert small["risk_band"] == huge["risk_band"]
+
+    def test_unknown_incident_energy_requires_study_and_is_never_low(self):
+        r = calculate_datacenter_kinetic_risk(400, 26, False, False)
+        assert r["arc_flash_energy_cal"] is None
+        assert r["arc_flash_study_required"] is True
+        assert r["risk_band"] == "HIGH"
+        controls = get_controls(r)
+        assert any("UNKNOWN" in c for c in controls)
+
+    def test_unknown_incident_energy_with_no_energized_work_is_low(self):
+        r = calculate_datacenter_kinetic_risk(400, 26, False, False, energized_work_planned=False)
+        assert r["risk_band"] == "LOW"
+
+    def test_lee_path_used_when_fault_data_supplied(self):
+        r = calculate_datacenter_kinetic_risk(None, 26, False, False,
+                                              voltage_kv=0.48, fault_current_ka=20, clearing_time_s=0.1)
+        assert r["arc_flash_source"].startswith("Ralph Lee")
+        assert r["arc_flash_energy_cal"] == pytest.approx(2.37, abs=0.01)
+
+    def test_label_value_beats_lee_calculation(self):
+        r = calculate_datacenter_kinetic_risk(None, 26, False, False, label_incident_energy_cal=12.0,
+                                              voltage_kv=0.48, fault_current_ka=20, clearing_time_s=0.1)
+        assert r["arc_flash_energy_cal"] == 12.0
+        assert r["arc_flash_source"].startswith("Equipment arc-flash label")
+
+    def test_cold_aisle_setpoint_is_an_input(self):
+        r = calculate_datacenter_kinetic_risk(None, 40, False, False, label_incident_energy_cal=2.0,
+                                              cold_aisle_temp_c=27.0)
+        assert r["thermal_differential"] == 13.0
 
     def test_thermal_critical_forces_override(self):
         r = calculate_datacenter_kinetic_risk(
@@ -300,13 +402,13 @@ class TestDataCenter:
         assert r["confined_armed_danger"] is False
 
     def test_thermal_control_reflects_actual_thermal_reading_not_overall_band(self):
-        # Regression test for the bug caught during development: the
-        # "thermal differential elevated" control must be driven by the
+        # The "thermal differential elevated" control must be driven by the
         # actual thermal_differential value, not by an overall CRITICAL
         # band caused purely by arc-flash danger.
         r = calculate_datacenter_kinetic_risk(
-            electrical_load_kw=1300, hot_aisle_temp=30,
+            electrical_load_kw=None, hot_aisle_temp=30,
             ceiling_void_confined=False, gas_system_armed=False,
+            label_incident_energy_cal=45.0,
         )
         assert r["thermal_differential"] < 15.0
         controls = get_controls(r)
@@ -708,13 +810,90 @@ class TestUniversalWeatherFeed:
         }
         assert expected_fields.issubset(mock.keys())
 
-    def test_falls_back_to_mock_when_no_key_and_network_blocked(self):
-        # In this sandboxed test environment, api.open-meteo.com is not on
-        # the allowed egress list, so this genuinely exercises the real
-        # fallback path end-to-end rather than mocking it away.
-        result = fetch_live_weather_universal(24.95, 53.90)
-        assert result["source"] in ("Mock fallback data (no live network reachable)",
-                                     "Open-Meteo /v1/forecast")
+    def test_production_never_returns_mock_data(self, monkeypatch):
+        monkeypatch.delenv("MAKU_DEMO_MODE", raising=False)
+        with patch("data_feeds._fetch_open_meteo_universal", side_effect=Exception("network down")):
+            with pytest.raises(DataFeedError):
+                fetch_live_weather_universal(2.0, 2.0)
+
+    def test_demo_mode_mock_is_tagged_not_live(self, monkeypatch):
+        monkeypatch.setenv("MAKU_DEMO_MODE", "1")
+        with patch("data_feeds._fetch_open_meteo_universal", side_effect=Exception("network down")):
+            result = fetch_live_weather_universal(3.0, 3.0)
+        assert result["is_live"] is False
+        assert result["source"].startswith("Mock fallback")
+
+    def test_live_reading_is_tagged_live(self):
+        live = {"temperature_2m": 30.0, "relative_humidity_2m": 40.0, "wind_speed_10m_kn": 5.0,
+                "wind_gusts_10m_kn": 7.0, "uv_index": 5.0, "pressure_hpa": 1010.0,
+                "fetched_at": "now", "source": "Open-Meteo /v1/forecast", "is_live": True}
+        with patch("data_feeds._fetch_open_meteo_universal", return_value=live):
+            assert fetch_live_weather_universal(4.0, 4.0)["is_live"] is True
+
+    def test_failures_are_not_cached(self, monkeypatch):
+        """A transient outage must not be frozen into the cache: the very
+        next call after recovery returns live data."""
+        monkeypatch.delenv("MAKU_DEMO_MODE", raising=False)
+        live = {"temperature_2m": 31.0, "relative_humidity_2m": 40.0, "wind_speed_10m_kn": 5.0,
+                "wind_gusts_10m_kn": 7.0, "uv_index": 5.0, "pressure_hpa": 1010.0,
+                "fetched_at": "now", "source": "Open-Meteo /v1/forecast", "is_live": True}
+        with patch("data_feeds._fetch_open_meteo_universal", side_effect=Exception("down")):
+            with pytest.raises(DataFeedError):
+                fetch_live_weather_universal(5.0, 5.0)
+        with patch("data_feeds._fetch_open_meteo_universal", return_value=live):
+            assert fetch_live_weather_universal(5.0, 5.0)["temperature_2m"] == 31.0
+
+
+class TestDataProvenance:
+    def test_air_quality_raises_in_production(self, monkeypatch):
+        from data_feeds import fetch_air_quality_live
+        monkeypatch.delenv("MAKU_DEMO_MODE", raising=False)
+        with patch("data_feeds.requests.get", side_effect=Exception("down")):
+            with pytest.raises(DataFeedError):
+                fetch_air_quality_live(6.0, 6.0)
+
+    def test_air_quality_demo_mock_is_not_live(self, monkeypatch):
+        from data_feeds import fetch_air_quality_live
+        monkeypatch.setenv("MAKU_DEMO_MODE", "1")
+        with patch("data_feeds.requests.get", side_effect=Exception("down")):
+            assert fetch_air_quality_live(7.0, 7.0)["is_live"] is False
+
+    def test_simulators_refuse_to_run_in_production(self, monkeypatch):
+        from data_feeds import simulate_tunnel_telemetry, simulate_crane_telemetry, simulate_datacenter_telemetry
+        monkeypatch.delenv("MAKU_DEMO_MODE", raising=False)
+        for fn in (simulate_tunnel_telemetry, lambda: simulate_crane_telemetry(10), simulate_datacenter_telemetry):
+            with pytest.raises(DataFeedError):
+                fn()
+
+    def test_simulators_in_demo_mode_are_tagged_not_live(self, monkeypatch):
+        import data_feeds
+        from data_feeds import simulate_datacenter_telemetry
+        monkeypatch.setenv("MAKU_DEMO_MODE", "1")
+        monkeypatch.setattr(data_feeds, "SIM_DROPOUT_PROB", 0.0)
+        assert simulate_datacenter_telemetry()["is_live"] is False
+
+    def test_feed_errors_do_not_leak_technical_detail(self, monkeypatch):
+        from data_feeds import fetch_air_quality_live
+        monkeypatch.delenv("MAKU_DEMO_MODE", raising=False)
+        with patch("data_feeds.requests.get", side_effect=Exception("https://secret.internal/?key=abc")):
+            with pytest.raises(DataFeedError) as info:
+                fetch_air_quality_live(8.0, 8.0)
+        assert "secret" not in str(info.value)
+
+    def test_provenance_helper(self):
+        from data_feeds import combine_provenance
+        assert combine_provenance([None]) == "MANUAL"
+        assert combine_provenance([{"is_live": True}]) == "LIVE"
+        assert combine_provenance([{"is_live": True}, {"is_live": False}]) == "SIMULATED"
+
+    def test_simulated_assessment_is_logged_as_simulated(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("analytics.DB_PATH", str(tmp_path / "prov.db"))
+        st.session_state.clear()
+        r = calculate_solar_albedo_heat_risk(950, 9, 42, "silicon_pv_panels")
+        r["data_provenance"] = "SIMULATED"
+        log_assessment(st, r)
+        df = get_log_dataframe(st)
+        assert df.iloc[0]["data_provenance"] == "SIMULATED"
 
     def test_raises_when_mock_fallback_disabled_and_all_providers_fail(self):
         with patch("data_feeds._fetch_open_meteo_universal", side_effect=Exception("simulated network failure")):
@@ -884,7 +1063,7 @@ class TestGenerateNarrativeRequest:
             assert sent_json["tools"][0]["type"] == "web_search_20250305"
 
     def test_prompt_includes_verified_references_for_module(self):
-        result = calculate_datacenter_kinetic_risk(1300, 30, False, False)
+        result = calculate_datacenter_kinetic_risk(None, 30, False, False, label_incident_energy_cal=45.0)
         controls = get_controls(result)
         expected_bodies = {ref["body"] for ref in get_references(result["module"])}
         with patch("ai_advisor.requests.post") as mock_post:
@@ -933,7 +1112,7 @@ class TestAnalyticsLog:
     def test_key_metric_extracted_per_module(self):
         r_solar = calculate_solar_albedo_heat_risk(950, 9, 42, "silicon_pv_panels")
         log_assessment(st, r_solar)
-        r_dc = calculate_datacenter_kinetic_risk(1300, 30, False, False)
+        r_dc = calculate_datacenter_kinetic_risk(None, 30, False, False, label_incident_energy_cal=45.0)
         log_assessment(st, r_dc)
         df = get_log_dataframe(st)
         solar_row = df[df["module"] == "Solar (Desert)"].iloc[0]
@@ -1150,32 +1329,25 @@ class TestAuthCredentialResolution:
 
 
 class TestAuthPasswordMatching:
-    def test_plain_password_constant_time_match(self):
-        assert auth._password_matches("correct-horse", "correct-horse")
-        assert not auth._password_matches("correct-horse", "wrong")
+    def test_plaintext_credentials_are_rejected(self):
+        assert not auth._password_matches("correct-horse", "correct-horse")
 
-    def test_sha256_hashed_password_matches_correct_plaintext(self):
+    def test_sha256_credentials_are_rejected(self):
         import hashlib
         digest = hashlib.sha256(b"my-secret").hexdigest()
-        configured = f"sha256:{digest}"
-        assert auth._password_matches(configured, "my-secret")
-        assert not auth._password_matches(configured, "not-my-secret")
+        assert not auth._password_matches(f"sha256:{digest}", "my-secret")
 
     def test_unknown_username_runs_decoy_comparison_and_fails(self, monkeypatch):
-        monkeypatch.setattr(auth.st, "secrets", {"auth": {"users": {"alice": "pw1"}}})
+        monkeypatch.setattr(auth.st, "secrets", {"auth": {"users": {"alice": auth.hash_password("pw1-Long-enough")}}})
         assert not auth._verify_credentials("nobody", "anything")
 
     def test_bcrypt_hashed_password_matches_correct_plaintext(self):
-        """P0 'AUTHENTICATION & CRYPTOGRAPHIC HARDENING' - bcrypt is now
-        the primary, recommended credential format."""
         configured = auth.hash_password("my-secret")
         assert configured.startswith("bcrypt:")
         assert auth._password_matches(configured, "my-secret")
         assert not auth._password_matches(configured, "not-my-secret")
 
     def test_hash_password_produces_a_different_hash_each_time(self):
-        # bcrypt salts every hash - two calls for the same password must
-        # not produce identical stored values.
         assert auth.hash_password("same-password") != auth.hash_password("same-password")
 
     def test_malformed_bcrypt_hash_fails_closed(self):
@@ -1186,54 +1358,33 @@ class TestAuthPasswordMatching:
         assert auth._credential_format("sha256:" + "a" * 64) == "sha256"
         assert auth._credential_format("plain-value") == "plaintext"
 
-    def test_successful_bcrypt_login_does_not_flag_deprecated_warning(self, monkeypatch):
+    def test_bootstrap_bcrypt_login_sets_admin_role(self, monkeypatch, tmp_path):
+        monkeypatch.setattr("analytics.DB_PATH", str(tmp_path / "auth.db"))
         st.session_state.clear()
-        configured = auth.hash_password("s3cret!")
-        monkeypatch.setattr(auth.st, "secrets", {"auth": {"users": {"alice": configured}}})
+        monkeypatch.setattr(auth.st, "secrets", {"auth": {"users": {"alice": auth.hash_password("s3cret!")}}})
         assert auth._verify_credentials("alice", "s3cret!")
-        assert st.session_state.get("_auth_credential_format_warning") is None
+        assert st.session_state["_auth_role"] == "admin"
 
-    def test_successful_sha256_login_flags_deprecated_warning(self, monkeypatch):
-        import hashlib
-        st.session_state.clear()
-        digest = hashlib.sha256(b"legacy-secret").hexdigest()
-        monkeypatch.setattr(auth.st, "secrets", {"auth": {"users": {"bob": f"sha256:{digest}"}}})
-        assert auth._verify_credentials("bob", "legacy-secret")
-        warning = st.session_state.get("_auth_credential_format_warning")
-        assert warning is not None
-        assert "bob" in warning
-        assert "SHA-256" in warning
-
-    def test_successful_plaintext_login_flags_deprecated_warning(self, monkeypatch):
+    def test_bootstrap_plaintext_login_is_refused(self, monkeypatch, tmp_path):
+        monkeypatch.setattr("analytics.DB_PATH", str(tmp_path / "auth.db"))
         st.session_state.clear()
         monkeypatch.setattr(auth.st, "secrets", {"auth": {"users": {"carol": "plaintext-pw"}}})
-        assert auth._verify_credentials("carol", "plaintext-pw")
-        warning = st.session_state.get("_auth_credential_format_warning")
-        assert warning is not None
-        assert "carol" in warning
-        assert "plaintext" in warning
+        assert not auth._verify_credentials("carol", "plaintext-pw")
+
+    def test_database_account_login(self, monkeypatch, tmp_path):
+        import accounts
+        monkeypatch.setattr("analytics.DB_PATH", str(tmp_path / "auth.db"))
+        monkeypatch.setattr(auth.st, "secrets", {})
+        st.session_state.clear()
+        accounts.create_user("site.lead", "Correct-Horse-9", role="supervisor")
+        assert auth._verify_credentials("site.lead", "Correct-Horse-9")
+        assert st.session_state["_auth_role"] == "supervisor"
+        assert not auth._verify_credentials("site.lead", "wrong-password")
 
 
-class TestAuthLockoutAndSessionExpiry:
+class TestAuthSessionExpiry:
     def setup_method(self):
         st.session_state.clear()
-
-    def test_lockout_triggers_after_max_failed_attempts(self):
-        for _ in range(auth.MAX_FAILED_ATTEMPTS - 1):
-            auth._register_failure("bob")
-        attempts, locked_until = auth._lockout_state()
-        assert attempts == auth.MAX_FAILED_ATTEMPTS - 1
-        assert locked_until == 0.0
-        auth._register_failure("bob")  # the MAX_FAILED_ATTEMPTS-th failure
-        attempts, locked_until = auth._lockout_state()
-        assert attempts == 0  # counter resets once locked out
-        assert locked_until > 0.0
-
-    def test_reset_failures_clears_lockout_state(self):
-        auth._register_failure("bob")
-        auth._register_failure("bob")
-        auth._reset_failures()
-        assert auth._lockout_state() == (0, 0.0)
 
     def test_session_not_expired_when_never_logged_in(self):
         assert auth._session_expired() is False
@@ -1247,6 +1398,133 @@ class TestAuthLockoutAndSessionExpiry:
         import time
         st.session_state["_auth_login_at"] = time.time()
         assert auth._session_expired() is False
+
+
+class TestServerSideLockout:
+    @pytest.fixture(autouse=True)
+    def _db(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("analytics.DB_PATH", str(tmp_path / "lockout.db"))
+        st.session_state.clear()
+
+    def test_locks_after_max_failures_per_user(self):
+        import accounts
+        now = 1_000_000.0
+        for i in range(accounts.MAX_FAILED_PER_USER - 1):
+            accounts.record_login_attempt("bob", "10.0.0.1", False, now=now + i)
+        assert accounts.lockout_status("bob", "10.0.0.1", now=now + 10)[0] is False
+        accounts.record_login_attempt("bob", "10.0.0.1", False, now=now + 5)
+        locked, retry = accounts.lockout_status("bob", "10.0.0.9", now=now + 10)
+        assert locked is True and retry > 0
+
+    def test_lock_survives_session_reset_and_new_device(self):
+        """The whole point of moving lockout to the database: clearing the
+        browser session (refresh, new tab, new device) does not unlock."""
+        import accounts
+        now = 2_000_000.0
+        for i in range(accounts.MAX_FAILED_PER_USER):
+            accounts.record_login_attempt("eve", "10.0.0.2", False, now=now + i)
+        st.session_state.clear()
+        assert accounts.lockout_status("eve", "203.0.113.7", now=now + 30)[0] is True
+
+    def test_lock_expires_after_lockout_period(self):
+        import accounts
+        now = 3_000_000.0
+        for i in range(accounts.MAX_FAILED_PER_USER):
+            accounts.record_login_attempt("ann", None, False, now=now + i)
+        assert accounts.lockout_status("ann", None, now=now + accounts.LOCKOUT_SECONDS + 10)[0] is False
+
+    def test_per_ip_lock_catches_username_spraying(self):
+        import accounts
+        now = 4_000_000.0
+        for i in range(accounts.MAX_FAILED_PER_IP):
+            accounts.record_login_attempt(f"user{i}", "198.51.100.4", False, now=now + i)
+        assert accounts.lockout_status("someone-new", "198.51.100.4", now=now + 30)[0] is True
+        assert accounts.lockout_status("someone-new", "198.51.100.5", now=now + 30)[0] is False
+
+    def test_success_clears_failure_streak(self):
+        import accounts
+        now = 5_000_000.0
+        for i in range(accounts.MAX_FAILED_PER_USER - 1):
+            accounts.record_login_attempt("dan", "10.0.0.3", False, now=now + i)
+        accounts.record_login_attempt("dan", "10.0.0.3", True, now=now + 6)
+        accounts.record_login_attempt("dan", "10.0.0.3", False, now=now + 7)
+        assert accounts.lockout_status("dan", "10.0.0.3", now=now + 8)[0] is False
+
+
+class TestPrivacyAndAccountDeletion:
+    @pytest.fixture(autouse=True)
+    def _db(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("analytics.DB_PATH", str(tmp_path / "privacy.db"))
+        st.session_state.clear()
+
+    def test_consent_defaults_to_unanswered_and_is_recorded(self):
+        import accounts
+        accounts.create_user("worker.one", "Strong-Pass-123")
+        assert accounts.get_consents("worker.one") == {"ai_processing": None, "location": None}
+        accounts.set_consent("worker.one", "ai_processing", False)
+        accounts.set_consent("worker.one", "location", True)
+        assert accounts.get_consents("worker.one") == {"ai_processing": False, "location": True}
+        assert accounts.has_consent("worker.one", "ai_processing") is False
+
+    def test_policy_version_change_requires_fresh_consent(self, monkeypatch):
+        import accounts
+        accounts.set_consent("worker.two", "ai_processing", True)
+        monkeypatch.setattr(accounts, "PRIVACY_POLICY_VERSION", "2099-01")
+        assert accounts.get_consents("worker.two")["ai_processing"] is None
+
+    def test_weak_passwords_rejected(self):
+        import accounts
+        with pytest.raises(accounts.AccountError):
+            accounts.create_user("weak.user", "short")
+
+    def test_export_contains_account_consents_and_assessments(self):
+        import json
+        import accounts
+        accounts.create_user("export.me", "Strong-Pass-123")
+        accounts.set_consent("export.me", "location", True)
+        st.session_state["_auth_username"] = "export.me"
+        log_assessment(st, calculate_solar_albedo_heat_risk(950, 9, 42, "silicon_pv_panels"))
+        data = json.loads(accounts.export_user_data("export.me"))
+        assert data["account"]["role"] == "supervisor"
+        assert data["consents"][0]["purpose"] == "location"
+        assert len(data["assessments"]) == 1
+        assert "password_hash" not in json.dumps(data)
+
+    def test_delete_requires_correct_password(self):
+        import accounts
+        accounts.create_user("keep.me", "Strong-Pass-123")
+        with pytest.raises(accounts.AccountError):
+            accounts.delete_account("keep.me", "wrong-password")
+        assert accounts.get_user("keep.me") is not None
+
+    def test_delete_removes_personal_data_and_leaves_receipt(self):
+        import accounts
+        import analytics as _analytics
+        accounts.create_user("leaving.user", "Strong-Pass-123")
+        accounts.set_consent("leaving.user", "ai_processing", True)
+        accounts.record_login_attempt("leaving.user", "10.1.1.1", False)
+        st.session_state["_auth_username"] = "leaving.user"
+        log_assessment(st, calculate_solar_albedo_heat_risk(950, 9, 42, "silicon_pv_panels"))
+
+        counts = accounts.delete_account("leaving.user", "Strong-Pass-123")
+        assert counts["users"] == 1 and counts["assessment_log"] == 1 and counts["user_consents"] == 1
+
+        assert accounts.get_user("leaving.user") is None
+        assert accounts.get_consents("leaving.user") == {"ai_processing": None, "location": None}
+        with _analytics._get_connection() as conn:
+            assert conn.execute("SELECT COUNT(*) FROM assessment_log WHERE username = ?",
+                                ("leaving.user",)).fetchone()[0] == 0
+            receipt = conn.execute("SELECT username_sha256, requested_via FROM account_deletions").fetchone()
+        assert receipt[0] == accounts._sha256("leaving.user") and receipt[1] == "in_app"
+        audit = get_audit_log_dataframe()
+        assert (audit["event_type"] == "ACCOUNT_DELETED").any()
+        assert not (audit["actor"] == "leaving.user").iloc[:1].any()  # deletion event is pseudonymised
+        assert verify_audit_log_integrity()["ok"] is True
+
+    def test_deployment_accounts_cannot_self_delete(self):
+        import accounts
+        with pytest.raises(accounts.AccountError):
+            accounts.delete_account("bootstrap.admin", "whatever")
 
 
 # ---------------------------------------------------------------------------
@@ -1823,7 +2101,8 @@ class TestRiskMatrixWiringAcrossAllModules:
                                                      particulate_matter_pm25=20, gas_co_ppm=5),
         lambda: calculate_high_rise_kinetic_risk(ground_wind_speed_knots=8, floor_level=5, crane_load_mass_tons=10),
         lambda: calculate_datacenter_kinetic_risk(electrical_load_kw=100, hot_aisle_temp=26,
-                                                    ceiling_void_confined=False, gas_system_armed=False),
+                                                    ceiling_void_confined=False, gas_system_armed=False,
+                                                    label_incident_energy_cal=2.0),
         lambda: calculate_wind_energy_kinetic_risk(6.0),
         lambda: calculate_mining_quarrying_kinetic_risk(respirable_silica_ugm3=10, measured_noise_dba=75,
                                                           noise_exposure_hours=8, measured_vibration_aw_ms2=0.2,
@@ -2024,14 +2303,14 @@ class TestFormulaStandardsMap:
             assert isinstance(entry["cited_standards"], list) and entry["cited_standards"]
             assert entry["caveat"], f"{entry['function']} must document a caveat, even if empty-ish"
 
-    def test_datacenter_arc_flash_proxy_is_honestly_flagged_illustrative(self):
-        """The datacenter module's arc-flash number is a simplified
-        load-only proxy, NOT the Lee formula or IEEE 1584 - this must
-        never be silently upgraded to look like a certified figure."""
+    def test_datacenter_arc_flash_is_never_presented_as_certified(self):
+        """The datacenter arc-flash figure comes from an equipment label or
+        a Lee screening calculation - never claimed as an IEEE 1584 result."""
         entry = get_formula_standard("calculate_datacenter_kinetic_risk() arc_flash_energy_cal")
         assert entry is not None
-        assert entry["validation_status"] == "Illustrative (not standards-derived)"
-        assert "IEEE 1584" in entry["caveat"] or "Lee" in entry["caveat"]
+        assert entry["validation_status"] != "Direct implementation"
+        assert "IEEE 1584" in entry["caveat"]
+        assert "load" in entry["formula_summary"].lower()  # states load is NOT used
 
     def test_get_formula_standard_unknown_returns_none(self):
         assert get_formula_standard("nonexistent_formula_xyz") is None
@@ -2101,3 +2380,190 @@ class TestOfficialReportWithEvidence:
         result = calculate_solar_albedo_heat_risk(ghi=300, uv_index=3, ambient_temp=24, surface_type="pure_desert_sand")
         pdf_bytes = _build_report_pdf(result, "narrative", ["control"], [], [], "2026-01-01 00:00 UTC", "en")
         assert pdf_bytes[:4] == b"%PDF"
+
+
+# ---------------------------------------------------------------------------
+# AI error hygiene: failures never cached, no raw exception text, per-key cache
+# ---------------------------------------------------------------------------
+
+class TestAIErrorHygiene:
+    def _ok(self, text):
+        resp = MagicMock()
+        resp.raise_for_status.return_value = None
+        resp.json.return_value = {"content": [{"type": "text", "text": text}]}
+        return resp
+
+    def _result(self, wind):
+        # A unique input per test so the shared st.cache_data store can't
+        # make one test depend on another.
+        return calculate_high_rise_kinetic_risk(wind, 10, 10)
+
+    def test_rate_limit_is_not_cached_and_next_call_recovers(self):
+        import requests as _requests
+        from ai_advisor import generate_narrative_cached
+        result = self._result(11.11)
+        controls = get_controls(result)
+        err = _requests.exceptions.HTTPError("429 Client Error: Too Many Requests for url: https://api.anthropic.com/v1/messages")
+        with patch("ai_advisor.requests.post", side_effect=err):
+            first = generate_narrative_cached(result, controls, "key-A", "en")
+        assert "rate limit" in first.lower()
+        with patch("ai_advisor.requests.post", return_value=self._ok("LIVE AI TEXT")) as mock_post:
+            second = generate_narrative_cached(result, controls, "key-A", "en")
+        assert second == "LIVE AI TEXT"
+        assert mock_post.call_count == 1
+
+    def test_success_is_cached(self):
+        from ai_advisor import generate_narrative_cached
+        result = self._result(12.22)
+        controls = get_controls(result)
+        with patch("ai_advisor.requests.post", return_value=self._ok("CACHED TEXT")) as mock_post:
+            a = generate_narrative_cached(result, controls, "key-A", "en")
+            b = generate_narrative_cached(result, controls, "key-A", "en")
+        assert a == b == "CACHED TEXT"
+        assert mock_post.call_count == 1
+
+    def test_cache_is_separate_per_api_key(self):
+        from ai_advisor import generate_narrative_cached
+        result = self._result(13.33)
+        controls = get_controls(result)
+        with patch("ai_advisor.requests.post", return_value=self._ok("PAID BY KEY A")):
+            generate_narrative_cached(result, controls, "key-A", "en")
+        with patch("ai_advisor.requests.post", side_effect=Exception("401 invalid x-api-key")):
+            other = generate_narrative_cached(result, controls, "key-B-invalid", "en")
+        assert "PAID BY KEY A" not in other
+
+    def test_raw_exception_text_never_shown(self):
+        result = self._result(14.44)
+        controls = get_controls(result)
+        with patch("ai_advisor.requests.post", side_effect=Exception("https://internal.example/secret?token=xyz")):
+            text = generate_narrative(result, controls, api_key="k", lang="en")
+        assert "secret" not in text and "token" not in text and "http" not in text
+
+    def test_background_job_cap_returns_none_when_full(self, monkeypatch):
+        import threading
+        import ai_advisor
+        monkeypatch.setattr(ai_advisor, "_AI_JOB_SLOTS", threading.BoundedSemaphore(1))
+        monkeypatch.setattr(ai_advisor, "ANTHROPIC_SDK_AVAILABLE", True)
+        assert ai_advisor._AI_JOB_SLOTS.acquire(blocking=False)  # occupy the only slot
+        try:
+            r = self._result(15.55)
+            assert ai_advisor.start_narrative_background_job(r, get_controls(r), "k") is None
+        finally:
+            ai_advisor._AI_JOB_SLOTS.release()
+
+
+# ---------------------------------------------------------------------------
+# Mobile shell bridge, push registry, site photos in the PDF, Streamlit config
+# ---------------------------------------------------------------------------
+
+class TestMobileIntegration:
+    @pytest.fixture(autouse=True)
+    def _db(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("analytics.DB_PATH", str(tmp_path / "mobile.db"))
+        st.session_state.clear()
+
+    def test_bridge_is_inert_outside_the_shell(self):
+        import mobile_bridge
+        assert mobile_bridge.in_mobile_shell() is False
+        assert mobile_bridge.request_native_location() == {"error": {"code": 2, "message": "not-in-shell"}}
+        assert mobile_bridge.bridge_request("hello", key="x") == {"error": "not-in-shell"}
+
+    def test_shell_detection_only_accepts_known_platforms(self):
+        import mobile_bridge
+        st.session_state[mobile_bridge.SHELL_KEY] = "ios"
+        assert mobile_bridge.in_mobile_shell() is True
+        st.session_state[mobile_bridge.SHELL_KEY] = "<script>"
+        assert mobile_bridge.in_mobile_shell() is False
+
+    def test_bridge_js_only_talks_to_shell_origins(self):
+        import mobile_bridge
+        js = mobile_bridge._request_js("request-location", None, 1000)
+        assert "capacitor://localhost" in js and "https://localhost" in js
+        assert '"*"' not in js  # never a wildcard target origin
+
+    def test_device_registration_and_deletion(self):
+        import accounts
+        import push
+        accounts.create_user("phone.user", "Phone-Pass-123")
+        push.register_device("phone.user", "tok-1", "android", "ACME")
+        push.register_device("phone.user", "tok-1", "android", "ACME")  # re-registration is idempotent
+        assert push._tokens_for_organization("ACME") == ["tok-1"]
+        accounts.delete_account("phone.user", "Phone-Pass-123")
+        assert push._tokens_for_organization("ACME") == []
+
+    def test_invalid_device_tokens_rejected(self):
+        import push
+        with pytest.raises(ValueError):
+            push.register_device("u", "", "android", "ACME")
+        with pytest.raises(ValueError):
+            push.register_device("u", "tok", "windows", "ACME")
+
+    def test_push_disabled_without_credentials_and_never_for_simulated(self, monkeypatch):
+        import push
+        monkeypatch.delenv("MAKU_FCM_SERVICE_ACCOUNT_FILE", raising=False)
+        override = {"safety_override": True, "module": "X", "risk_band": "CRITICAL"}
+        assert push.notify_stop_work(override, "ACME") is False
+        monkeypatch.setattr(push, "push_enabled", lambda: True)
+        assert push.notify_stop_work({**override, "data_provenance": "SIMULATED"}, "ACME") is False
+
+    def test_fcm_unregistered_token_is_forgotten(self, monkeypatch):
+        import push
+        push.register_device("u", "dead-token", "ios", "ACME")
+        resp = MagicMock(status_code=404, text='{"error":{"status":"NOT_FOUND","details":[{"errorCode":"UNREGISTERED"}]}}')
+        monkeypatch.setattr(push, "_access_token", lambda: "x")
+        monkeypatch.setattr(push, "_project_id", lambda: "p")
+        with patch("push.requests.post", return_value=resp):
+            assert push._send_one("dead-token", "t", "b", {}) is False
+        assert push._tokens_for_organization("ACME") == []
+
+    def test_site_photos_are_embedded_in_pdf(self):
+        import io
+        from PIL import Image
+        from ui_helpers import _build_report_pdf
+        buf = io.BytesIO()
+        Image.new("RGB", (64, 48), (200, 30, 30)).save(buf, "JPEG")
+        result = calculate_solar_albedo_heat_risk(950, 9, 42, "silicon_pv_panels")
+        without = _build_report_pdf(result, "n", ["c"], [], [], "now", "en")
+        with_photo = _build_report_pdf(result, "n", ["c"], [], [], "now", "en", photos=[buf.getvalue()])
+        assert with_photo[:4] == b"%PDF" and len(with_photo) > len(without)
+        assert b"/Subtype /Image" in with_photo
+
+    def test_simulated_results_are_stamped_in_pdf(self):
+        from ui_helpers import _build_report_pdf
+        result = calculate_solar_albedo_heat_risk(950, 9, 42, "silicon_pv_panels")
+        result["data_provenance"] = "SIMULATED"
+        pdf = _build_report_pdf(result, "n", ["c"], [], [], "now", "en")
+        assert pdf[:4] == b"%PDF"
+
+    def test_streamlit_cors_config_generated_from_domain(self, monkeypatch, tmp_path):
+        import configure_streamlit
+        monkeypatch.setenv("HOME", str(tmp_path))
+        monkeypatch.setenv("MAKU_DOMAIN", "maku.ae")
+        assert configure_streamlit.main() == 0
+        text = (tmp_path / ".streamlit" / "config.toml").read_text()
+        assert 'corsAllowedOrigins = ["https://maku.ae"]' in text
+        assert '"maku.ae"' in text
+
+
+class TestDatacenterArcFlashTriage:
+    def test_label_first(self):
+        from risk_engine import datacenter_arc_flash
+        r = datacenter_arc_flash(12.0, 0.48, 20, 0.1)
+        assert r["incident_energy_cal"] == 12.0 and r["source"].startswith("Equipment") and not r["study_required"]
+
+    def test_lee_second(self):
+        from risk_engine import datacenter_arc_flash
+        r = datacenter_arc_flash(None, 0.48, 20, 0.1, 455)
+        assert r["incident_energy_cal"] == pytest.approx(2.374, rel=0.001) and r["source"].startswith("Ralph Lee")
+
+    def test_unknown_last(self):
+        from risk_engine import datacenter_arc_flash
+        r = datacenter_arc_flash(None, 0.48, None, 0.1)
+        assert r["incident_energy_cal"] is None and r["study_required"] is True
+
+    def test_init_db_script_runs(self, tmp_path):
+        import subprocess, sys, os
+        env = {**os.environ, "MAKU_DB_PATH": str(tmp_path / "init.db"), "DATABASE_URL": ""}
+        out = subprocess.run([sys.executable, "scripts/init_db.py"], capture_output=True, text=True, env=env)
+        assert out.returncode == 0, out.stderr
+        assert "Database ready (SQLite)" in out.stderr + out.stdout
