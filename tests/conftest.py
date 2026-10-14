@@ -12,7 +12,11 @@ if ROOT not in sys.path:
 
 # MAKU_TEST_BACKEND=postgres runs every test that uses `fresh_db` against the
 # (already migrated) PostgreSQL at MAKU_TEST_PG_URL, emptied before each test.
+# MAKU_TEST_PG_URL should be the APPLICATION role (row-level security applies,
+# as in production); MAKU_TEST_PG_OWNER_URL the table owner, used only to
+# empty the tables between tests.
 PG_URL = os.environ.get("MAKU_TEST_PG_URL", "")
+PG_OWNER_URL = os.environ.get("MAKU_TEST_PG_OWNER_URL", "") or PG_URL
 USE_PG = os.environ.get("MAKU_TEST_BACKEND") == "postgres" and bool(PG_URL)
 _TABLES = ("assessment_log", "site_alert_log", "audit_log", "organizations", "projects", "sites",
            "users", "login_attempts", "user_consents", "account_deletions", "device_tokens",
@@ -29,10 +33,15 @@ def fresh_db(tmp_path, monkeypatch):
     monkeypatch.delenv("MAKU_ENV", raising=False)
     monkeypatch.setattr("analytics.DB_PATH", str(tmp_path / "test.db"))
     if USE_PG:
+        import db
+        raw = db.raw_connection(PG_OWNER_URL)
+        try:
+            raw.cursor().execute(f"TRUNCATE {', '.join(_TABLES)} RESTART IDENTITY")
+            raw.commit()
+        finally:
+            raw.close()
         monkeypatch.setattr("analytics.DATABASE_URL", PG_URL)
         analytics.reset_fatal_state_for_testing()
-        with analytics._get_connection() as conn:
-            conn.execute(f"TRUNCATE {', '.join(_TABLES)} RESTART IDENTITY")
     else:
         monkeypatch.setattr("analytics.DATABASE_URL", "")
     analytics.reset_fatal_state_for_testing()

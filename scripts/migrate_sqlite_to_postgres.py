@@ -15,14 +15,18 @@ Safe by design:
   * verifies row counts and re-checks the audit-log hash chain on PostgreSQL
   * --dry-run reports what would be copied without writing anything
 
+Run it with the table OWNER's URL (MIGRATION_DATABASE_URL), not the
+application role: copying rows and resetting sequences is owner work, and
+row-level security (migration 0003) would otherwise filter the copy.
+
 Usage (from the repository root, with the stack running):
 
   # copy the old Streamlit Cloud / laptop database into the compose stack
   docker compose cp ./maku_site_data.db app:/app/data/import.db
   docker compose exec app python scripts/migrate_sqlite_to_postgres.py \
-      --sqlite /app/data/import.db --dry-run
+      --sqlite /app/data/import.db --postgres "$MIGRATION_DATABASE_URL" --dry-run
   docker compose exec app python scripts/migrate_sqlite_to_postgres.py \
-      --sqlite /app/data/import.db
+      --sqlite /app/data/import.db --postgres "$MIGRATION_DATABASE_URL"
 
   # or against any PostgreSQL server from a laptop
   python scripts/migrate_sqlite_to_postgres.py --sqlite maku_site_data.db \
@@ -162,4 +166,10 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    import analytics as _analytics_ctx
+
+    # Operator tool run on the server: platform-administrator identity for
+    # PostgreSQL row-level security (analytics.system_context).
+    with _analytics_ctx.system_context():
+        _code = main()
+    sys.exit(_code)

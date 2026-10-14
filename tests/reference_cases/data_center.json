@@ -28,7 +28,12 @@
       "basis": "hand calculation, Lee (1982) formula: 5.12e5 x 0.48 x 20 x 0.1 / 455^2",
       "review_status": "pending independent HSE review",
       "reviewed_by": null,
-      "reviewed_on": null
+      "reviewed_on": null,
+      "residual_scenario": {
+        "applied_controls": "all_recommended",
+        "note": "Residual inputs: every control MAKU recommends for this result is marked as applied. A reviewer may replace this with a specific list of control ids."
+      },
+      "approved_expected": null
     },
     {
       "id": "lee-480V-50kA-30cyc",
@@ -55,7 +60,12 @@
       "basis": "hand calculation, Lee (1982) formula: 5.12e5 x 0.48 x 50 x 0.5 / 455^2",
       "review_status": "pending independent HSE review",
       "reviewed_by": null,
-      "reviewed_on": null
+      "reviewed_on": null,
+      "residual_scenario": {
+        "applied_controls": "all_recommended",
+        "note": "Residual inputs: every control MAKU recommends for this result is marked as applied. A reviewer may replace this with a specific list of control ids."
+      },
+      "approved_expected": null
     },
     {
       "id": "label-45cal-danger",
@@ -79,7 +89,12 @@
       "basis": "label value is used as-is (NFPA 70E 130.5(H))",
       "review_status": "pending independent HSE review",
       "reviewed_by": null,
-      "reviewed_on": null
+      "reviewed_on": null,
+      "residual_scenario": {
+        "applied_controls": "all_recommended",
+        "note": "Residual inputs: every control MAKU recommends for this result is marked as applied. A reviewer may replace this with a specific list of control ids."
+      },
+      "approved_expected": null
     },
     {
       "id": "unknown-ie",
@@ -97,7 +112,26 @@
       "basis": "rule: unknown incident energy must never be estimated from load",
       "review_status": "pending independent HSE review",
       "reviewed_by": null,
-      "reviewed_on": null
+      "reviewed_on": null,
+      "residual_scenario": {
+        "applied_controls": "all_recommended",
+        "note": "Residual inputs: every control MAKU recommends for this result is marked as applied. A reviewer may replace this with a specific list of control ids."
+      },
+      "approved_expected": null
     }
-  ]
+  ],
+  "approval_schema": {
+    "approved_expected": "Filled ONLY by the independent HSE reviewer, from the approved reference standard - never from MAKU output.",
+    "fields": {
+      "reference_standard": "name and version of the approved standard / matrix",
+      "initial_score": "integer 1-25",
+      "initial_band": "Low|Moderate|High|Extreme",
+      "residual_score": "integer 1-25",
+      "residual_band": "Low|Moderate|High|Extreme",
+      "safety_override": "true|false",
+      "reviewer": "name and qualification",
+      "approved_on": "YYYY-MM-DD",
+      "notes": "case-specific calculation notes"
+    }
+  }
 }

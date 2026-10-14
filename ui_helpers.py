@@ -1128,6 +1128,11 @@ def render_analytics_section(st_module, lang: str) -> None:
                 (f"{added} nouvelle(s) ligne(s) fusionnée(s)." if lang == "fr"
                  else f"{added} new row(s) merged.")
             )
+        except RuntimeError as exc:   # analytics.PersistenceError: never reported as merged
+            if exc.__class__.__name__ != "PersistenceError":
+                raise
+            st_module.error("Import NON enregistré - base de données indisponible." if lang == "fr"
+                            else "Import NOT saved - the database is unavailable.")
         except PermissionError:
             st_module.error("Votre rôle est en lecture seule dans cette organisation : import impossible."
                             if lang == "fr" else
@@ -1139,7 +1144,12 @@ def render_analytics_section(st_module, lang: str) -> None:
             st_module.error("Échec de la fusion : fichier illisible." if lang == "fr"
                             else "Merge failed: the file could not be read.")
 
-    df = get_log_dataframe(st_module)
+    try:
+        df = get_log_dataframe(st_module)
+    except PermissionError:   # tenancy.TenantAccessDenied: no organization, or access removed
+        st_module.info("Aucune organisation accessible - journal indisponible." if lang == "fr"
+                       else "No accessible organization - the log is not available.")
+        return
 
     if df.empty:
         st_module.info(

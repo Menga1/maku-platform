@@ -130,7 +130,8 @@ unzip MAKU_production.zip && cd maku
 
 cp .env.example .env
 openssl rand -hex 24          # copy the output into POSTGRES_PASSWORD
-nano .env                     # set MAKU_DOMAIN, ACME_EMAIL, POSTGRES_PASSWORD, MAKU_AI_API_KEY (optional)
+openssl rand -hex 24          # a second, different one into MAKU_APP_DB_PASSWORD
+nano .env                     # set MAKU_DOMAIN, ACME_EMAIL, POSTGRES_PASSWORD, MAKU_APP_DB_PASSWORD, MAKU_AI_API_KEY (optional)
 ```
 
 Generate the first administrator's credential (Argon2id), then paste it into `.env`. The password needs at least 12 characters mixing three of lowercase, uppercase, digits and symbols; production refuses weaker ones at sign-in:
@@ -158,6 +159,8 @@ Open `https://maku.ae`, sign in as `first.admin`, and make your privacy choices.
 
 - MAKU only uses PostgreSQL. If `DATABASE_URL` is missing or not PostgreSQL, the app container stops at start-up with `CRITICAL ... Refusing to fall back to a local SQLite file` in `docker compose logs app`.
 - At every start, `scripts/init_db.py` applies the versioned migrations in `migrations/` (`alembic upgrade head`). The app refuses to use a database that is not at the expected revision.
+- **Two database roles.** Migrations run as the table owner (`MIGRATION_DATABASE_URL`, the `POSTGRES_USER`). The app connects as `maku_app` (`DATABASE_URL`), which `init_db.py` creates and grants on first start. PostgreSQL row-level security (migration 0003) applies to `maku_app` only, so the app refuses to start if `DATABASE_URL` is the owner, a superuser or a `BYPASSRLS` role. `maku_app` cannot change or delete the audit log.
+- Managed database (RDS, Azure, Supabase, Neon): create a login role for the app yourself if the owner may not create roles, then set both URLs in `.env`.
 - If PostgreSQL goes down while running, every page shows **CRITICAL DATABASE ERROR** and nothing is saved anywhere else; the container turns *unhealthy* and the log shows a CRITICAL line. Pages work again automatically within seconds of the database coming back.
 
 ## 3. Accounts
