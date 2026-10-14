@@ -13,11 +13,19 @@ SECURITY MODEL
        MAKU_AUTH_USERS / MAKU_AUTH_USERNAME+MAKU_AUTH_PASSWORD environment
        variables - for the first administrator only.
   If neither yields an account, no login form is rendered at all.
-* BCRYPT ONLY. Every stored credential must be "bcrypt:<hash>". Plaintext
-  and unsalted "sha256:" values - previously accepted with a warning - are
-  now REJECTED: the login fails and a REJECTED_CREDENTIAL_FORMAT audit event
-  is written. Generate a value with:
+* ARGON2ID (bcrypt still accepted). New credentials are "argon2:<hash>"
+  (Argon2id, RFC 9106 parameters). "bcrypt:<hash>" values still work and
+  database accounts are upgraded to Argon2id at their next sign-in. Plaintext
+  and unsalted "sha256:" values are REJECTED: the login fails and a
+  REJECTED_CREDENTIAL_FORMAT audit event is written. Generate a value with:
       python3 manage_users.py hash
+* PASSWORD POLICY FOR DEPLOYMENT ACCOUNTS. Accounts from secrets/env can't
+  be checked when configured (only the hash is stored), so the password is
+  checked at sign-in. In strict mode (MAKU_ENV=production/staging) a password
+  that fails the policy is refused with an explicit message; elsewhere a
+  warning banner asks the operator to replace it.
+* SESSIONS end after MAKU_SESSION_TIMEOUT_MINUTES (default 480) in total, or
+  MAKU_SESSION_IDLE_MINUTES (default 30) without any interaction.
 * SERVER-SIDE BRUTE-FORCE LOCKOUT. Attempts are recorded in the database
   (accounts.login_attempts) and evaluated per username AND per client IP,
   so refreshing the page, opening a new tab, or switching devices does not
@@ -49,6 +57,9 @@ logger = logging.getLogger("maku.auth")
 _SHA256_PREFIX = "sha256:"
 _BCRYPT_PREFIX = accounts.BCRYPT_PREFIX
 SESSION_TIMEOUT_MINUTES = int(os.environ.get("MAKU_SESSION_TIMEOUT_MINUTES", "480"))  # 8 hours default
+SESSION_IDLE_MINUTES = int(os.environ.get("MAKU_SESSION_IDLE_MINUTES", "30"))
+AUDIT_EVENT_WEAK_DEPLOYMENT_PASSWORD = "WEAK_DEPLOYMENT_PASSWORD"
+AUDIT_EVENT_SESSION_IDLE_TIMEOUT = "SESSION_IDLE_TIMEOUT"
 BOOTSTRAP_ROLE = "admin"
 
 
@@ -57,17 +68,13 @@ BOOTSTRAP_ROLE = "admin"
 # ---------------------------------------------------------------------------
 
 def hash_password(plaintext: str) -> str:
-    """'bcrypt:<hash>' - paste into st.secrets / MAKU_AUTH_USERS. Provisioning
+    """'argon2:<hash>' - paste into st.secrets / MAKU_AUTH_USERS. Provisioning
     helper; not part of the login request path."""
     return accounts.hash_password(plaintext)
 
 
 def _credential_format(configured: str) -> str:
-    if configured.startswith(_BCRYPT_PREFIX):
-        return "bcrypt"
-    if configured.startswith(_SHA256_PREFIX):
-        return "sha256"
-    return "plaintext"
+    return accounts.credential_format(configured)
 
 
 def _audit(event_type: str, actor: str, detail: str = "") -> None:
@@ -124,8 +131,8 @@ def _configured_users() -> dict[str, str]:
 
 
 def _password_matches(configured: str, supplied: str) -> bool:
-    """bcrypt only. Any other stored format fails closed."""
-    if _credential_format(configured) != "bcrypt":
+    """Argon2id or bcrypt only. Any other stored format fails closed."""
+    if _credential_format(configured) not in accounts.ACCEPTED_FORMATS:
         return False
     return accounts.verify_password(configured, supplied)
 
@@ -152,6 +159,8 @@ def _verify_credentials(username: str, password: str) -> bool:
         if ok:
             st.session_state["_auth_role"] = user["role"]
             st.session_state["_auth_source"] = "database"
+            if accounts.needs_rehash(user["password_hash"]):
+                accounts.upgrade_stored_hash(username, password)
         return ok
 
     # 2. Deployment-managed bootstrap account
@@ -159,20 +168,34 @@ def _verify_credentials(username: str, password: str) -> bool:
     if configured is None:
         accounts.burn_equal_time(password)
         return False
-    if _credential_format(configured) != "bcrypt":
+    if _credential_format(configured) not in accounts.ACCEPTED_FORMATS:
         accounts.burn_equal_time(password)
         message = (f"Account '{username}' is configured with a rejected "
                    f"{'SHA-256' if _credential_format(configured) == 'sha256' else 'plaintext'} credential. "
-                   "Only 'bcrypt:<hash>' values are accepted - run `python3 manage_users.py hash`.")
+                   "Only 'argon2:<hash>' or 'bcrypt:<hash>' values are accepted - run `python3 manage_users.py hash`.")
         logger.error(message)
         _audit(_analytics.AUDIT_EVENT_REJECTED_CREDENTIAL_FORMAT if _analytics else "REJECTED_CREDENTIAL_FORMAT",
                actor=username, detail=message)
         return False
     ok = accounts.verify_password(configured, password)
-    if ok:
-        st.session_state["_auth_role"] = BOOTSTRAP_ROLE
-        st.session_state["_auth_source"] = "deployment"
-    return ok
+    if not ok:
+        return False
+    problems = accounts.password_policy_problems(password)
+    if problems:
+        import db
+        detail = f"deployment account password fails policy: {problems[0]}"
+        logger.warning("Account '%s': %s", username, detail)
+        _audit(AUDIT_EVENT_WEAK_DEPLOYMENT_PASSWORD, actor=username, detail=detail)
+        if db.strict_persistence():
+            st.session_state["_auth_refused_reason"] = "weak_deployment_password"
+            return False
+        st.session_state["_auth_weak_password_warning"] = problems[0]
+    if accounts.needs_rehash(configured):
+        logger.info("Account '%s' uses a %s credential - replace it with `python3 manage_users.py hash` "
+                    "(Argon2id)", username, _credential_format(configured))
+    st.session_state["_auth_role"] = BOOTSTRAP_ROLE
+    st.session_state["_auth_source"] = "deployment"
+    return True
 
 
 def get_client_ip() -> str | None:
@@ -192,6 +215,15 @@ def _session_expired() -> bool:
     return (time.time() - login_at) > SESSION_TIMEOUT_MINUTES * 60
 
 
+def _session_idle() -> bool:
+    """True when the last interaction is older than SESSION_IDLE_MINUTES.
+    Every rerun (any click or input) counts as an interaction."""
+    last_seen = st.session_state.get("_auth_last_seen")
+    if last_seen is None or SESSION_IDLE_MINUTES <= 0:
+        return False
+    return (time.time() - last_seen) > SESSION_IDLE_MINUTES * 60
+
+
 def current_username() -> str:
     return st.session_state.get("_auth_username", "") or ""
 
@@ -206,7 +238,7 @@ def is_admin() -> bool:
 
 def _clear_session_identity() -> None:
     for key in ("authenticated", "_auth_username", "_auth_role", "_auth_source", "_auth_login_at",
-                "_auth_consents"):
+                "_auth_last_seen", "_auth_consents", "_auth_weak_password_warning"):
         st.session_state.pop(key, None)
     st.session_state["authenticated"] = False
 
@@ -226,7 +258,13 @@ def require_login() -> None:
             _audit(_analytics.AUDIT_EVENT_SESSION_EXPIRED if _analytics else "SESSION_EXPIRED",
                    actor=current_username() or "unknown")
             _clear_session_identity()
+        elif _session_idle():
+            _audit(AUDIT_EVENT_SESSION_IDLE_TIMEOUT, actor=current_username() or "unknown",
+                   detail=f"idle > {SESSION_IDLE_MINUTES} min")
+            _clear_session_identity()
+            st.session_state["_auth_idle_notice"] = True
         else:
+            st.session_state["_auth_last_seen"] = time.time()
             return
 
     st.set_page_config(page_title="MAKU - Connexion", page_icon="🔒", layout="centered")
@@ -241,6 +279,9 @@ def require_login() -> None:
 
         if st.session_state.pop("_account_deleted_notice", False):
             st.success("Votre compte a été supprimé. / Your account has been deleted.")
+        if st.session_state.pop("_auth_idle_notice", False):
+            st.info(f"Déconnecté après {SESSION_IDLE_MINUTES} min d'inactivité. / "
+                    f"Signed out after {SESSION_IDLE_MINUTES} min without activity.")
         st.markdown("### 🔒 MAKU — Accès sécurisé / Secure access")
         st.caption("Plateforme d'évaluation des risques cinétiques multi-environnement")
 
@@ -290,6 +331,7 @@ def require_login() -> None:
                 st.session_state["authenticated"] = True
                 st.session_state["_auth_username"] = username
                 st.session_state["_auth_login_at"] = time.time()
+                st.session_state["_auth_last_seen"] = time.time()
                 _audit(_analytics.AUDIT_EVENT_LOGIN_SUCCESS if _analytics else "LOGIN_SUCCESS",
                        actor=username, detail=f"ip={client_ip}")
                 st.rerun()
@@ -300,16 +342,26 @@ def require_login() -> None:
                     pass
                 _audit(_analytics.AUDIT_EVENT_LOGIN_FAILURE if _analytics else "LOGIN_FAILURE",
                        actor=username or "(empty)", detail=f"ip={client_ip}")
-                st.error("Identifiant ou mot de passe incorrect. / Incorrect username or password.")
+                if st.session_state.pop("_auth_refused_reason", None) == "weak_deployment_password":
+                    st.error("Ce mot de passe administrateur ne respecte plus la politique de sécurité "
+                             f"(≥ {accounts.MIN_PASSWORD_LENGTH} caractères, 3 types). L'exploitant du serveur doit "
+                             "en définir un nouveau. / This administrator password no longer meets the password "
+                             "policy. The server operator must set a new one (manage_users.py hash).")
+                else:
+                    st.error("Identifiant ou mot de passe incorrect. / Incorrect username or password.")
 
     st.stop()
 
 
 def render_deprecated_credential_banner(st_module) -> None:
-    """Kept for app.py compatibility. Legacy formats are now rejected at
-    login (see _verify_credentials), so there is nothing to warn about for
-    an authenticated session."""
-    return None
+    """Outside strict mode, warns an administrator signed in with a
+    deployment account whose password fails the policy (in strict mode such
+    a sign-in is refused - see _verify_credentials)."""
+    problem = st_module.session_state.get("_auth_weak_password_warning")
+    if problem:
+        st_module.sidebar.warning(
+            "Mot de passe administrateur trop faible - remplacez-le (manage_users.py hash). / "
+            f"Weak administrator password - replace it (manage_users.py hash). {problem}", icon="🔑")
 
 
 def render_logout_control(st_module) -> None:

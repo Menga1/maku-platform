@@ -13,7 +13,7 @@ Run inside the app container (or any machine with DATABASE_URL set):
   # list accounts
   docker compose exec app python manage_users.py list
 
-  # generate a bcrypt value for st.secrets / MAKU_AUTH_USERS
+  # generate an Argon2id value for st.secrets / MAKU_AUTH_USERS
   python manage_users.py hash
 
   # delete an account (GDPR/PDPL erasure request received by email)
@@ -58,7 +58,7 @@ def main(argv: list[str] | None = None) -> int:
     p_create.add_argument("--email", default=None)
 
     sub.add_parser("list", help="list active database accounts")
-    sub.add_parser("hash", help="print a bcrypt credential for secrets/env configuration")
+    sub.add_parser("hash", help="print an Argon2id credential for secrets/env configuration")
 
     p_delete = sub.add_parser("delete", help="permanently delete an account and its personal data")
     p_delete.add_argument("username")
@@ -85,7 +85,9 @@ def main(argv: list[str] | None = None) -> int:
             for u in accounts.list_users():
                 print(f"{u['username']:<32} {u['role']:<11} created {u['created_at']}  last login {u['last_login_at']}")
         elif args.command == "hash":
-            print(accounts.hash_password(_prompt_password()))
+            password = _prompt_password()
+            accounts.validate_password_strength(password)   # same policy as in-app accounts
+            print(accounts.hash_password(password))
         elif args.command == "delete":
             user = accounts.get_user(args.username)
             if user is None:

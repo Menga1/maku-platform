@@ -33,14 +33,25 @@ import time
 from datetime import datetime, timezone
 
 import bcrypt
+from argon2 import PasswordHasher
+from argon2 import exceptions as argon2_errors
 
 import analytics as _analytics
 
 logger = logging.getLogger("maku.accounts")
 
+# Password storage (review finding F3). New hashes are Argon2id with the
+# RFC 9106 second recommended parameter set (t=3, m=64 MiB, p=4). bcrypt
+# hashes from earlier versions are still verified and are upgraded to
+# Argon2id automatically at the user's next successful sign-in. Plain text and
+# unsalted SHA-256 are rejected.
+ARGON2_PREFIX = "argon2:"
 BCRYPT_PREFIX = "bcrypt:"
 BCRYPT_ROUNDS = 12
+ACCEPTED_FORMATS = ("argon2", "bcrypt")
+_ARGON2 = PasswordHasher(time_cost=3, memory_cost=64 * 1024, parallelism=4, hash_len=32, salt_len=16)
 MIN_PASSWORD_LENGTH = 12
+MAX_PASSWORD_LENGTH = 256   # Argon2 has no 72-byte limit; this only guards against abuse
 
 ROLES = ("viewer", "supervisor", "admin")
 DEFAULT_ROLE = "supervisor"
@@ -89,36 +100,103 @@ def _conn():
 
 
 # ---------------------------------------------------------------------------
-# Password hashing (bcrypt only)
+# Password hashing (Argon2id; bcrypt verified and upgraded)
 # ---------------------------------------------------------------------------
 
-def validate_password_strength(password: str) -> None:
-    if len(password or "") < MIN_PASSWORD_LENGTH:
-        raise AccountError(f"Password must be at least {MIN_PASSWORD_LENGTH} characters.")
+def password_policy_problems(password: str) -> list[str]:
+    """Human-readable reasons the password fails the policy ([] = OK)."""
+    password = password or ""
+    problems = []
+    if len(password) < MIN_PASSWORD_LENGTH:
+        problems.append(f"Password must be at least {MIN_PASSWORD_LENGTH} characters.")
+    if len(password) > MAX_PASSWORD_LENGTH:
+        problems.append(f"Password must be at most {MAX_PASSWORD_LENGTH} characters.")
     classes = sum(bool(re.search(p, password)) for p in (r"[a-z]", r"[A-Z]", r"[0-9]", r"[^A-Za-z0-9]"))
     if classes < 3:
-        raise AccountError("Password must mix at least three of: lowercase, uppercase, digits, symbols.")
+        problems.append("Password must mix at least three of: lowercase, uppercase, digits, symbols.")
+    return problems
+
+
+def validate_password_strength(password: str) -> None:
+    problems = password_policy_problems(password)
+    if problems:
+        raise AccountError(problems[0])
+
+
+def credential_format(stored: str | None) -> str:
+    """'argon2' | 'bcrypt' | 'sha256' | 'plaintext' | 'empty'."""
+    stored = (stored or "").strip()
+    if not stored:
+        return "empty"
+    if stored.startswith(ARGON2_PREFIX):
+        return "argon2"
+    if stored.startswith(BCRYPT_PREFIX):
+        return "bcrypt"
+    if stored.startswith("sha256:"):
+        return "sha256"
+    return "plaintext"
 
 
 def hash_password(plaintext: str) -> str:
-    """'bcrypt:<hash>' - the only credential format MAKU accepts."""
-    return BCRYPT_PREFIX + bcrypt.hashpw(plaintext.encode("utf-8"),
-                                         bcrypt.gensalt(rounds=BCRYPT_ROUNDS)).decode("ascii")
+    """'argon2:$argon2id$...' - the format for every new password."""
+    if len(plaintext or "") > MAX_PASSWORD_LENGTH:
+        raise AccountError(f"Password must be at most {MAX_PASSWORD_LENGTH} characters.")
+    return ARGON2_PREFIX + _ARGON2.hash(plaintext or "")
 
 
 def verify_password(stored: str, supplied: str) -> bool:
-    """Constant-time bcrypt verification. Any non-bcrypt stored value is
-    rejected (fails closed)."""
-    if not stored or not stored.startswith(BCRYPT_PREFIX):
+    """Constant-time verification of an Argon2id or bcrypt credential. Any
+    other stored format is rejected (fails closed). Never raises."""
+    fmt = credential_format(stored)
+    supplied = supplied or ""
+    if len(supplied) > MAX_PASSWORD_LENGTH:
         return False
     try:
-        return bcrypt.checkpw((supplied or "").encode("utf-8"),
-                              stored[len(BCRYPT_PREFIX):].strip().encode("utf-8"))
-    except ValueError:
+        if fmt == "argon2":
+            return _ARGON2.verify(stored[len(ARGON2_PREFIX):].strip(), supplied)
+        if fmt == "bcrypt":
+            raw = supplied.encode("utf-8")
+            if len(raw) > 72:        # bcrypt cannot have stored such a password
+                return False
+            return bcrypt.checkpw(raw, stored[len(BCRYPT_PREFIX):].strip().encode("utf-8"))
+    except (argon2_errors.VerificationError, argon2_errors.InvalidHashError, ValueError):
+        return False
+    return False
+
+
+def needs_rehash(stored: str) -> bool:
+    """True for bcrypt hashes and for Argon2id hashes with outdated parameters."""
+    fmt = credential_format(stored)
+    if fmt == "bcrypt":
+        return True
+    if fmt == "argon2":
+        try:
+            return _ARGON2.check_needs_rehash(stored[len(ARGON2_PREFIX):].strip())
+        except argon2_errors.InvalidHashError:
+            return True
+    return False
+
+
+def upgrade_stored_hash(username: str, plaintext: str) -> bool:
+    """After a successful sign-in with an old-format hash, store a fresh
+    Argon2id hash. Database accounts only (deployment accounts live in
+    secrets the app cannot rewrite). Best-effort; never blocks sign-in."""
+    try:
+        with _conn() as conn:
+            conn.execute("UPDATE users SET password_hash = ? WHERE username = ?",
+                         (hash_password(plaintext), username))
+        _analytics.log_audit_event(AUDIT_EVENT_PASSWORD_REHASHED, actor=username,
+                                   detail="upgraded to argon2id")
+        return True
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not upgrade password hash for %s: %s", username, exc.__class__.__name__)
         return False
 
 
-# A real bcrypt hash used to equalize timing for unknown usernames.
+AUDIT_EVENT_PASSWORD_REHASHED = "PASSWORD_REHASHED"
+
+
+# A real Argon2id hash used to equalize timing for unknown usernames.
 _DECOY_HASH = hash_password("decoy-password-never-matches-anything")
 
 
