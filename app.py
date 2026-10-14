@@ -1004,64 +1004,89 @@ def render_country_selector(lang: str) -> dict:
 
 
 def render_org_context_selector(lang: str) -> None:
-    """PERSISTENT DATABASE ARCHITECTURE (Phase 2.1 / task 4), extended for
-    P0 "MULTI-TENANT ISOLATION ARCHITECTURE": sidebar control for the
-    Organization / Project / Site hierarchy every log_assessment()/
-    log_site_alert()/log_audit_event() call tags itself with (see
-    analytics.set_org_context()/get_org_context()). Collapsed by default
-    so it doesn't clutter the sidebar for a single-site user who never
-    needs to touch it - the defaults (analytics.DEFAULT_ORGANIZATION/
-    DEFAULT_PROJECT, blank site) apply automatically either way. Called
-    from render_country_selector() so it's present on every page exactly
-    like the workload/country selectors, without a second call site to
-    keep in sync.
+    """Organization / Project / Site picker, shown on every page from
+    render_country_selector().
 
-    ORGANIZATION IS NOW DB-BACKED, NOT A BARE TEXT FIELD: once at least
-    one organization has been created (by any session, ever), this
-    renders a selectbox of the real, DB-resolved organization names (see
-    analytics.list_organizations()) plus a "+ New organization..." option,
-    instead of an open free-text box - the top of the tenant hierarchy is
-    now something the operator picks from a governed list rather than
-    retypes, closing the "shift away from basic user-entered text fields"
-    gap for the field that actually gates data isolation. This degrades
-    to a plain text field (the original behavior) when the database has
-    no organizations yet (first-ever run) or is unavailable - never a
-    dead end. Project/Site stay scoped text fields under the chosen
-    organization; a full cascading DB-backed picker for those two is a
-    reasonable v1.1 follow-on, intentionally out of scope here to avoid
-    risking the proven AppTest coverage across all 9 pages for lower
-    marginal isolation benefit than the organization field itself."""
+    TENANT ISOLATION (review finding F2): the organization list contains only
+    the organizations the signed-in user is a member of (a platform
+    administrator sees all, and is the only one offered "+ New
+    organization"). The choice is re-validated on the server by
+    analytics.set_org_context() on every run - choosing is all the browser
+    can do. A user who belongs to no organization cannot use the module
+    pages: this stops the page with an explanation (My account still works).
+    Viewers see their role and that results are not saved."""
+    import tenancy
+
+    fr = lang == "fr"
+    principal = tenancy.principal_from_session(st)
+    db_up = analytics._db_ok()
+    orgs = tenancy.accessible_organizations(principal) if db_up else []
     current = get_org_context(st)
-    new_org_option = "+ Nouvelle organisation..." if lang == "fr" else "+ New organization..."
+    new_org_option = "+ Nouvelle organisation..." if fr else "+ New organization..."
     with st.sidebar.expander(f"🏢 {t('org_context_label', lang)}", expanded=False):
-        existing_orgs = list_organizations()
-        if existing_orgs:
-            options = existing_orgs + [new_org_option]
-            default_index = options.index(current["organization"]) if current["organization"] in options \
-                else len(options) - 1
-            picked = st.selectbox(
-                t("org_context_org_label", lang), options=options, index=default_index,
-                key="org_context_org_select",
-            )
+        if orgs:
+            names = [o["name"] for o in orgs]
+            options = names + ([new_org_option] if principal.platform_admin else [])
+            default_index = names.index(current["organization"]) if current["organization"] in names else 0
+            picked = st.selectbox(t("org_context_org_label", lang), options=options, index=default_index,
+                                  key="org_context_org_select")
             if picked == new_org_option:
-                organization = st.text_input(
-                    "Nom de la nouvelle organisation" if lang == "fr" else "New organization name",
-                    value="" if current["organization"] in existing_orgs else current["organization"],
-                    key="org_context_org_new_widget",
-                )
+                organization = st.text_input("Nom de la nouvelle organisation" if fr else "New organization name",
+                                             value="", key="org_context_org_new_widget").strip() \
+                    or current["organization"]
             else:
                 organization = picked
+        elif principal.platform_admin or not db_up:
+            organization = st.text_input(t("org_context_org_label", lang), value=current["organization"],
+                                         key="org_context_org_widget")
         else:
-            organization = st.text_input(
-                t("org_context_org_label", lang), value=current["organization"], key="org_context_org_widget",
-            )
-        project = st.text_input(
-            t("org_context_project_label", lang), value=current["project"], key="org_context_project_widget",
-        )
-        site = st.text_input(
-            t("org_context_site_label", lang), value=current["site"], key="org_context_site_widget",
-        )
-    set_org_context(st, organization=organization, project=project, site=site)
+            organization = ""
+        project = st.text_input(t("org_context_project_label", lang), value=current["project"],
+                                key="org_context_project_widget")
+        site = st.text_input(t("org_context_site_label", lang), value=current["site"],
+                             key="org_context_site_widget")
+        try:
+            ctx = set_org_context(st, organization=organization, project=project, site=site)
+        except tenancy.TenantAccessDenied:
+            st.error("Accès refusé à cette organisation." if fr else "Access to this organization is denied.")
+            ctx = set_org_context(st, project=project, site=site)
+        role = ctx.get("role")
+        if role:
+            role_label = {"platform_admin": "Platform administrator" if not fr else "Administrateur plateforme",
+                          "org_admin": "Organization admin" if not fr else "Admin de l'organisation",
+                          "supervisor": "Supervisor" if not fr else "Superviseur",
+                          "viewer": "Viewer (read-only)" if not fr else "Lecteur (lecture seule)"}.get(role, role)
+            st.caption(("Votre rôle : " if fr else "Your role: ") + role_label)
+
+    if db_up and ctx.get("organization_id") is None:
+        st.warning(
+            "Votre compte n'est membre d'aucune organisation. Demandez à votre administrateur MAKU de vous "
+            "ajouter à votre organisation. La page « Mon compte » reste disponible."
+            if fr else
+            "Your account is not a member of any organization yet. Ask your MAKU administrator to add you to "
+            "your organization. The My account page is still available.")
+        st.stop()
+    if ctx.get("role") == "viewer":
+        st.sidebar.info("Lecture seule : les évaluations ne sont pas enregistrées." if fr
+                        else "Read-only: assessments are not saved.")
+
+
+def save_assessment(result: dict) -> bool:
+    """Logs the assessment in the user's validated organization when their
+    role allows writing (tenant check repeated inside log_assessment)."""
+    if not can_save_assessments():
+        return False
+    log_assessment(st, result)
+    return True
+
+
+def can_save_assessments() -> bool:
+    """False for viewers (and outside any organization): pages still compute
+    and display results, but never call log_assessment()."""
+    import tenancy
+    if not analytics._db_ok():
+        return True  # development degrade keeps the session log
+    return tenancy.can(tenancy.principal_from_session(st), get_org_context(st).get("organization_id"), "write")
 
 
 def render_result_provenance(result: dict, lang: str) -> None:
@@ -1477,10 +1502,14 @@ def render_push_opt_in(lang: str, where: str) -> None:
         return
     if reply.get("token"):
         try:
+            ctx = analytics.require_scope(st, "read")   # only organizations the user belongs to
             push.register_device(st.session_state.get("_auth_username", ""), reply["token"],
-                                 reply.get("platform") or shell_platform() or "", get_org_context(st)["organization"])
+                                 reply.get("platform") or shell_platform() or "", ctx.get("organization_id"))
             st.session_state["_push_registered"] = True
             st.success("Alertes activées." if fr else "Alerts turned on.")
+        except PermissionError:
+            st.warning("Les alertes d'arrêt de travail sont envoyées aux membres de l'organisation uniquement."
+                       if fr else "Stop-work alerts go to members of the organization only.")
         except Exception:  # noqa: BLE001
             st.error("Impossible d'enregistrer cet appareil." if fr else "Could not register this device.")
     elif reply.get("error") == "denied":
@@ -1502,9 +1531,9 @@ def on_assessment_logged(result: dict, controls: list) -> None:
     }.get(metric_field or "", metric_field or "")
     send_assessment_to_shell(result, controls, key_metric_label=label,
                              key_metric_value=result.get(metric_field) if metric_field else None)
-    if result.get("safety_override"):
+    if result.get("safety_override") and can_save_assessments():
         ctx = get_org_context(st)
-        push.notify_stop_work(result, ctx["organization"], ctx.get("site") or result.get("module", ""))
+        push.notify_stop_work(result, ctx.get("organization_id"), ctx.get("site") or result.get("module", ""))
 
 def _render_field_position_result(lang: str, lat: float, lon: float,
                                    accuracy: float | None = None, key_suffix: str = "gps") -> None:
@@ -1891,7 +1920,7 @@ def render_dashboard():
     # sharing this deployment would see every other organization's site
     # alerts (physiological CRITICAL strain events, safety-override
     # triggers), the exact cross-tenant exposure the audit named.
-    alert_log = get_site_alert_log_dataframe(organization=get_org_context(st)["organization"])
+    alert_log = get_site_alert_log_dataframe(st)   # filtered server-side to the validated organization
     if not alert_log.empty:
         st.markdown("---")
         st.markdown("### 🚨 " + ("Journal des Alertes de Site" if lang == "fr" else "Site Alert Log"))
@@ -2012,7 +2041,7 @@ def render_solar_farms():
         controls = get_controls(result)
 
         result["data_provenance"] = combine_provenance([feed_payload])
-        log_assessment(st, result)
+        save_assessment(result)
         st.session_state["latest_risk_result"] = result
         st.session_state["latest_controls"] = controls
         on_assessment_logged(result, controls)
@@ -2165,7 +2194,7 @@ def render_offshore_oil_gas():
         controls = get_controls(result)
 
         result["data_provenance"] = combine_provenance([feed_payload])
-        log_assessment(st, result)
+        save_assessment(result)
         st.session_state["latest_risk_result"] = result
         st.session_state["latest_controls"] = controls
         on_assessment_logged(result, controls)
@@ -2300,7 +2329,7 @@ def render_metros_tunnels():
         controls = get_controls(result)
 
         result["data_provenance"] = combine_provenance([feed_payload])
-        log_assessment(st, result)
+        save_assessment(result)
         st.session_state["latest_risk_result"] = result
         st.session_state["latest_controls"] = controls
         on_assessment_logged(result, controls)
@@ -2450,7 +2479,7 @@ def render_high_rise():
         controls = get_controls(result)
 
         result["data_provenance"] = combine_provenance([feed_payload])
-        log_assessment(st, result)
+        save_assessment(result)
         st.session_state["latest_risk_result"] = result
         st.session_state["latest_controls"] = controls
         on_assessment_logged(result, controls)
@@ -2650,7 +2679,7 @@ def render_data_centers():
         controls = get_controls(result)
 
         result["data_provenance"] = combine_provenance([feed_payload])
-        log_assessment(st, result)
+        save_assessment(result)
         st.session_state["latest_risk_result"] = result
         st.session_state["latest_controls"] = controls
         on_assessment_logged(result, controls)
@@ -2795,7 +2824,7 @@ def render_wind_energy():
         controls = get_controls(result)
 
         result["data_provenance"] = combine_provenance([feed_payload])
-        log_assessment(st, result)
+        save_assessment(result)
         st.session_state["latest_risk_result"] = result
         st.session_state["latest_controls"] = controls
         on_assessment_logged(result, controls)
@@ -2910,7 +2939,7 @@ def render_mining_quarrying():
         controls = get_controls(result)
 
         result["data_provenance"] = combine_provenance([feed_payload])
-        log_assessment(st, result)
+        save_assessment(result)
         st.session_state["latest_risk_result"] = result
         st.session_state["latest_controls"] = controls
         on_assessment_logged(result, controls)
@@ -3025,7 +3054,7 @@ def render_marine_port_construction():
         controls = get_controls(result)
 
         result["data_provenance"] = combine_provenance([feed_payload])
-        log_assessment(st, result)
+        save_assessment(result)
         st.session_state["latest_risk_result"] = result
         st.session_state["latest_controls"] = controls
         on_assessment_logged(result, controls)

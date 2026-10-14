@@ -146,12 +146,13 @@ CRITICAL_DB_ERROR_MESSAGE = (
 # Alembic revision the code expects (migrations/versions). In strict mode the
 # app refuses to use a database whose alembic_version differs - run
 # `python scripts/init_db.py` (or `alembic upgrade head`) to migrate.
-SCHEMA_REVISION = "0001_baseline"
+SCHEMA_REVISION = "0002_tenancy"
 PROBE_INTERVAL_SECONDS = 5.0
 
 DB_PATH = os.environ.get("MAKU_DB_PATH", "maku_site_data.db")
 DATABASE_URL = (os.environ.get("DATABASE_URL") or os.environ.get("MAKU_DATABASE_URL") or "").strip()
-ALL_TIME_DEFAULT_LIMIT = 5000     # RAM guard for the durable multi-session view
+ALL_TIME_DEFAULT_LIMIT = 5000
+MAX_CSV_IMPORT_ROWS = 20000       # upload guard (review: file uploads)     # RAM guard for the durable multi-session view
 ALERT_LOG_DEFAULT_LIMIT = 1000
 AUDIT_LOG_DEFAULT_LIMIT = 2000
 
@@ -490,6 +491,20 @@ _SITES_DDL = """CREATE TABLE IF NOT EXISTS sites (
     UNIQUE(project_id, name)
 )"""
 
+# Tenant membership (review finding F2): which user may act in which
+# organization, and with which organization role (tenancy.ORG_ROLES). The
+# platform administrator (users.role = 'admin', or a deployment-configured
+# account) is the only principal not limited by this table.
+_ORGANIZATION_MEMBERS_DDL = """CREATE TABLE IF NOT EXISTS organization_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    organization_id INTEGER NOT NULL,
+    role TEXT NOT NULL DEFAULT 'supervisor',
+    created_at TEXT NOT NULL,
+    created_by TEXT,
+    UNIQUE(username, organization_id)
+)"""
+
 # ---------------------------------------------------------------------------
 # Accounts, server-side brute-force tracking, privacy consent (auth.py /
 # accounts.py). Stored in the same database as the logs so one backup and one
@@ -565,6 +580,7 @@ _MIGRATION_STATEMENTS = [
     "ALTER TABLE audit_log ADD COLUMN site_id INTEGER",
     "ALTER TABLE assessment_log ADD COLUMN username TEXT",
     "ALTER TABLE assessment_log ADD COLUMN data_provenance TEXT",
+    "ALTER TABLE device_tokens ADD COLUMN organization_id INTEGER",
 ]
 
 _INDEX_STATEMENTS = [
@@ -581,13 +597,17 @@ _INDEX_STATEMENTS = [
     "CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time ON login_attempts(client_ip, attempted_at)",
     "CREATE INDEX IF NOT EXISTS idx_device_tokens_org ON device_tokens(organization)",
     "CREATE INDEX IF NOT EXISTS idx_device_tokens_user ON device_tokens(username)",
+    "CREATE INDEX IF NOT EXISTS idx_device_tokens_org_id ON device_tokens(organization_id)",
+    "CREATE INDEX IF NOT EXISTS idx_members_user ON organization_members(username)",
+    "CREATE INDEX IF NOT EXISTS idx_members_org ON organization_members(organization_id)",
+    "CREATE INDEX IF NOT EXISTS idx_audit_org ON audit_log(organization_id)",
 ]
 
 ALL_TABLE_DDL = [
     _ASSESSMENT_LOG_DDL, _SITE_ALERT_LOG_DDL, _AUDIT_LOG_DDL,
     _ORGANIZATIONS_DDL, _PROJECTS_DDL, _SITES_DDL,
     _USERS_DDL, _LOGIN_ATTEMPTS_DDL, _USER_CONSENTS_DDL, _ACCOUNT_DELETIONS_DDL,
-    _DEVICE_TOKENS_DDL,
+    _DEVICE_TOKENS_DDL, _ORGANIZATION_MEMBERS_DDL,
 ]
 
 # Backends whose schema has already been created/migrated in this process.
@@ -797,17 +817,16 @@ def get_or_create_site_id(project_id: int | None, site: str) -> int | None:
         return None
 
 
-def list_organizations() -> list[str]:
-    """All known organization names, alphabetical - backs app.py's
-    DB-driven organization selector (P0 "shift away from basic user-
-    entered text fields"). Returns [] (never raises) if the database is
-    unavailable, so the sidebar can fall back to a plain text field."""
+def list_organizations(st_module) -> list[str]:
+    """Names of the organizations the signed-in user may access (tenancy.py)
+    - never every organization in the database. [] if none or the database
+    is unavailable."""
+    import tenancy
+
     if not _db_ok():
         return []
     try:
-        with _get_connection() as conn:
-            cur = conn.execute("SELECT name FROM organizations ORDER BY name")
-            return [row[0] for row in cur.fetchall()]
+        return [o["name"] for o in tenancy.accessible_organizations(tenancy.principal_from_session(st_module))]
     except Exception as exc:  # noqa: BLE001
         _handle_db_failure(exc, "list_organizations")
         return []
@@ -842,52 +861,113 @@ def _get_session_id(st_module) -> str:
 # has to change to keep working.
 # ---------------------------------------------------------------------------
 
-def set_org_context(st_module, organization: str = "", project: str = "", site: str = "") -> None:
-    """Sets the current session's Organization/Project/Site tags AND
-    resolves/creates their relational ids (User Session -> Organization ID
-    -> Project ID -> Site ID, see the organizations/projects/sites DDL
-    above) - the ids are what every tenant-isolation filter downstream
-    actually keys on, the name strings remain for display/CSV/backward
-    compatibility. Call this from a sidebar selector; an empty string for
-    any field means "use the default" rather than "leave whatever was
-    there," so a selector reset behaves predictably. If the database is
-    unavailable, the *_id fields degrade to None (see get_or_create_*_id())
-    - the app keeps working on name strings alone, exactly like every
-    other database-backed feature in this file degrades."""
-    organization = organization or DEFAULT_ORGANIZATION
+def _org_context(organization: str, project: str, site: str, organization_id=None, project_id=None,
+                 site_id=None, role=None) -> dict:
+    return {"organization": organization, "project": project, "site": site,
+            "organization_id": organization_id, "project_id": project_id, "site_id": site_id,
+            "role": role}
+
+
+def set_org_context(st_module, organization: str = "", project: str = "", site: str = "",
+                    organization_id: int | None = None) -> dict:
+    """Sets the session's Organization/Project/Site after checking, on the
+    server, that the signed-in user may act there (tenancy.py, finding F2).
+
+    Resolution order for the organization: organization_id, then the name
+    (looked up only among organizations this user can access), then the
+    user's first accessible organization. A platform administrator may name
+    an organization that does not exist yet - it is created. Anyone else
+    naming an organization outside their memberships gets TenantAccessDenied.
+    New projects/sites are created only with 'write' permission.
+
+    A user with no organization gets a context whose organization_id is None
+    (and role None): pages must not offer data entry - see
+    app.render_org_context_sidebar(). If the database is unavailable outside
+    strict mode, the context degrades to name strings only (development)."""
+    import tenancy
+
     project = project or DEFAULT_PROJECT
     site = site or ""
-    organization_id = get_or_create_organization_id(organization)
-    project_id = get_or_create_project_id(organization_id, project)
-    site_id = get_or_create_site_id(project_id, site) if site else None
-    st_module.session_state[ORG_CONTEXT_KEY] = {
-        "organization": organization,
-        "project": project,
-        "site": site,
-        "organization_id": organization_id,
-        "project_id": project_id,
-        "site_id": site_id,
-    }
+    if not _db_ok():
+        ctx = _org_context(organization or DEFAULT_ORGANIZATION, project, site)
+        st_module.session_state[ORG_CONTEXT_KEY] = ctx
+        return ctx
+
+    principal = tenancy.principal_from_session(st_module)
+    try:
+        orgs = tenancy.accessible_organizations(principal)
+        chosen = None
+        if organization_id is not None:
+            chosen = next((o for o in orgs if o["id"] == int(organization_id)), None)
+            if chosen is None:
+                tenancy.require_access(principal, int(organization_id), "read")  # audits + raises
+        elif organization:
+            chosen = next((o for o in orgs if o["name"] == organization), None)
+            if chosen is None:
+                if not principal.platform_admin:
+                    tenancy.require_access(principal, tenancy.organization_id_by_name(organization), "read")
+                new_id = tenancy.create_organization(principal, organization)
+                chosen = {"id": new_id, "name": organization, "role": tenancy.PLATFORM_ADMIN_ROLE}
+        elif orgs:
+            chosen = orgs[0]
+        elif principal.platform_admin:
+            new_id = tenancy.create_organization(principal, DEFAULT_ORGANIZATION)
+            chosen = {"id": new_id, "name": DEFAULT_ORGANIZATION, "role": tenancy.PLATFORM_ADMIN_ROLE}
+
+        if chosen is None:
+            ctx = _org_context("", project, site)
+        else:
+            can_write = tenancy.can(principal, chosen["id"], "write")
+            with _get_connection() as conn:
+                project_id = (_get_or_create_id(conn, "projects", {"organization_id": chosen["id"]}, "name", project)
+                              if can_write else _find_id(conn, "projects", {"organization_id": chosen["id"]}, project))
+                site_id = None
+                if site and project_id is not None:
+                    site_id = (_get_or_create_id(conn, "sites", {"project_id": project_id}, "name", site)
+                               if can_write else _find_id(conn, "sites", {"project_id": project_id}, site))
+            ctx = _org_context(chosen["name"], project, site, chosen["id"], project_id, site_id, chosen["role"])
+    except tenancy.TenantAccessDenied:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        _handle_db_failure(exc, "set_org_context")
+        ctx = _org_context(organization or DEFAULT_ORGANIZATION, project, site)
+    st_module.session_state[ORG_CONTEXT_KEY] = ctx
+    return ctx
+
+
+def _find_id(conn: "_Connection", table: str, scope: dict, name: str) -> int | None:
+    where = " AND ".join([f"{k} = ?" for k in scope] + ["name = ?"])
+    row = conn.execute(f"SELECT id FROM {table} WHERE {where}", tuple(scope.values()) + (name,)).fetchone()
+    return row[0] if row else None
 
 
 def get_org_context(st_module) -> dict:
-    """Current session's Organization/Project/Site tags AND their
-    relational ids, defaulting to DEFAULT_ORGANIZATION/DEFAULT_PROJECT/""
-    /None if never explicitly set. NOTE: app.py spreads this dict as
-    **get_org_context(st_module) directly into log_audit_event() calls
-    (e.g. for AUDIT_EVENT_THRESHOLD_OVERRIDE) - log_audit_event() accepts
-    every key this returns, including the *_id fields, for exactly that
-    reason. log_assessment() and log_site_alert() resolve their own ids
-    internally instead (see their docstrings) since neither is called
-    with this dict spread into it."""
-    return st_module.session_state.get(ORG_CONTEXT_KEY, {
-        "organization": DEFAULT_ORGANIZATION,
-        "project": DEFAULT_PROJECT,
-        "site": "",
-        "organization_id": None,
-        "project_id": None,
-        "site_id": None,
-    })
+    """The session's validated Organization/Project/Site and their ids. If
+    none was set yet, resolves the default (the user's first accessible
+    organization) through set_org_context(), so every caller gets a context
+    that passed the server-side access check. Never raises."""
+    ctx = st_module.session_state.get(ORG_CONTEXT_KEY)
+    if ctx is not None:
+        return ctx
+    try:
+        return set_org_context(st_module)
+    except Exception:  # noqa: BLE001
+        return _org_context("", DEFAULT_PROJECT, "")
+
+
+def require_scope(st_module, action: str) -> dict:
+    """Re-checks, against the database, that the signed-in user may perform
+    `action` in the session's current organization, and returns the context.
+    Called by every data function that reads or writes organization data -
+    so a membership removed by an administrator takes effect on the very
+    next request, not at the next login. Raises tenancy.TenantAccessDenied."""
+    import tenancy
+
+    ctx = get_org_context(st_module)
+    if not _db_ok():
+        return ctx  # development degrade (strict mode never reaches this)
+    tenancy.require_access(tenancy.principal_from_session(st_module), ctx.get("organization_id"), action)
+    return ctx
 
 
 # ---------------------------------------------------------------------------
@@ -955,7 +1035,11 @@ def log_assessment(st_module, result: dict, organization: str | None = None,
     the module name) - pass them explicitly only to override that."""
     module = result.get("module", "")
     key_metric_field = MODULE_KEY_METRIC.get(module)
-    ctx = get_org_context(st_module)
+    ctx = require_scope(st_module, "write")   # tenant check (F2): raises if not allowed
+    if organization and organization != ctx["organization"]:
+        import tenancy
+        raise tenancy.TenantAccessDenied("log_assessment cannot write to a different organization "
+                                         "than the session's validated one")
     row = {
         "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "module": module,
@@ -974,12 +1058,12 @@ def log_assessment(st_module, result: dict, organization: str | None = None,
     # no explicit organization/project/site override was passed (the
     # overwhelmingly common case); only re-resolve against the database
     # when a caller explicitly overrides one of the name strings.
-    if organization or project or site:
-        org_id = get_or_create_organization_id(row["organization"])
+    org_id = ctx.get("organization_id")
+    if project or site:   # within the validated organization only
         proj_id = get_or_create_project_id(org_id, row["project"])
         site_row_id = get_or_create_site_id(proj_id, row["site"]) if row["site"] else None
     else:
-        org_id, proj_id, site_row_id = ctx.get("organization_id"), ctx.get("project_id"), ctx.get("site_id")
+        proj_id, site_row_id = ctx.get("project_id"), ctx.get("site_id")
 
     if _db_ok():
         session_id = _get_session_id(st_module)
@@ -1019,15 +1103,16 @@ def get_log_dataframe(st_module) -> pd.DataFrame:
         session_id = st_module.session_state.get(SESSION_ID_KEY)
         if session_id is None:
             return pd.DataFrame(columns=LOG_COLUMNS)
+        ctx = require_scope(st_module, "read")
         try:
             with _get_connection() as conn:
                 df = pd.read_sql_query(
                     _adapt_sql(
                         f"SELECT {', '.join(LOG_COLUMNS)} FROM assessment_log "
-                        "WHERE session_id = ? ORDER BY timestamp",
+                        "WHERE session_id = ? AND organization_id = ? ORDER BY timestamp",
                         conn.dialect,
                     ),
-                    conn.raw, params=(session_id,),
+                    conn.raw, params=(session_id, ctx.get("organization_id")),
                 )
             if df.empty:
                 return pd.DataFrame(columns=LOG_COLUMNS)
@@ -1052,24 +1137,22 @@ def get_log_dataframe(st_module) -> pd.DataFrame:
     return df.sort_values("timestamp").reset_index(drop=True)
 
 
-def get_all_time_log_dataframe(limit: int = ALL_TIME_DEFAULT_LIMIT) -> pd.DataFrame:
-    """The durable, cross-session history for this running instance (see
-    module docstring) - every assessment ever logged while this app
-    instance has been up, from every browser session, newest first,
-    bounded by `limit` so this never pulls an unbounded table into RAM.
-    Returns an empty DataFrame (never raises) if the database is
-    unavailable."""
+def get_all_time_log_dataframe(st_module, limit: int = ALL_TIME_DEFAULT_LIMIT) -> pd.DataFrame:
+    """The durable, cross-session history of the session's validated
+    organization (tenant check: 'read'), newest first, bounded by `limit`.
+    Returns an empty DataFrame if the database is unavailable."""
     if not _db_ok():
         return pd.DataFrame(columns=LOG_COLUMNS)
+    ctx = require_scope(st_module, "read")
     try:
         with _get_connection() as conn:
             df = pd.read_sql_query(
                 _adapt_sql(
                     f"SELECT {', '.join(LOG_COLUMNS)} FROM assessment_log "
-                    "ORDER BY timestamp DESC LIMIT ?",
+                    "WHERE organization_id = ? ORDER BY timestamp DESC LIMIT ?",
                     conn.dialect,
                 ),
-                conn.raw, params=(int(limit),),
+                conn.raw, params=(ctx.get("organization_id"), int(limit)),
             )
         if df.empty:
             return pd.DataFrame(columns=LOG_COLUMNS)
@@ -1089,15 +1172,21 @@ def merge_uploaded_csv(st_module, uploaded_file) -> int:
     with the session's current org context if absent) so a CSV downloaded
     from an earlier version of this app - before the hierarchy columns
     existed - still merges cleanly instead of being rejected."""
-    uploaded_df = pd.read_csv(uploaded_file)
+    ctx = require_scope(st_module, "write")   # tenant check (F2)
+    uploaded_df = pd.read_csv(uploaded_file, nrows=MAX_CSV_IMPORT_ROWS + 1)
+    if len(uploaded_df) > MAX_CSV_IMPORT_ROWS:
+        raise ValueError(f"File has more than {MAX_CSV_IMPORT_ROWS} rows - split it before importing.")
     required_columns = [c for c in LOG_COLUMNS if c not in {"organization", "project", "site", "data_provenance"}]
     missing = set(required_columns) - set(uploaded_df.columns)
     if missing:
         raise ValueError(f"Uploaded file is missing expected columns: {sorted(missing)}")
 
-    ctx = get_org_context(st_module)
-    for col, default in (("organization", ctx["organization"]), ("project", ctx["project"]), ("site", ctx["site"]),
-                         ("data_provenance", PROVENANCE_MANUAL)):
+    # Tenant isolation (F2): an imported file can never place rows in another
+    # organization or project - whatever those columns say is overwritten
+    # with the session's validated context.
+    uploaded_df["organization"] = ctx["organization"]
+    uploaded_df["project"] = ctx["project"]
+    for col, default in (("site", ctx["site"]), ("data_provenance", PROVENANCE_MANUAL)):
         if col not in uploaded_df.columns:
             uploaded_df[col] = default
         else:
@@ -1121,16 +1210,19 @@ def merge_uploaded_csv(st_module, uploaded_file) -> int:
         session_id = _get_session_id(st_module)
         try:
             with _get_connection() as conn:
-                conn.execute("DELETE FROM assessment_log WHERE session_id = ?", (session_id,))
+                conn.execute("DELETE FROM assessment_log WHERE session_id = ? AND organization_id = ?",
+                             (session_id, ctx.get("organization_id")))
                 conn.executemany(
                     """INSERT INTO assessment_log
                        (session_id, timestamp, module, risk_band, safety_override, key_metric,
-                        primary_hazard, organization, project, site, username, data_provenance)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        primary_hazard, organization, project, site, organization_id, project_id,
+                        username, data_provenance)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     [(session_id, r["timestamp"], r["module"], r["risk_band"],
                       int(r["safety_override"]), r["key_metric"], r["primary_hazard"],
-                      r.get("organization") or ctx["organization"], r.get("project") or ctx["project"],
-                      r.get("site") or ctx["site"], st_module.session_state.get("_auth_username") or None,
+                      ctx["organization"], ctx["project"], r.get("site") or ctx["site"],
+                      ctx.get("organization_id"), ctx.get("project_id"),
+                      st_module.session_state.get("_auth_username") or None,
                       r.get("data_provenance") or PROVENANCE_MANUAL) for r in records],
                 )
             return added
@@ -1159,7 +1251,8 @@ def merge_uploaded_csv(st_module, uploaded_file) -> int:
 def log_site_alert(worker_or_site_id: str, alert_type: str, severity: str, message: str, module: str = "",
                     organization: str = "", project: str = "", site: str = "",
                     organization_id: int | None = None, project_id: int | None = None,
-                    site_id: int | None = None) -> None:
+                    site_id: int | None = None,
+                    role: str | None = None) -> None:
     """Records one durable site alert row. Silently no-ops if the database
     is unavailable (an alert that can't be written to disk still displayed
     on screen at the moment it fired - this is a log for later review, not
@@ -1178,9 +1271,22 @@ def log_site_alert(worker_or_site_id: str, alert_type: str, severity: str, messa
     path."""
     if not _db_ok():
         return
+    # Tenant isolation (F2): callers pass the session's validated context
+    # (**get_org_context(st)). A bare organization NAME is only looked up,
+    # never created - so a stray name can't mint a new tenant. An alert with
+    # no resolvable organization is still recorded (it is a safety record)
+    # but is visible to platform administrators only.
     if organization_id is None and organization:
-        organization_id = get_or_create_organization_id(organization)
-    if project_id is None and organization_id is not None and project:
+        try:
+            with _get_connection() as conn:
+                organization_id = _find_id(conn, "organizations", {}, organization)
+        except Exception as exc:  # noqa: BLE001
+            _handle_db_failure(exc, "log_site_alert")
+            return
+    if organization_id is None:
+        logger.warning("Site alert %s/%s recorded without an organization", alert_type, severity)
+        project_id = site_id = None
+    elif project_id is None and project:
         project_id = get_or_create_project_id(organization_id, project)
     if site_id is None and project_id is not None and site:
         site_id = get_or_create_site_id(project_id, site)
@@ -1199,32 +1305,31 @@ def log_site_alert(worker_or_site_id: str, alert_type: str, severity: str, messa
         _handle_db_failure(exc, "log_site_alert")
 
 
-def get_site_alert_log_dataframe(limit: int = ALERT_LOG_DEFAULT_LIMIT,
-                                  organization: str | None = None) -> pd.DataFrame:
+def get_site_alert_log_dataframe(st_module, limit: int = ALERT_LOG_DEFAULT_LIMIT,
+                                  all_organizations: bool = False) -> pd.DataFrame:
     """Durable site alert history, newest first, bounded by `limit`.
 
-    DATA ISOLATION (P0 "MULTI-TENANT ISOLATION ARCHITECTURE"): this table
-    is deliberately ALL-TIME and NOT session-scoped (see module docstring
-    - a site manager must see incidents regardless of who else was logged
-    in when they fired), which means it has no natural per-session
-    boundary the way get_log_dataframe() does. Pass `organization` (the
-    active session's get_org_context(st)["organization"]) to restrict the
-    query to that tenant's rows at the SQL layer - callers in app.py MUST
-    pass this; omitting it returns every organization's alerts and should
-    only be used by a genuine cross-tenant admin view, never a normal
-    site-manager dashboard."""
+    TENANT ISOLATION (F2): rows are filtered at the SQL layer by the
+    organization_id of the session's validated context, after a server-side
+    'read' check (require_scope). all_organizations=True is honoured only for
+    a platform administrator; anyone else asking for it gets
+    tenancy.TenantAccessDenied."""
+    import tenancy
+
     if not _db_ok():
         return pd.DataFrame(columns=ALERT_LOG_COLUMNS)
+    if all_organizations:
+        principal = tenancy.principal_from_session(st_module)
+        if not principal.platform_admin:
+            tenancy.require_access(principal, None, "read")  # audits + raises
+        where, params = "", (int(limit),)
+    else:
+        ctx = require_scope(st_module, "read")
+        where, params = "WHERE organization_id = ? ", (ctx.get("organization_id"), int(limit))
     try:
         with _get_connection() as conn:
-            if organization:
-                sql = (f"SELECT {', '.join(ALERT_LOG_COLUMNS)} FROM site_alert_log "
-                       "WHERE organization = ? ORDER BY timestamp DESC LIMIT ?")
-                params = (organization, int(limit))
-            else:
-                sql = (f"SELECT {', '.join(ALERT_LOG_COLUMNS)} FROM site_alert_log "
-                       "ORDER BY timestamp DESC LIMIT ?")
-                params = (int(limit),)
+            sql = (f"SELECT {', '.join(ALERT_LOG_COLUMNS)} FROM site_alert_log "
+                   f"{where}ORDER BY timestamp DESC LIMIT ?")
             df = pd.read_sql_query(_adapt_sql(sql, conn.dialect), conn.raw, params=params)
         if not df.empty:
             df["timestamp"] = pd.to_datetime(df["timestamp"])
@@ -1314,7 +1419,8 @@ def _last_audit_hash(conn) -> str:
 def log_audit_event(event_type: str, actor: str = "anonymous", detail: str = "",
                      organization: str = "", project: str = "", site: str = "",
                      organization_id: int | None = None, project_id: int | None = None,
-                     site_id: int | None = None) -> bool:
+                     site_id: int | None = None,
+                    role: str | None = None) -> bool:
     """Appends one row to the hash-chained audit ledger. Returns True if
     the row was durably written, False if it degraded to a no-op (database
     unavailable) - callers that must guarantee an audit trail exists (e.g.

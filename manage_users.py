@@ -18,6 +18,13 @@ Run inside the app container (or any machine with DATABASE_URL set):
 
   # delete an account (GDPR/PDPL erasure request received by email)
   docker compose exec app python manage_users.py delete some.user
+
+  # organizations and memberships (tenant isolation)
+  docker compose exec app python manage_users.py org-create "ACME Construction"
+  docker compose exec app python manage_users.py member-add some.user "ACME Construction" --role supervisor
+  docker compose exec app python manage_users.py member-remove some.user "ACME Construction"
+  docker compose exec app python manage_users.py member-list [--user some.user]
+  roles: viewer (read only) · supervisor (runs assessments) · org_admin (manages the organization)
 """
 
 from __future__ import annotations
@@ -27,6 +34,11 @@ import getpass
 import sys
 
 import accounts
+import tenancy
+
+# The CLI runs on the server with direct database access: it acts as the
+# platform administrator.
+OPERATOR = tenancy.Principal("manage_users.py", platform_admin=True)
 
 
 def _prompt_password(confirm: bool = True) -> str:
@@ -51,6 +63,18 @@ def main(argv: list[str] | None = None) -> int:
     p_delete = sub.add_parser("delete", help="permanently delete an account and its personal data")
     p_delete.add_argument("username")
 
+    p_org = sub.add_parser("org-create", help="create an organization")
+    p_org.add_argument("name")
+    p_madd = sub.add_parser("member-add", help="add a user to an organization (or change their role)")
+    p_madd.add_argument("username")
+    p_madd.add_argument("organization")
+    p_madd.add_argument("--role", choices=tenancy.ORG_ROLES, default=tenancy.DEFAULT_ORG_ROLE)
+    p_mrem = sub.add_parser("member-remove", help="remove a user from an organization")
+    p_mrem.add_argument("username")
+    p_mrem.add_argument("organization")
+    p_mlist = sub.add_parser("member-list", help="list memberships")
+    p_mlist.add_argument("--user", default=None)
+
     args = parser.parse_args(argv)
     try:
         if args.command == "create":
@@ -70,7 +94,24 @@ def main(argv: list[str] | None = None) -> int:
                 sys.exit("Aborted.")
             counts = accounts.erase_account_data(args.username, requested_via="operator")
             print(f"Deleted {args.username}: {counts}")
-    except accounts.AccountError as exc:
+        elif args.command == "org-create":
+            org_id = tenancy.create_organization(OPERATOR, args.name)
+            print(f"Organization '{args.name}' has id {org_id}.")
+        elif args.command in ("member-add", "member-remove"):
+            org_id = tenancy.organization_id_by_name(args.organization)
+            if org_id is None:
+                sys.exit(f"No organization named '{args.organization}' (create it with org-create).")
+            if args.command == "member-add":
+                tenancy.set_membership(OPERATOR, args.username, org_id, args.role)
+                print(f"{args.username} is now {args.role} in '{args.organization}'.")
+            elif tenancy.remove_membership(OPERATOR, args.username, org_id):
+                print(f"Removed {args.username} from '{args.organization}'.")
+            else:
+                print("No such membership.")
+        elif args.command == "member-list":
+            for m in tenancy.list_memberships(args.user):
+                print(f"{m['username']:<32} {m['role']:<11} {m['organization']}")
+    except (accounts.AccountError, tenancy.TenancyError) as exc:
         sys.exit(f"Error: {exc}")
     except accounts.AccountStoreUnavailable:
         sys.exit("Error: database unavailable (check DATABASE_URL).")

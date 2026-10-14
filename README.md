@@ -35,6 +35,7 @@ MAKU_TEST_PG_URL=postgresql://... python -m pytest -q tests/   # + PostgreSQL in
 | `ai_advisor.py` | Rule-based controls + optional Claude briefing (successes cached per API key; failures never cached) |
 | `data_feeds.py` | Live feeds (Open-Meteo, Nominatim, ipapi.co); every payload tagged `is_live`; mocks only in demo mode |
 | `auth.py`, `accounts.py` | bcrypt-only login, database-backed lockout, roles, consent, data export, account deletion |
+| `tenancy.py` | Tenant isolation: organization membership and the server-side access check on every read and write |
 | `analytics.py`, `db.py` | Assessment/alert/audit logs on pooled SQLAlchemy engines; `MAKU_ENV=production` makes PostgreSQL mandatory |
 | `alembic.ini`, `migrations/` | Versioned database migrations, applied by `scripts/init_db.py` at start-up |
 | `mobile_bridge.py`, `push.py` | Bridge to the native shell (GPS, camera, share, offline cache) and FCM stop-work alerts |
