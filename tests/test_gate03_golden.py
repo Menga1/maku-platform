@@ -480,3 +480,21 @@ class TestAuditRegressions:
             analytics.log_assessment(st, run_case(*CASES[0])["result"])
         assert analytics.LOG_SESSION_KEY not in st.session_state
         assert analytics.is_db_fatal()
+
+
+class TestClientIpValidation:
+    """Audit C1 regression: header text went unvalidated into the
+    ipapi.co URL path and the per-IP login-lockout key."""
+
+    @pytest.mark.parametrize("header,expected", [
+        ({"X-Forwarded-For": "203.0.113.7"}, "203.0.113.7"),
+        ({"X-Forwarded-For": "203.0.113.7, 10.0.0.2"}, "203.0.113.7"),
+        ({"X-Real-IP": "2001:db8::1"}, "2001:db8::1"),
+        ({"X-Forwarded-For": "1.2.3.4/../admin?x=1"}, None),
+        ({"X-Forwarded-For": "evil.example.com"}, None),
+        ({"X-Forwarded-For": "A" * 5000}, None),
+        ({}, None),
+    ])
+    def test_only_valid_addresses(self, header, expected):
+        from data_feeds import client_ip_from_headers
+        assert client_ip_from_headers(header) == expected

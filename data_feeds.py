@@ -695,10 +695,23 @@ def client_ip_from_headers(headers) -> str | None:
     try:
         forwarded = headers.get("X-Forwarded-For") or headers.get("x-forwarded-for") or ""
         if forwarded:
-            return forwarded.split(",")[0].strip() or None
-        real_ip = headers.get("X-Real-Ip") or headers.get("X-Real-IP") or headers.get("x-real-ip")
-        return real_ip.strip() if real_ip else None
+            candidate = forwarded.split(",")[0].strip()
+        else:
+            candidate = (headers.get("X-Real-Ip") or headers.get("X-Real-IP") or headers.get("x-real-ip") or "").strip()
+        return _valid_ip(candidate)
     except Exception:  # noqa: BLE001
+        return None
+
+
+def _valid_ip(value: str) -> str | None:
+    """Only a syntactically valid IP address is used (audit C1): the value
+    goes into the geolocation URL path and the login-lockout key, so header
+    text such as '1.2.3.4/../x?y=' or 5 kB of junk is discarded. In the
+    Docker stack Caddy overwrites X-Forwarded-For with the real client IP."""
+    import ipaddress
+    try:
+        return str(ipaddress.ip_address(value)) if value and len(value) <= 64 else None
+    except ValueError:
         return None
 
 
