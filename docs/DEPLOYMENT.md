@@ -133,14 +133,14 @@ openssl rand -hex 24          # copy the output into POSTGRES_PASSWORD
 nano .env                     # set MAKU_DOMAIN, ACME_EMAIL, POSTGRES_PASSWORD, MAKU_AI_API_KEY (optional)
 ```
 
-Generate the first administrator's bcrypt credential, then paste it into `.env`:
+Generate the first administrator's credential (Argon2id), then paste it into `.env`. The password needs at least 12 characters mixing three of lowercase, uppercase, digits and symbols; production refuses weaker ones at sign-in:
 
 ```bash
 docker compose build app
 docker compose run --rm --no-deps app python manage_users.py hash
-#   type the admin password twice; copy the line starting with  bcrypt:$2b$12$...
+#   type the admin password twice; copy the line starting with  argon2:$argon2id$...
 nano .env
-#   MAKU_AUTH_USERS='{"first.admin": "bcrypt:$2b$12$...PASTE..."}'
+#   MAKU_AUTH_USERS='{"first.admin": "argon2:$argon2id$...PASTE..."}'
 ```
 
 Start everything:
@@ -295,6 +295,7 @@ Also fill in the `[BRACKETED]` values in `deploy/site/privacy.html` and `deploy/
 | Restore a backup | `gunzip -c backups/maku-YYYYmmdd-HHMM.sql.gz \| docker compose exec -T db psql -U maku -d maku` |
 | Erasure request by email | `docker compose exec app python manage_users.py delete USERNAME` |
 | Run the test suite | `docker compose exec app python -m pytest -q test_app.py tests/` |
+| Check every account's password storage | `docker compose exec app python scripts/audit_credentials.py` (prints no secrets; exit 1 if any account is unusable) |
 | Database migration status | `docker compose exec app alembic current` (expected: the latest revision in `migrations/versions/`) |
 | Why is the app unhealthy? | `docker inspect --format '{{json .State.Health.Log}}' $(docker compose ps -q app)` |
 | Training/demo mode | set `MAKU_DEMO_MODE=1` in `.env` → `docker compose up -d app`. Red **SIMULATED DATA** banners appear. Never leave it on in production |

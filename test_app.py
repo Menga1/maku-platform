@@ -1354,9 +1354,15 @@ class TestAuthPasswordMatching:
         monkeypatch.setattr(auth.st, "secrets", {"auth": {"users": {"alice": auth.hash_password("pw1-Long-enough")}}})
         assert not auth._verify_credentials("nobody", "anything")
 
-    def test_bcrypt_hashed_password_matches_correct_plaintext(self):
+    def test_hashed_password_matches_correct_plaintext(self):
         configured = auth.hash_password("my-secret")
-        assert configured.startswith("bcrypt:")
+        assert configured.startswith("argon2:$argon2id$")
+        assert auth._password_matches(configured, "my-secret")
+        assert not auth._password_matches(configured, "not-my-secret")
+
+    def test_legacy_bcrypt_value_still_matches(self):
+        import bcrypt
+        configured = "bcrypt:" + bcrypt.hashpw(b"my-secret", bcrypt.gensalt(4)).decode()
         assert auth._password_matches(configured, "my-secret")
         assert not auth._password_matches(configured, "not-my-secret")
 
@@ -1367,7 +1373,8 @@ class TestAuthPasswordMatching:
         assert not auth._password_matches("bcrypt:not-a-real-hash", "anything")
 
     def test_credential_format_classification(self):
-        assert auth._credential_format(auth.hash_password("x")) == "bcrypt"
+        assert auth._credential_format(auth.hash_password("x")) == "argon2"
+        assert auth._credential_format("bcrypt:$2b$12$abc") == "bcrypt"
         assert auth._credential_format("sha256:" + "a" * 64) == "sha256"
         assert auth._credential_format("plain-value") == "plaintext"
 

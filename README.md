@@ -34,7 +34,7 @@ MAKU_TEST_PG_URL=postgresql://... python -m pytest -q tests/   # + PostgreSQL in
 | `risk_engine.py` | All risk maths - pure functions, no Streamlit |
 | `ai_advisor.py` | Rule-based controls + optional Claude briefing (successes cached per API key; failures never cached) |
 | `data_feeds.py` | Live feeds (Open-Meteo, Nominatim, ipapi.co); every payload tagged `is_live`; mocks only in demo mode |
-| `auth.py`, `accounts.py` | bcrypt-only login, database-backed lockout, roles, consent, data export, account deletion |
+| `auth.py`, `accounts.py` | Argon2id passwords (bcrypt upgraded at sign-in), lockout, idle timeout, consent, data export, account deletion |
 | `tenancy.py` | Tenant isolation: organization membership and the server-side access check on every read and write |
 | `analytics.py`, `db.py` | Assessment/alert/audit logs on pooled SQLAlchemy engines; `MAKU_ENV=production` makes PostgreSQL mandatory |
 | `alembic.ini`, `migrations/` | Versioned database migrations, applied by `scripts/init_db.py` at start-up |
@@ -66,7 +66,7 @@ The full table, with caveats, is `regulatory_references.FORMULA_STANDARDS_MAP` a
 - No silent mock data: failed feeds fall back to manual entry; simulated values are bannered, logged and
   stamped on reports as SIMULATED.
 - AI failures (429/timeout/network) are never cached and never shown as raw exceptions.
-- bcrypt-only credentials, server-side lockout per user and per IP, roles, GDPR/UAE PDPL consent, data export
+- Argon2id credentials (bcrypt accepted and upgraded at sign-in; plain text and SHA-256 rejected), server-side lockout per user and per IP, idle and absolute session timeouts, roles, GDPR/UAE PDPL consent, data export
   and in-app account deletion.
 - PostgreSQL support fixed (the previous code aborted every Postgres transaction), connection pooling,
   one-time schema migration, CORS and WebSocket origins locked to the MAKU domain.
