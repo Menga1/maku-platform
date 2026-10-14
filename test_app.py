@@ -2566,4 +2566,4 @@ class TestDatacenterArcFlashTriage:
         env = {**os.environ, "MAKU_DB_PATH": str(tmp_path / "init.db"), "DATABASE_URL": ""}
         out = subprocess.run([sys.executable, "scripts/init_db.py"], capture_output=True, text=True, env=env)
         assert out.returncode == 0, out.stderr
-        assert "Database ready (SQLite)" in out.stderr + out.stdout
+        assert "Database ready - schema revision 0001_baseline" in out.stderr + out.stdout

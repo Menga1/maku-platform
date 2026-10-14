@@ -19,7 +19,8 @@ python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements-dev.txt
 python manage_users.py create dev.admin --role admin     # local SQLite account
 streamlit run app.py
-python -m pytest -q test_app.py                           # 284 tests
+python -m pytest -q test_app.py tests/                    # full suite
+MAKU_TEST_PG_URL=postgresql://... python -m pytest -q tests/   # + PostgreSQL integration tests
 ```
 
 `MAKU_DEMO_MODE=1 streamlit run app.py` enables the sensor simulators (every simulated value carries a red
@@ -34,7 +35,8 @@ python -m pytest -q test_app.py                           # 284 tests
 | `ai_advisor.py` | Rule-based controls + optional Claude briefing (successes cached per API key; failures never cached) |
 | `data_feeds.py` | Live feeds (Open-Meteo, Nominatim, ipapi.co); every payload tagged `is_live`; mocks only in demo mode |
 | `auth.py`, `accounts.py` | bcrypt-only login, database-backed lockout, roles, consent, data export, account deletion |
-| `analytics.py`, `db.py` | Assessment/alert/audit logs on pooled SQLAlchemy engines (PostgreSQL in production) |
+| `analytics.py`, `db.py` | Assessment/alert/audit logs on pooled SQLAlchemy engines; `MAKU_ENV=production` makes PostgreSQL mandatory |
+| `alembic.ini`, `migrations/` | Versioned database migrations, applied by `scripts/init_db.py` at start-up |
 | `mobile_bridge.py`, `push.py` | Bridge to the native shell (GPS, camera, share, offline cache) and FCM stop-work alerts |
 | `ui_helpers.py`, `i18n.py` | Shared widgets, PDF/HTML reports, 14-language UI strings |
 | `regulatory_*.py` | Country threshold profiles and the verified citation list |

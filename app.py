@@ -52,6 +52,7 @@ from mobile_bridge import (
     detect_shell, in_mobile_shell, shell_platform, request_native_location, request_native_photo,
     request_push_token, send_assessment_to_shell,
 )
+import analytics
 import push
 from i18n import t, language_selector, LANGUAGES
 from risk_engine import (
@@ -117,7 +118,7 @@ from ui_helpers import (
     render_feed_status_banner,
     render_simulated_data_banner,
     render_data_unavailable_banner,
-    render_db_fatal_banner,
+    render_db_fatal_banner, render_database_gate,
     render_virtual_library,
     render_web_search_toggle,
     render_meteorology_forecast,
@@ -250,6 +251,10 @@ def is_inside_geofence(lat: float, lon: float, radius_km: float = GEOFENCE_RADIU
 st.session_state.setdefault("authenticated", False)
 # Remember for the session whether the native iOS/Android shell opened us.
 detect_shell()
+# P0 data integrity: stop every page (login included) with an explicit error
+# while the configured production database is unavailable - see
+# ui_helpers.render_database_gate / analytics.probe_database.
+render_database_gate(st, analytics, st.session_state.get("lang", "fr"))
 require_login()
 # GDPR / UAE PDPL: explicit, un-pre-ticked choices before first use.
 require_privacy_choices(st.session_state.get("lang", "fr"))

@@ -38,6 +38,63 @@ _ENGINES: dict[str, sa.Engine] = {}
 _ENGINES_LOCK = threading.Lock()
 
 
+# ---------------------------------------------------------------------------
+# Deployment environment (P0 "no silent persistence fallback")
+#   MAKU_ENV=production | staging   strict: PostgreSQL is mandatory. Without
+#                                   a PostgreSQL DATABASE_URL the app refuses
+#                                   to start (scripts/init_db.py exits 2) and
+#                                   every page shows an explicit error.
+#   MAKU_ENV=demo                   local SQLite allowed; UI says data is not kept
+#   MAKU_ENV=development (default)  local SQLite allowed (laptops, tests)
+# The Docker image sets MAKU_ENV=production, so a server deployment is strict
+# unless someone deliberately overrides it. Unknown values are treated as
+# production (fail safe).
+# ---------------------------------------------------------------------------
+STRICT_ENVIRONMENTS = {"production", "staging"}
+KNOWN_ENVIRONMENTS = STRICT_ENVIRONMENTS | {"demo", "development", "test"}
+
+
+class ProductionConfigError(RuntimeError):
+    """The deployment is configured in a way production must never run with."""
+
+
+def maku_env() -> str:
+    value = (os.environ.get("MAKU_ENV") or "development").strip().lower()
+    if value not in KNOWN_ENVIRONMENTS:
+        logger.warning("Unknown MAKU_ENV=%r - treating it as 'production'", value)
+        return "production"
+    return value
+
+
+def strict_persistence() -> bool:
+    """True when only PostgreSQL may be used and any database problem must
+    stop the application instead of degrading."""
+    return maku_env() in STRICT_ENVIRONMENTS
+
+
+def require_production_database(url: str) -> None:
+    """Raises ProductionConfigError when a strict environment is not pointed
+    at PostgreSQL. Never logs the URL itself (it can contain a password)."""
+    if not strict_persistence():
+        return
+    if not url:
+        raise ProductionConfigError(
+            f"MAKU_ENV={maku_env()} requires DATABASE_URL to point at PostgreSQL, but DATABASE_URL is not set. "
+            "Refusing to fall back to a local SQLite file.")
+    if not is_postgres_url(url):
+        raise ProductionConfigError(
+            f"MAKU_ENV={maku_env()} requires a PostgreSQL DATABASE_URL (postgresql://...), but the configured "
+            f"URL uses the '{url.split(':', 1)[0]}' scheme. Refusing to start.")
+
+
+def redact_url(url: str) -> str:
+    """URL safe for logs: password replaced."""
+    try:
+        return sa.engine.make_url(normalize_url(url)).render_as_string(hide_password=True)
+    except Exception:  # noqa: BLE001
+        return "<unparseable database URL>"
+
+
 def is_postgres_url(url: str) -> bool:
     return url.startswith(("postgres://", "postgresql://", "postgresql+psycopg2://"))
 

@@ -979,6 +979,36 @@ def render_db_fatal_banner(st_module, backend_status: dict, lang: str = "fr") ->
     )
 
 
+
+def render_database_gate(st_module, analytics_module, lang: str = "fr") -> dict:
+    """Runs before every page (app.py). Probes the configured database
+    (analytics.probe_database, throttled) and, if it is in the fatal state,
+    shows an explicit error and STOPS the page - so no module page can run
+    an assessment that would silently not be saved. Technical details go to
+    the server log (CRITICAL), never to the browser.
+
+    In MAKU_ENV=demo it adds a sidebar notice that data is not kept.
+    Returns the backend status when the page may continue."""
+    status = analytics_module.probe_database()
+    if status.get("fatal"):
+        st_module.error(f"🛑 {status.get('fatal_message') or 'CRITICAL DATABASE ERROR'}")
+        st_module.markdown(
+            "**MAKU est temporairement indisponible.** La base de données de production ne répond pas ou "
+            "n'est pas configurée correctement. Aucune évaluation ne peut être enregistrée, et rien n'est "
+            "enregistré ailleurs. L'administrateur a été alerté via le journal du serveur. "
+            "Réessayez dans quelques minutes."
+            if lang == "fr" else
+            "**MAKU is temporarily unavailable.** The production database is not answering or is not "
+            "configured correctly. No assessment can be saved, and nothing is being saved anywhere else. "
+            "The administrator has been alerted through the server log. Please try again in a few minutes."
+        )
+        st_module.stop()
+    if status.get("environment") == "demo":
+        st_module.sidebar.warning(
+            "Démo - les données ne sont pas conservées." if lang == "fr"
+            else "Demo - data is not kept.", icon="🧪")
+    return status
+
 # ---------------------------------------------------------------------------
 # Virtual library (free HSE publications + Google Books search + web-search toggle)
 # ---------------------------------------------------------------------------

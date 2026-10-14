@@ -154,6 +154,12 @@ curl -I https://maku.ae/healthz          # HTTP/2 200
 
 Open `https://maku.ae`, sign in as `first.admin`, and make your privacy choices.
 
+**Production database rules.** The image runs with `MAKU_ENV=production`:
+
+- MAKU only uses PostgreSQL. If `DATABASE_URL` is missing or not PostgreSQL, the app container stops at start-up with `CRITICAL ... Refusing to fall back to a local SQLite file` in `docker compose logs app`.
+- At every start, `scripts/init_db.py` applies the versioned migrations in `migrations/` (`alembic upgrade head`). The app refuses to use a database that is not at the expected revision.
+- If PostgreSQL goes down while running, every page shows **CRITICAL DATABASE ERROR** and nothing is saved anywhere else; the container turns *unhealthy* and the log shows a CRITICAL line. Pages work again automatically within seconds of the database coming back.
+
 ## 3. Accounts
 
 Admins create staff accounts in the app under **Users (admin)**, or from the server:
@@ -272,7 +278,9 @@ Also fill in the `[BRACKETED]` values in `deploy/site/privacy.html` and `deploy/
 | Backups | nightly in `~/maku/backups/` (14 days). Copy them off the server, e.g. `aws s3 sync backups s3://YOUR-BUCKET/maku-backups` in a cron job |
 | Restore a backup | `gunzip -c backups/maku-YYYYmmdd-HHMM.sql.gz \| docker compose exec -T db psql -U maku -d maku` |
 | Erasure request by email | `docker compose exec app python manage_users.py delete USERNAME` |
-| Run the test suite | `docker compose exec app python -m pytest -q test_app.py` |
+| Run the test suite | `docker compose exec app python -m pytest -q test_app.py tests/` |
+| Database migration status | `docker compose exec app alembic current` (expected: the latest revision in `migrations/versions/`) |
+| Why is the app unhealthy? | `docker inspect --format '{{json .State.Health.Log}}' $(docker compose ps -q app)` |
 | Training/demo mode | set `MAKU_DEMO_MODE=1` in `.env` → `docker compose up -d app`. Red **SIMULATED DATA** banners appear. Never leave it on in production |
 
 ## Known limitations
