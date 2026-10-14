@@ -1,0 +1,32 @@
+........................................................................ [  9%]
+........................................................................ [ 19%]
+........................................................................ [ 29%]
+........................................................................ [ 38%]
+...........................sss......................ssssssssssssssssssss [ 48%]
+s....................................................................... [ 58%]
+........................................................................ [ 68%]
+........................................................................ [ 77%]
+........................................................................ [ 87%]
+........................
+[reference cases] 0/21 independently reviewed (release gate 03 requires all)
+.....................................sssssssssss [ 97%]
+sssssssssssssssssss                                                      [100%]
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_database_guard.py:203: set MAKU_TEST_PG_URL (application role) and MAKU_TEST_PG_OWNER_URL (owner)
+SKIPPED [1] tests/test_database_guard.py:209: set MAKU_TEST_PG_URL (application role) and MAKU_TEST_PG_OWNER_URL (owner)
+SKIPPED [1] tests/test_database_guard.py:216: set MAKU_TEST_PG_URL (application role) and MAKU_TEST_PG_OWNER_URL (owner)
+SKIPPED [21] tests/test_gate03_golden.py:151: BLOCKED: no independently approved expected value for this case (mandate A1)
+SKIPPED [7] tests/test_tenant_isolation_matrix.py:249: row-level security exists on PostgreSQL only (MAKU_TEST_BACKEND=postgres, MAKU_TEST_PG_URL, MAKU_TEST_PG_OWNER_URL)
+SKIPPED [7] tests/test_tenant_isolation_matrix.py:254: row-level security exists on PostgreSQL only (MAKU_TEST_BACKEND=postgres, MAKU_TEST_PG_URL, MAKU_TEST_PG_OWNER_URL)
+SKIPPED [7] tests/test_tenant_isolation_matrix.py:262: row-level security exists on PostgreSQL only (MAKU_TEST_BACKEND=postgres, MAKU_TEST_PG_URL, MAKU_TEST_PG_OWNER_URL)
+SKIPPED [1] tests/test_tenant_isolation_matrix.py:267: row-level security exists on PostgreSQL only (MAKU_TEST_BACKEND=postgres, MAKU_TEST_PG_URL, MAKU_TEST_PG_OWNER_URL)
+SKIPPED [1] tests/test_tenant_isolation_matrix.py:280: row-level security exists on PostgreSQL only (MAKU_TEST_BACKEND=postgres, MAKU_TEST_PG_URL, MAKU_TEST_PG_OWNER_URL)
+SKIPPED [1] tests/test_tenant_isolation_matrix.py:285: row-level security exists on PostgreSQL only (MAKU_TEST_BACKEND=postgres, MAKU_TEST_PG_URL, MAKU_TEST_PG_OWNER_URL)
+SKIPPED [1] tests/test_tenant_isolation_matrix.py:296: row-level security exists on PostgreSQL only (MAKU_TEST_BACKEND=postgres, MAKU_TEST_PG_URL, MAKU_TEST_PG_OWNER_URL)
+SKIPPED [1] tests/test_tenant_isolation_matrix.py:304: row-level security exists on PostgreSQL only (MAKU_TEST_BACKEND=postgres, MAKU_TEST_PG_URL, MAKU_TEST_PG_OWNER_URL)
+SKIPPED [1] tests/test_tenant_isolation_matrix.py:315: row-level security exists on PostgreSQL only (MAKU_TEST_BACKEND=postgres, MAKU_TEST_PG_URL, MAKU_TEST_PG_OWNER_URL)
+SKIPPED [1] tests/test_tenant_isolation_matrix.py:321: row-level security exists on PostgreSQL only (MAKU_TEST_BACKEND=postgres, MAKU_TEST_PG_URL, MAKU_TEST_PG_OWNER_URL)
+SKIPPED [1] tests/test_tenant_isolation_matrix.py:328: row-level security exists on PostgreSQL only (MAKU_TEST_BACKEND=postgres, MAKU_TEST_PG_URL, MAKU_TEST_PG_OWNER_URL)
+SKIPPED [1] tests/test_tenant_isolation_matrix.py:333: row-level security exists on PostgreSQL only (MAKU_TEST_BACKEND=postgres, MAKU_TEST_PG_URL, MAKU_TEST_PG_OWNER_URL)
+685 passed, 54 skipped in 48.25s
+exit code: 0
