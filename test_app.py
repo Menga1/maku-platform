@@ -69,6 +69,19 @@ from data_feeds import (
     fetch_solar_forecast, fetch_offshore_forecast, DataFeedError,
     fetch_live_weather_universal, _mock_universal_weather,
 )
+import tenancy
+
+
+@pytest.fixture(autouse=True)
+def _act_as_platform_admin(monkeypatch):
+    """These legacy suites test the risk engine, logging, reports and auth -
+    not tenant isolation - and they clear st.session_state freely. They run
+    as a platform administrator (allowed everywhere). Tenant isolation has
+    its own suite in tests/test_tenancy.py, which runs as real members."""
+    monkeypatch.setattr(tenancy, "principal_from_session",
+                        lambda st_module: tenancy.Principal("test.admin", platform_admin=True))
+
+
 import auth
 from regulatory_country_thresholds import (
     get_threshold_category_badge, THRESHOLD_CATEGORY_META, REGULATORY_PROFILES,
@@ -1688,12 +1701,14 @@ class TestOrgContext:
         monkeypatch.setattr("analytics.DB_PATH", str(tmp_path / "test_org_context.db"))
 
     def test_defaults_when_never_set(self):
+        # Platform administrator, empty database: the default organization is
+        # created and resolved through the server-side access check.
         ctx = get_org_context(st)
         assert ctx["organization"] == DEFAULT_ORGANIZATION
         assert ctx["project"] == DEFAULT_PROJECT
         assert ctx["site"] == ""
-        assert ctx["organization_id"] is None
-        assert ctx["project_id"] is None
+        assert isinstance(ctx["organization_id"], int)
+        assert isinstance(ctx["project_id"], int)
         assert ctx["site_id"] is None
 
     def test_set_and_get_round_trip(self):
@@ -1748,50 +1763,41 @@ class TestMultiTenantIsolation:
         st.session_state.clear()
         monkeypatch.setattr("analytics.DB_PATH", str(tmp_path / "test_tenant_isolation.db"))
 
+    def _alert(self, tenant, worker, **extra):
+        import analytics as _analytics
+        set_org_context(st, organization=tenant, **extra)
+        _analytics.log_site_alert(worker, "physiological_strain", "CRITICAL", "Heat strain",
+                                  module="Worker Physiology", **get_org_context(st))
+
     def test_site_alert_log_filters_by_organization(self):
         import analytics as _analytics
 
-        _analytics.log_site_alert("Worker_A1", "physiological_strain", "CRITICAL",
-                                   "Heat strain", module="Worker Physiology",
-                                   organization="Tenant Alpha")
-        _analytics.log_site_alert("Worker_B1", "physiological_strain", "CRITICAL",
-                                   "Heat strain", module="Worker Physiology",
-                                   organization="Tenant Beta")
+        self._alert("Tenant Alpha", "Worker_A1")
+        self._alert("Tenant Beta", "Worker_B1")
 
-        alpha_view = _analytics.get_site_alert_log_dataframe(organization="Tenant Alpha")
-        beta_view = _analytics.get_site_alert_log_dataframe(organization="Tenant Beta")
+        set_org_context(st, organization="Tenant Alpha")
+        alpha_view = _analytics.get_site_alert_log_dataframe(st)
+        set_org_context(st, organization="Tenant Beta")
+        beta_view = _analytics.get_site_alert_log_dataframe(st)
 
-        assert len(alpha_view) == 1
-        assert alpha_view.iloc[0]["worker_or_site_id"] == "Worker_A1"
-        assert len(beta_view) == 1
-        assert beta_view.iloc[0]["worker_or_site_id"] == "Worker_B1"
-        # Cross-tenant leakage check: Tenant Alpha's view must not contain
-        # any row belonging to Tenant Beta, and vice versa.
-        assert "Worker_B1" not in alpha_view["worker_or_site_id"].values
-        assert "Worker_A1" not in beta_view["worker_or_site_id"].values
+        assert list(alpha_view["worker_or_site_id"]) == ["Worker_A1"]
+        assert list(beta_view["worker_or_site_id"]) == ["Worker_B1"]
 
     def test_site_alert_log_resolves_organization_id(self):
         import analytics as _analytics
 
-        _analytics.log_site_alert("Worker_C1", "physiological_strain", "WARNING",
-                                   "Elevated strain", organization="Tenant Gamma",
-                                   project="Project X", site="Site 9")
-        df = _analytics.get_site_alert_log_dataframe(organization="Tenant Gamma")
+        self._alert("Tenant Gamma", "Worker_C1", project="Project X", site="Site 9")
+        df = _analytics.get_site_alert_log_dataframe(st)
         assert len(df) == 1
-        # organization_id/project_id/site_id columns are present and
-        # resolved to real relational ids, not left null.
-        assert df.iloc[0]["organization_id"] is not None
-        assert int(df.iloc[0]["organization_id"]) > 0
+        assert int(df.iloc[0]["organization_id"]) == get_org_context(st)["organization_id"]
+        assert int(df.iloc[0]["site_id"]) == get_org_context(st)["site_id"]
 
-    def test_unfiltered_call_sees_every_tenant_admin_only(self):
+    def test_all_organizations_view_is_platform_admin_only(self):
         import analytics as _analytics
 
-        _analytics.log_site_alert("Worker_A1", "physiological_strain", "CRITICAL",
-                                   "Heat strain", organization="Tenant Alpha")
-        _analytics.log_site_alert("Worker_B1", "physiological_strain", "CRITICAL",
-                                   "Heat strain", organization="Tenant Beta")
-        everything = _analytics.get_site_alert_log_dataframe()
-        assert len(everything) == 2
+        self._alert("Tenant Alpha", "Worker_A1")
+        self._alert("Tenant Beta", "Worker_B1")
+        assert len(_analytics.get_site_alert_log_dataframe(st, all_organizations=True)) == 2
 
 
 # ---------------------------------------------------------------------------
@@ -2481,15 +2487,37 @@ class TestMobileIntegration:
         assert "capacitor://localhost" in js and "https://localhost" in js
         assert '"*"' not in js  # never a wildcard target origin
 
+    @staticmethod
+    def _acme_member(username):
+        admin = tenancy.Principal("test.admin", platform_admin=True)
+        org_id = tenancy.organization_id_by_name("ACME") or tenancy.create_organization(admin, "ACME")
+        tenancy.set_membership(admin, username, org_id, "supervisor")
+        return org_id
+
     def test_device_registration_and_deletion(self):
         import accounts
         import push
         accounts.create_user("phone.user", "Phone-Pass-123")
-        push.register_device("phone.user", "tok-1", "android", "ACME")
-        push.register_device("phone.user", "tok-1", "android", "ACME")  # re-registration is idempotent
-        assert push._tokens_for_organization("ACME") == ["tok-1"]
+        acme = self._acme_member("phone.user")
+        push.register_device("phone.user", "tok-1", "android", acme)
+        push.register_device("phone.user", "tok-1", "android", acme)  # re-registration is idempotent
+        assert push._tokens_for_organization(acme) == ["tok-1"]
         accounts.delete_account("phone.user", "Phone-Pass-123")
-        assert push._tokens_for_organization("ACME") == []
+        assert push._tokens_for_organization(acme) == []
+
+    def test_non_member_cannot_register_for_alerts(self):
+        import push
+        acme = self._acme_member("someone.else")
+        with pytest.raises(tenancy.TenantAccessDenied):
+            push.register_device("outsider", "tok-x", "android", acme)
+
+    def test_removed_member_stops_receiving_alerts(self):
+        import push
+        acme = self._acme_member("leaver")
+        push.register_device("leaver", "tok-leaver", "ios", acme)
+        assert push._tokens_for_organization(acme) == ["tok-leaver"]
+        tenancy.remove_membership(tenancy.Principal("test.admin", True), "leaver", acme)
+        assert push._tokens_for_organization(acme) == []
 
     def test_invalid_device_tokens_rejected(self):
         import push
@@ -2502,19 +2530,20 @@ class TestMobileIntegration:
         import push
         monkeypatch.delenv("MAKU_FCM_SERVICE_ACCOUNT_FILE", raising=False)
         override = {"safety_override": True, "module": "X", "risk_band": "CRITICAL"}
-        assert push.notify_stop_work(override, "ACME") is False
+        assert push.notify_stop_work(override, 1) is False
         monkeypatch.setattr(push, "push_enabled", lambda: True)
-        assert push.notify_stop_work({**override, "data_provenance": "SIMULATED"}, "ACME") is False
+        assert push.notify_stop_work({**override, "data_provenance": "SIMULATED"}, 1) is False
 
     def test_fcm_unregistered_token_is_forgotten(self, monkeypatch):
         import push
-        push.register_device("u", "dead-token", "ios", "ACME")
+        acme = self._acme_member("u")
+        push.register_device("u", "dead-token", "ios", acme)
         resp = MagicMock(status_code=404, text='{"error":{"status":"NOT_FOUND","details":[{"errorCode":"UNREGISTERED"}]}}')
         monkeypatch.setattr(push, "_access_token", lambda: "x")
         monkeypatch.setattr(push, "_project_id", lambda: "p")
         with patch("push.requests.post", return_value=resp):
             assert push._send_one("dead-token", "t", "b", {}) is False
-        assert push._tokens_for_organization("ACME") == []
+        assert push._tokens_for_organization(acme) == []
 
     def test_site_photos_are_embedded_in_pdf(self):
         import io
@@ -2566,4 +2595,5 @@ class TestDatacenterArcFlashTriage:
         env = {**os.environ, "MAKU_DB_PATH": str(tmp_path / "init.db"), "DATABASE_URL": ""}
         out = subprocess.run([sys.executable, "scripts/init_db.py"], capture_output=True, text=True, env=env)
         assert out.returncode == 0, out.stderr
-        assert "Database ready - schema revision 0001_baseline" in out.stderr + out.stdout
+        import analytics as _analytics
+        assert f"Database ready - schema revision {_analytics.SCHEMA_REVISION}" in out.stderr + out.stdout

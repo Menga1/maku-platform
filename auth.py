@@ -544,3 +544,65 @@ def render_admin_users_page(lang: str = "fr") -> None:
                 st.error(str(exc))
             except accounts.AccountStoreUnavailable:
                 st.error("Base de données indisponible." if fr else "Database unavailable.")
+
+    _render_membership_admin(fr)
+
+
+def _render_membership_admin(fr: bool) -> None:
+    """Organizations and memberships (tenant isolation, finding F2). Only a
+    platform administrator reaches this page (is_admin() check above), and
+    tenancy.py re-checks that on every change."""
+    import tenancy
+
+    actor = tenancy.principal_from_session(st)
+    st.subheader("🏢 " + ("Organisations et membres" if fr else "Organizations and members"))
+    st.caption("Un utilisateur ne voit et ne modifie que les données des organisations dont il est membre."
+               if fr else "A user only sees and changes data of the organizations they are a member of.")
+    try:
+        orgs = tenancy.accessible_organizations(actor)
+        members = tenancy.list_memberships()
+    except Exception:  # noqa: BLE001
+        st.error("Base de données indisponible." if fr else "Database unavailable.")
+        return
+    if members:
+        st.dataframe(members, hide_index=True, width="stretch")
+
+    with st.form("create_org", clear_on_submit=True):
+        org_name = st.text_input("Nouvelle organisation" if fr else "New organization")
+        if st.form_submit_button("Créer l'organisation" if fr else "Create organization") and org_name.strip():
+            try:
+                tenancy.create_organization(actor, org_name)
+                st.success(("Organisation créée : " if fr else "Organization created: ") + org_name.strip())
+                st.rerun()
+            except (tenancy.TenancyError, tenancy.TenantAccessDenied) as exc:
+                st.error(str(exc))
+
+    if not orgs:
+        return
+    names = {o["name"]: o["id"] for o in orgs}
+    role_labels = {"viewer": "viewer - lecture seule" if fr else "viewer - read only",
+                   "supervisor": "supervisor - évaluations" if fr else "supervisor - runs assessments",
+                   "org_admin": "org_admin - gère l'organisation" if fr else "org_admin - manages the organization"}
+    with st.form("set_membership", clear_on_submit=True):
+        c1, c2, c3 = st.columns(3)
+        member_user = c1.text_input("Identifiant" if fr else "Username")
+        member_org = c2.selectbox("Organisation" if fr else "Organization", list(names))
+        member_role = c3.selectbox("Rôle" if fr else "Role", list(tenancy.ORG_ROLES),
+                                   index=list(tenancy.ORG_ROLES).index(tenancy.DEFAULT_ORG_ROLE),
+                                   format_func=lambda r: role_labels[r])
+        b1, b2 = st.columns(2)
+        add = b1.form_submit_button("Ajouter / changer le rôle" if fr else "Add / change role", type="primary")
+        remove = b2.form_submit_button("Retirer de l'organisation" if fr else "Remove from organization")
+        if (add or remove) and member_user.strip():
+            try:
+                if add:
+                    tenancy.set_membership(actor, member_user.strip(), names[member_org], member_role)
+                    st.success(("Membre enregistré : " if fr else "Membership saved: ")
+                               + f"{member_user.strip()} → {member_org} ({member_role})")
+                elif tenancy.remove_membership(actor, member_user.strip(), names[member_org]):
+                    st.success(("Retiré : " if fr else "Removed: ") + f"{member_user.strip()} / {member_org}")
+                else:
+                    st.info("Aucune adhésion à retirer." if fr else "No such membership.")
+                st.rerun()
+            except (tenancy.TenancyError, tenancy.TenantAccessDenied) as exc:
+                st.error(str(exc))

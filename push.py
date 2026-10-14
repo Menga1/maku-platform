@@ -69,22 +69,43 @@ def _access_token() -> str:
 # Device registry
 # ---------------------------------------------------------------------------
 
-def register_device(username: str, token: str, platform: str, organization: str) -> None:
+def register_device(username: str, token: str, platform: str, organization_id: int | None) -> None:
+    """Registers a phone for one organization's stop-work alerts. The caller
+    passes the organization_id from the session's VALIDATED context
+    (analytics.require_scope); this re-checks in the database that the user
+    is a member of that organization before storing anything (tenant
+    isolation, finding F2). Alerts go to members' devices only - a platform
+    administrator who wants an organization's alerts adds themselves as a
+    member of it."""
+    import tenancy
+
     if not token or len(token) > 4096 or platform not in ("ios", "android"):
         raise ValueError("invalid device token")
+    if not username or organization_id is None or tenancy.membership_role(username, int(organization_id)) is None:
+        raise tenancy.TenantAccessDenied(f"{username or 'anonymous'} is not a member of organization "
+                                         f"{organization_id}; stop-work alerts go to members only")
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     with _analytics._get_connection() as conn:
+        row = conn.execute("SELECT name FROM organizations WHERE id = ?", (int(organization_id),)).fetchone()
         conn.execute("DELETE FROM device_tokens WHERE token = ?", (token,))
         conn.execute(
-            "INSERT INTO device_tokens (username, token, platform, organization, created_at, updated_at) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
-            (username, token, platform, organization or "", now, now),
+            "INSERT INTO device_tokens (username, token, platform, organization, organization_id, "
+            "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (username, token, platform, row[0] if row else "", int(organization_id), now, now),
         )
 
 
-def _tokens_for_organization(organization: str) -> list[str]:
+def _tokens_for_organization(organization_id: int | None) -> list[str]:
+    """Devices of CURRENT members of the organization only: a user removed
+    from the organization stops receiving its alerts immediately, even if
+    their phone registered earlier."""
+    if organization_id is None:
+        return []
     with _analytics._get_connection() as conn:
-        cur = conn.execute("SELECT token FROM device_tokens WHERE organization = ?", (organization or "",))
+        cur = conn.execute(
+            "SELECT d.token FROM device_tokens d WHERE d.organization_id = ? AND EXISTS ("
+            "SELECT 1 FROM organization_members m WHERE m.username = d.username "
+            "AND m.organization_id = d.organization_id)", (int(organization_id),))
         return [row[0] for row in cur.fetchall()]
 
 
@@ -122,18 +143,18 @@ def _send_one(token: str, title: str, body: str, data: dict) -> bool:
     return False
 
 
-def _send_to_organization(organization: str, title: str, body: str, data: dict) -> int:
+def _send_to_organization(organization_id: int | None, title: str, body: str, data: dict) -> int:
     sent = 0
-    for token in _tokens_for_organization(organization):
+    for token in _tokens_for_organization(organization_id):
         try:
             sent += 1 if _send_one(token, title, body, data) else 0
         except Exception as exc:  # noqa: BLE001 - one bad token never stops the rest
             logger.warning("FCM send error: %s", exc)
-    logger.info("Stop-work alert delivered to %d device(s) in '%s'", sent, organization)
+    logger.info("Stop-work alert delivered to %d device(s) in organization %s", sent, organization_id)
     return sent
 
 
-def notify_stop_work(result: dict, organization: str, site: str = "") -> bool:
+def notify_stop_work(result: dict, organization_id: int | None, site: str = "") -> bool:
     """Queue a stop-work alert for the organisation. Never raises and never
     blocks the page. Simulated assessments are never pushed."""
     if not push_enabled() or not result.get("safety_override"):
@@ -147,7 +168,7 @@ def notify_stop_work(result: dict, organization: str, site: str = "") -> bool:
     data = {"module": module, "risk_band": result.get("risk_band", ""), "site": site,
             "kind": "stop_work"}
     try:
-        _EXECUTOR.submit(_send_to_organization, organization, title, body, data)
+        _EXECUTOR.submit(_send_to_organization, organization_id, title, body, data)
         return True
     except Exception as exc:  # noqa: BLE001
         logger.warning("Could not queue push: %s", exc)

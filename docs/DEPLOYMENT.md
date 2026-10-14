@@ -169,6 +169,22 @@ docker compose exec app python manage_users.py create site.supervisor --role sup
 docker compose exec app python manage_users.py list
 ```
 
+**Every user must be a member of an organization** before they can use the module pages; each customer company is one organization, and nobody sees another organization's assessments, alerts or push notifications. Do this in **Users (admin) → Organizations and members**, or:
+
+```bash
+docker compose exec app python manage_users.py org-create "ACME Construction"
+docker compose exec app python manage_users.py member-add site.supervisor "ACME Construction" --role supervisor
+docker compose exec app python manage_users.py member-list
+```
+
+| Organization role | Can |
+|---|---|
+| `viewer` | See the organization's results; assessments are calculated but not saved |
+| `supervisor` | Run and save assessments, import logs, receive stop-work alerts |
+| `org_admin` | Everything above, plus add/remove `viewer` and `supervisor` members of that organization |
+
+Platform administrators (`--role admin`, or the accounts in `MAKU_AUTH_USERS`) see every organization and create organizations. To receive an organization's stop-work alerts on a phone, an administrator adds themselves as a member of it.
+
 **Create two reviewer accounts before submitting to the stores.** Reviewers test account deletion, and a deleted account can't be reused for the next review round.
 
 ```bash

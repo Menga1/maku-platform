@@ -38,6 +38,7 @@ hardcoded constant in this codebase.
 
 from __future__ import annotations
 
+import logging
 import os
 from datetime import datetime, timezone
 from html import escape
@@ -1085,16 +1086,18 @@ def render_analytics_section(st_module, lang: str) -> None:
     st_module.markdown(
         "### 📊 " + ("Analyse des Tendances & Rapport Mensuel" if lang == "fr" else "Trend Analysis & Monthly Report")
     )
-    st_module.caption(
-        "Journal des évaluations de cette session uniquement (pas de base de "
-        "données persistante sur Streamlit Cloud). Téléchargez le CSV "
-        "régulièrement et réimportez-le lors d'une session future pour "
-        "construire un historique multi-mois."
-        if lang == "fr" else
-        "This session's assessment log only (Streamlit Cloud has no "
-        "persistent database). Download the CSV periodically and re-upload "
-        "it in a future session to build a multi-month history."
-    )
+    import db as _db
+    if not _db.strict_persistence():
+        st_module.caption(
+            "Journal des évaluations de cette session uniquement (pas de base de "
+            "données persistante sur Streamlit Cloud). Téléchargez le CSV "
+            "régulièrement et réimportez-le lors d'une session future pour "
+            "construire un historique multi-mois."
+            if lang == "fr" else
+            "This session's assessment log only (Streamlit Cloud has no "
+            "persistent database). Download the CSV periodically and re-upload "
+            "it in a future session to build a multi-month history."
+        )
 
     uploaded = st_module.file_uploader(
         "Importer un journal précédent (CSV) pour fusionner" if lang == "fr"
@@ -1109,8 +1112,16 @@ def render_analytics_section(st_module, lang: str) -> None:
                 (f"{added} nouvelle(s) ligne(s) fusionnée(s)." if lang == "fr"
                  else f"{added} new row(s) merged.")
             )
-        except Exception as exc:
+        except PermissionError:
+            st_module.error("Votre rôle est en lecture seule dans cette organisation : import impossible."
+                            if lang == "fr" else
+                            "Your role in this organization is read-only: import is not allowed.")
+        except ValueError as exc:   # our own validation messages (missing columns, too many rows)
             st_module.error(f"{'Échec de la fusion' if lang == 'fr' else 'Merge failed'}: {exc}")
+        except Exception:  # noqa: BLE001 - never show raw technical errors to users
+            logging.getLogger("maku.ui").exception("CSV merge failed")
+            st_module.error("Échec de la fusion : fichier illisible." if lang == "fr"
+                            else "Merge failed: the file could not be read.")
 
     df = get_log_dataframe(st_module)
 

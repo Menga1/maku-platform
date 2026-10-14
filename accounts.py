@@ -357,7 +357,8 @@ def erase_account_data(username: str, requested_via: str) -> dict:
     received through the public web form or by email."""
     counts = {}
     with _conn() as conn:
-        for table in ("assessment_log", "user_consents", "login_attempts", "device_tokens", "users"):
+        for table in ("assessment_log", "user_consents", "login_attempts", "device_tokens",
+                      "organization_members", "users"):
             cur = conn.execute(f"DELETE FROM {table} WHERE username = ?", (username,))
             counts[table] = max(cur.rowcount, 0)
         conn.execute(

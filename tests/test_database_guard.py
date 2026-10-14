@@ -59,6 +59,7 @@ class TestEnvironment:
 # ------------------------------------------------------------ runtime guard
 class TestStrictRuntime:
     def test_production_without_database_url_is_fatal_and_writes_nothing(self, fresh_db, monkeypatch, caplog):
+        _sign_in_admin()
         monkeypatch.setenv("MAKU_ENV", "production")
         with caplog.at_level(logging.CRITICAL, logger="maku.analytics"):
             analytics.log_assessment(st, calculate_solar_albedo_heat_risk(950, 9, 42, "silicon_pv_panels"))
@@ -110,9 +111,14 @@ class TestStrictRuntime:
             analytics.verify_schema_revision(_sqlite_conn(fresh_db))
 
     def test_development_mode_keeps_working_on_sqlite(self, fresh_db):
+        _sign_in_admin()
         analytics.log_assessment(st, calculate_solar_albedo_heat_risk(950, 9, 42, "silicon_pv_panels"))
         assert not analytics.is_db_fatal()
         assert not analytics.get_log_dataframe(st).empty
+
+
+def _sign_in_admin():
+    st.session_state.update({"authenticated": True, "_auth_username": "ops.admin", "_auth_role": "admin"})
 
 
 def _sqlite_conn(tmp_path):
@@ -158,7 +164,7 @@ class TestInitDb:
     def test_development_creates_and_migrates_sqlite(self, tmp_path):
         out = _run_init_db({"MAKU_DB_PATH": str(tmp_path / "dev.db")})
         assert out.returncode == 0, out.stderr
-        assert "schema revision 0001_baseline" in out.stderr
+        assert f"schema revision {analytics.SCHEMA_REVISION}" in out.stderr
 
     def test_baseline_upgrades_a_database_built_before_migrations(self, tmp_path, monkeypatch):
         """Existing deployments (tables created by ensure_schema) migrate in place."""
@@ -196,6 +202,7 @@ class TestPostgresProduction:
         monkeypatch.setattr("analytics.DATABASE_URL", PG_URL)
         analytics.reset_fatal_state_for_testing()
         st.session_state.clear()
+        _sign_in_admin()
         analytics.log_assessment(st, calculate_solar_albedo_heat_risk(950, 9, 42, "silicon_pv_panels"))
         assert not analytics.is_db_fatal()
         assert not analytics.get_log_dataframe(st).empty
