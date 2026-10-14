@@ -1,0 +1,45 @@
+{
+  "module": "underground",
+  "country": "USA",
+  "note": "expected.fields with a hand-calculation basis were computed from the published formula, independently of risk_engine.py. risk_band / safety_override are MAKU's own thresholds and are regression baselines until a competent HSE reviewer signs them off (review_status).",
+  "cases": [
+    {
+      "id": "co-over-oel",
+      "description": "38 degC, 85% RH, PM2.5 30, CO 60 ppm",
+      "inputs": {
+        "ambient_temp": 38,
+        "geothermal_humidity": 85,
+        "particulate_matter_pm25": 30,
+        "gas_co_ppm": 60
+      },
+      "expected": {
+        "risk_band": "CRITICAL",
+        "safety_override": true,
+        "fields": {}
+      },
+      "basis": "regression baseline",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    },
+    {
+      "id": "clean-cool",
+      "description": "26 degC, 55% RH, PM2.5 10, CO 5 ppm",
+      "inputs": {
+        "ambient_temp": 26,
+        "geothermal_humidity": 55,
+        "particulate_matter_pm25": 10,
+        "gas_co_ppm": 5
+      },
+      "expected": {
+        "risk_band": "LOW",
+        "safety_override": false,
+        "fields": {}
+      },
+      "basis": "regression baseline",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    }
+  ]
+}

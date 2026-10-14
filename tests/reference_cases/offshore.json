@@ -1,0 +1,76 @@
+{
+  "module": "offshore",
+  "country": "USA",
+  "note": "expected.fields with a hand-calculation basis were computed from the published formula, independently of risk_engine.py. risk_band / safety_override are MAKU's own thresholds and are regression baselines until a competent HSE reviewer signs them off (review_status).",
+  "cases": [
+    {
+      "id": "humidex-30C-70pct",
+      "description": "30 degC, 70% RH, light wind",
+      "inputs": {
+        "ambient_temp": 30,
+        "relative_humidity": 70,
+        "wind_speed": 10
+      },
+      "expected": {
+        "risk_band": "Extreme",
+        "safety_override": true,
+        "fields": {
+          "humidex": [
+            41.2,
+            0.6
+          ]
+        }
+      },
+      "basis": "Environment Canada humidex via dew point (independent of the engine's RH form)",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    },
+    {
+      "id": "humidex-35C-50pct",
+      "description": "35 degC, 50% RH",
+      "inputs": {
+        "ambient_temp": 35,
+        "relative_humidity": 50,
+        "wind_speed": 10
+      },
+      "expected": {
+        "risk_band": "Extreme",
+        "safety_override": true,
+        "fields": {
+          "humidex": [
+            45.3,
+            0.6
+          ]
+        }
+      },
+      "basis": "Environment Canada humidex via dew point",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    },
+    {
+      "id": "humidex-25C-80pct-gale",
+      "description": "25 degC, 80% RH, 45 kn wind",
+      "inputs": {
+        "ambient_temp": 25,
+        "relative_humidity": 80,
+        "wind_speed": 45
+      },
+      "expected": {
+        "risk_band": "Moderate",
+        "safety_override": true,
+        "fields": {
+          "humidex": [
+            33.7,
+            0.6
+          ]
+        }
+      },
+      "basis": "Environment Canada humidex via dew point",
+      "review_status": "pending independent HSE review",
+      "reviewed_by": null,
+      "reviewed_on": null
+    }
+  ]
+}

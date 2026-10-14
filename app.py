@@ -54,6 +54,7 @@ from mobile_bridge import (
 )
 import analytics
 import push
+from maku_core import InputError, residual_risk_for, run_assessment
 from i18n import t, language_selector, LANGUAGES
 from risk_engine import (
     calculate_solar_albedo_heat_risk,
@@ -85,7 +86,6 @@ from risk_engine import (
     CLOTHING_ADJUSTMENT_FACTOR_C,
     get_stop_work_triggers,
 )
-from risk_matrix import apply_controls_residual_risk
 from regulatory_references import get_all_formula_standards
 from ai_advisor import (
     get_controls, generate_narrative, generate_narrative_cached,
@@ -1071,6 +1071,21 @@ def render_org_context_selector(lang: str) -> None:
                         else "Read-only: assessments are not saved.")
 
 
+def assess(module_key: str, regulatory_profile: dict | None = None, **inputs) -> dict:
+    """Runs one assessment through maku_core (validation, formula, controls,
+    methodology version) - the same path a future mobile API uses, so the
+    pages hold no assessment logic of their own. Invalid inputs stop the page
+    with the list of problems instead of producing a result."""
+    try:
+        return run_assessment(module_key, inputs, regulatory_profile=regulatory_profile)["result"]
+    except InputError as exc:
+        st.error("Valeurs d'entrée invalides :" if st.session_state.get("lang", "fr") == "fr"
+                 else "Invalid input values:")
+        for problem in exc.problems:
+            st.markdown(f"- {problem}")
+        st.stop()
+
+
 def save_assessment(result: dict) -> bool:
     """Logs the assessment in the user's validated organization when their
     role allows writing (tenant check repeated inside log_assessment)."""
@@ -2034,7 +2049,7 @@ def render_solar_farms():
     st.markdown("---")
 
     if st.button(t("run_button", lang), type="primary", width="stretch"):
-        result = calculate_solar_albedo_heat_risk(
+        result = assess("solar",
             ghi=ghi, uv_index=uv_index, ambient_temp=ambient_temp, surface_type=surface_type,
             regulatory_profile=country_thresholds,
         )
@@ -2085,7 +2100,7 @@ def render_solar_farms():
         render_risk_matrix_breakdown(st, result, lang)
         applied_controls = render_applied_controls_selector(st, controls, lang, key_suffix=result.get("module", ""))
         if result.get("risk_matrix"):
-            residual_matrix = apply_controls_residual_risk(result["risk_matrix"], len(applied_controls))
+            residual_matrix = residual_risk_for(result, applied_controls)
             render_residual_risk_comparison(st, result["risk_matrix"], residual_matrix, lang)
         render_official_report(st, result=result, narrative=narrative, controls=controls, lang=lang, evidence=build_evidence_traceability(st, result, data_mode, st.session_state.get("sensor_equipment_model", "")))
 
@@ -2187,7 +2202,7 @@ def render_offshore_oil_gas():
     st.markdown("---")
 
     if st.button(t("run_button", lang), type="primary", width="stretch"):
-        result = calculate_marine_humidex_risk(
+        result = assess("offshore",
             ambient_temp=ambient_temp, relative_humidity=relative_humidity, wind_speed=wind_speed,
             regulatory_profile=country_thresholds,
         )
@@ -2239,7 +2254,7 @@ def render_offshore_oil_gas():
         render_risk_matrix_breakdown(st, result, lang)
         applied_controls = render_applied_controls_selector(st, controls, lang, key_suffix=result.get("module", ""))
         if result.get("risk_matrix"):
-            residual_matrix = apply_controls_residual_risk(result["risk_matrix"], len(applied_controls))
+            residual_matrix = residual_risk_for(result, applied_controls)
             render_residual_risk_comparison(st, result["risk_matrix"], residual_matrix, lang)
         render_official_report(st, result=result, narrative=narrative, controls=controls, lang=lang, evidence=build_evidence_traceability(st, result, data_mode, st.session_state.get("sensor_equipment_model", "")))
 
@@ -2319,7 +2334,7 @@ def render_metros_tunnels():
     st.markdown("---")
 
     if st.button(t("run_button", lang), type="primary", width="stretch"):
-        result = calculate_underground_kinetic_risk(
+        result = assess("underground",
             ambient_temp=ambient_temp,
             geothermal_humidity=geothermal_humidity,
             particulate_matter_pm25=pm25,
@@ -2372,7 +2387,7 @@ def render_metros_tunnels():
         render_risk_matrix_breakdown(st, result, lang)
         applied_controls = render_applied_controls_selector(st, controls, lang, key_suffix=result.get("module", ""))
         if result.get("risk_matrix"):
-            residual_matrix = apply_controls_residual_risk(result["risk_matrix"], len(applied_controls))
+            residual_matrix = residual_risk_for(result, applied_controls)
             render_residual_risk_comparison(st, result["risk_matrix"], residual_matrix, lang)
         render_official_report(st, result=result, narrative=narrative, controls=controls, lang=lang, evidence=build_evidence_traceability(st, result, data_mode, st.session_state.get("sensor_equipment_model", "")))
 
@@ -2467,7 +2482,7 @@ def render_high_rise():
     st.markdown("---")
 
     if st.button(t("run_button", lang), type="primary", width="stretch"):
-        result = calculate_high_rise_kinetic_risk(
+        result = assess("high_rise",
             ground_wind_speed_knots=ground_wind_speed_knots,
             floor_level=floor_level,
             crane_load_mass_tons=crane_load_mass_tons,
@@ -2534,7 +2549,7 @@ def render_high_rise():
         render_risk_matrix_breakdown(st, result, lang)
         applied_controls = render_applied_controls_selector(st, controls, lang, key_suffix=result.get("module", ""))
         if result.get("risk_matrix"):
-            residual_matrix = apply_controls_residual_risk(result["risk_matrix"], len(applied_controls))
+            residual_matrix = residual_risk_for(result, applied_controls)
             render_residual_risk_comparison(st, result["risk_matrix"], residual_matrix, lang)
         render_official_report(st, result=result, narrative=narrative, controls=controls, lang=lang, evidence=build_evidence_traceability(st, result, data_mode, st.session_state.get("sensor_equipment_model", "")))
 
@@ -2662,7 +2677,7 @@ def render_data_centers():
     st.markdown("---")
 
     if st.button(t("run_button", lang), type="primary", width="stretch"):
-        result = calculate_datacenter_kinetic_risk(
+        result = assess("data_center",
             electrical_load_kw=electrical_load_kw,
             hot_aisle_temp=hot_aisle_temp,
             ceiling_void_confined=ceiling_void_confined,
@@ -2738,7 +2753,7 @@ def render_data_centers():
         render_risk_matrix_breakdown(st, result, lang)
         applied_controls = render_applied_controls_selector(st, controls, lang, key_suffix=result.get("module", ""))
         if result.get("risk_matrix"):
-            residual_matrix = apply_controls_residual_risk(result["risk_matrix"], len(applied_controls))
+            residual_matrix = residual_risk_for(result, applied_controls)
             render_residual_risk_comparison(st, result["risk_matrix"], residual_matrix, lang)
         render_official_report(st, result=result, narrative=narrative, controls=controls, lang=lang, evidence=build_evidence_traceability(st, result, data_mode, st.session_state.get("sensor_equipment_model", "")))
 
@@ -2814,7 +2829,7 @@ def render_wind_energy():
     st.markdown("---")
 
     if render_critical_action_button(t("run_button", lang), key="windenergy_run"):
-        result = calculate_wind_energy_kinetic_risk(
+        result = assess("wind_energy",
             hub_height_wind_speed_ms=hub_height_wind_speed_ms,
             is_offshore=is_offshore,
             significant_wave_height_m=significant_wave_height_m,
@@ -2869,7 +2884,7 @@ def render_wind_energy():
         render_risk_matrix_breakdown(st, result, lang)
         applied_controls = render_applied_controls_selector(st, controls, lang, key_suffix=result.get("module", ""))
         if result.get("risk_matrix"):
-            residual_matrix = apply_controls_residual_risk(result["risk_matrix"], len(applied_controls))
+            residual_matrix = residual_risk_for(result, applied_controls)
             render_residual_risk_comparison(st, result["risk_matrix"], residual_matrix, lang)
         render_official_report(st, result=result, narrative=narrative, controls=controls, lang=lang, evidence=build_evidence_traceability(st, result, data_mode, st.session_state.get("sensor_equipment_model", "")))
 
@@ -2928,7 +2943,7 @@ def render_mining_quarrying():
     st.markdown("---")
 
     if render_critical_action_button(t("run_button", lang), key="mining_run"):
-        result = calculate_mining_quarrying_kinetic_risk(
+        result = assess("mining_quarrying",
             respirable_silica_ugm3=respirable_silica_ugm3,
             measured_noise_dba=measured_noise_dba,
             noise_exposure_hours=noise_exposure_hours,
@@ -2985,7 +3000,7 @@ def render_mining_quarrying():
         render_risk_matrix_breakdown(st, result, lang)
         applied_controls = render_applied_controls_selector(st, controls, lang, key_suffix=result.get("module", ""))
         if result.get("risk_matrix"):
-            residual_matrix = apply_controls_residual_risk(result["risk_matrix"], len(applied_controls))
+            residual_matrix = residual_risk_for(result, applied_controls)
             render_residual_risk_comparison(st, result["risk_matrix"], residual_matrix, lang)
         render_official_report(st, result=result, narrative=narrative, controls=controls, lang=lang, evidence=build_evidence_traceability(st, result, "manual", st.session_state.get("sensor_equipment_model", "")))
 
@@ -3042,7 +3057,7 @@ def render_marine_port_construction():
     st.markdown("---")
 
     if render_critical_action_button(t("run_button", lang), key="marineport_run"):
-        result = calculate_marine_port_kinetic_risk(
+        result = assess("marine_port",
             current_tide_level_m=current_tide_level_m,
             required_min_clearance_m=required_min_clearance_m,
             is_night_operation=is_night_operation,
@@ -3096,7 +3111,7 @@ def render_marine_port_construction():
         render_risk_matrix_breakdown(st, result, lang)
         applied_controls = render_applied_controls_selector(st, controls, lang, key_suffix=result.get("module", ""))
         if result.get("risk_matrix"):
-            residual_matrix = apply_controls_residual_risk(result["risk_matrix"], len(applied_controls))
+            residual_matrix = residual_risk_for(result, applied_controls)
             render_residual_risk_comparison(st, result["risk_matrix"], residual_matrix, lang)
         render_official_report(st, result=result, narrative=narrative, controls=controls, lang=lang, evidence=build_evidence_traceability(st, result, "manual", st.session_state.get("sensor_equipment_model", "")))
 
