@@ -42,6 +42,7 @@ ENV PATH=/opt/venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     STREAMLIT_BROWSER_GATHER_USAGE_STATS=false \
+    MAKU_ENV=production \
     MAKU_DB_PATH=/app/data/maku_site_data.db
 
 WORKDIR /app
@@ -51,8 +52,9 @@ RUN mkdir -p /app/data && chown maku:maku /app/data && chmod +x /app/docker-entr
 USER maku
 EXPOSE 8501
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD curl -fsS http://127.0.0.1:8501/_stcore/health || exit 1
+# Healthy only when the web server AND the PostgreSQL database answer.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD python /app/scripts/healthcheck.py || exit 1
 
 ENTRYPOINT ["/usr/bin/tini", "--", "/app/docker-entrypoint.sh"]
 CMD ["streamlit", "run", "app.py", "--server.enableCORS=true"]

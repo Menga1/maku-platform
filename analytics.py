@@ -53,10 +53,18 @@ DATABASE_URL at a real hosted Postgres/Supabase instance is what actually
 makes the history survive a redeploy - and needs no other file in this
 app to change, by design.
 
-If the database can't be opened or written for any reason (read-only
-filesystem, disk full, locked, Postgres unreachable), every write/read
-here degrades gracefully to the previous pure-session_state behavior
-rather than crashing the page - see _db_ok().
+STRICT PRODUCTION MODE (MAKU_ENV=production|staging, set by the Docker
+image - see db.py): only PostgreSQL is allowed. A missing or non-PostgreSQL
+DATABASE_URL, an unreachable server, or a schema that has not been migrated
+to SCHEMA_REVISION all put this module into the fatal state; nothing is ever
+written to SQLite or session_state, the failure is logged at CRITICAL, and
+app.py stops every page with an explicit error (ui_helpers.render_database_
+gate). probe_database() clears the fatal state again once the SAME
+configured database answers - recovery, never substitution.
+
+Outside strict mode (development / demo / tests) with no DATABASE_URL, a
+local SQLite file is the intended store; if it cannot be opened, this file
+degrades to the per-session in-memory log - see _db_ok().
 
 SESSION-SCOPED VIEW vs ALL-TIME HISTORY:
 get_log_dataframe()/monthly_summary()/build_monthly_excel() keep their
@@ -100,6 +108,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import logging
 import os
 import sqlite3
 import threading
@@ -116,6 +125,8 @@ from openpyxl import load_workbook
 warnings.filterwarnings("ignore", message="pandas only supports SQLAlchemy connectable")
 
 import db as _db
+
+logger = logging.getLogger("maku.analytics")
 from openpyxl.chart import LineChart, Reference
 
 LOG_SESSION_KEY = "assessment_log"          # legacy in-memory fallback store
@@ -131,6 +142,12 @@ DEFAULT_PROJECT = "Default Project"
 CRITICAL_DB_ERROR_MESSAGE = (
     "CRITICAL DATABASE ERROR: Persistent connection lost. Manual verification required."
 )
+
+# Alembic revision the code expects (migrations/versions). In strict mode the
+# app refuses to use a database whose alembic_version differs - run
+# `python scripts/init_db.py` (or `alembic upgrade head`) to migrate.
+SCHEMA_REVISION = "0001_baseline"
+PROBE_INTERVAL_SECONDS = 5.0
 
 DB_PATH = os.environ.get("MAKU_DB_PATH", "maku_site_data.db")
 DATABASE_URL = (os.environ.get("DATABASE_URL") or os.environ.get("MAKU_DATABASE_URL") or "").strip()
@@ -223,14 +240,19 @@ def _disable_db(reason: str = "") -> None:
 
 
 def _disable_db_fatal(reason: str) -> None:
-    """FAIL-FAST path (P0): a Postgres/Supabase backend was explicitly
-    configured via DATABASE_URL and could not be reached. Freezes the
-    database layer entirely - callers must NOT fall through to SQLite or
-    session_state after this is set. See is_db_fatal()."""
+    """FAIL-FAST path (P0): the configured production database is missing,
+    misconfigured, unreachable or not migrated. Freezes the database layer
+    entirely - callers must NOT fall through to SQLite or session_state
+    after this is set. Logged at CRITICAL once per distinct reason, so the
+    server log always shows why the application stopped. See is_db_fatal()."""
     global _DB_DISABLED, _DB_FATAL
+    already = _DB_FATAL and _BACKEND_WARNING == reason
     _DB_DISABLED = True
     _DB_FATAL = True
     _set_backend_warning(reason)
+    if not already:
+        logger.critical("%s | MAKU_ENV=%s | database=%s", reason, _db.maku_env(),
+                        _db.redact_url(DATABASE_URL) if DATABASE_URL else "<not configured>")
 
 
 def _handle_db_failure(exc: Exception, context: str) -> None:
@@ -242,8 +264,8 @@ def _handle_db_failure(exc: Exception, context: str) -> None:
     here, not a fallback from Postgres, so keeping the app usable via
     session_state in that specific case is not the "silent redirect" the
     directive is about)."""
-    if DATABASE_URL and _is_postgres_url(DATABASE_URL):
-        _disable_db_fatal(f"{CRITICAL_DB_ERROR_MESSAGE} ({context}: {exc})")
+    if _db.strict_persistence() or (DATABASE_URL and _is_postgres_url(DATABASE_URL)):
+        _disable_db_fatal(f"{CRITICAL_DB_ERROR_MESSAGE} ({context}: {exc.__class__.__name__}: {exc})")
     else:
         _disable_db(f"Could not reach the database ({context}) - reverting to this "
                      "session's in-memory log only.")
@@ -259,6 +281,7 @@ def reset_fatal_state_for_testing() -> None:
     _DB_DISABLED = False
     _DB_FATAL = False
     _BACKEND_WARNING = None
+    _LAST_PROBE["at"] = 0.0
 
 
 def _set_backend_warning(message: str) -> None:
@@ -272,6 +295,8 @@ def get_backend_status() -> dict:
     raises - safe to call at any time, including before any connection has
     been attempted (resolved_backend is None until then)."""
     return {
+        "environment": _db.maku_env(),
+        "strict": _db.strict_persistence(),
         "configured_database_url_present": bool(DATABASE_URL),
         "resolved_backend": _RESOLVED_BACKEND,
         "disabled": _DB_DISABLED,
@@ -341,6 +366,7 @@ def _resolve_backend():
     on the next call without restarting the process (once the process
     isn't already latched into the fatal state - see is_db_fatal())."""
     global _RESOLVED_BACKEND
+    _db.require_production_database(DATABASE_URL)  # strict mode: PostgreSQL or ProductionConfigError
     if DATABASE_URL and _is_postgres_url(DATABASE_URL):
         backend = _PostgresBackend(DATABASE_URL)  # raises ImportError if psycopg2 is missing
         _RESOLVED_BACKEND = "postgres"
@@ -572,7 +598,8 @@ _SCHEMA_LOCK = threading.Lock()
 def _existing_columns(conn: "_Connection", table: str) -> set[str]:
     if conn.dialect == "postgres":
         cur = conn.execute(
-            "SELECT column_name FROM information_schema.columns WHERE table_name = ?", (table,)
+            "SELECT column_name FROM information_schema.columns WHERE table_name = ? "
+            "AND table_schema = current_schema()", (table,)
         )
         return {row[0] for row in cur.fetchall()}
     cur = conn.execute(f"PRAGMA table_info({table})")
@@ -612,7 +639,12 @@ def _get_connection() -> _Connection:
         with _SCHEMA_LOCK:
             if backend.key not in _SCHEMA_READY:
                 try:
-                    ensure_schema(conn)
+                    if _db.strict_persistence():
+                        # Production never creates or alters tables on the fly:
+                        # the schema must have been migrated explicitly.
+                        verify_schema_revision(conn)
+                    else:
+                        ensure_schema(conn)
                     raw.commit()
                 except Exception:
                     raw.rollback()
@@ -620,6 +652,67 @@ def _get_connection() -> _Connection:
                     raise
                 _SCHEMA_READY.add(backend.key)
     return conn
+
+
+class SchemaNotMigratedError(RuntimeError):
+    """The database exists but is not at SCHEMA_REVISION."""
+
+
+def current_schema_revision(conn: "_Connection") -> str | None:
+    """alembic_version of this database, or None if it was never migrated."""
+    try:
+        if conn.dialect == "postgres":
+            cur = conn.execute("SELECT to_regclass('alembic_version') IS NOT NULL")
+            if not cur.fetchone()[0]:
+                return None
+        else:
+            cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='alembic_version'")
+            if cur.fetchone() is None:
+                return None
+        cur = conn.execute("SELECT version_num FROM alembic_version")
+        row = cur.fetchone()
+        return row[0] if row else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def verify_schema_revision(conn: "_Connection") -> None:
+    found = current_schema_revision(conn)
+    if found != SCHEMA_REVISION:
+        raise SchemaNotMigratedError(
+            f"Database schema is at revision {found or 'none'}, application requires {SCHEMA_REVISION}. "
+            "Run `python scripts/init_db.py` to migrate.")
+
+
+_LAST_PROBE: dict[str, float] = {"at": 0.0}
+
+
+def probe_database(force: bool = False) -> dict:
+    """Checks that the configured database answers (SELECT 1), at most once
+    every PROBE_INTERVAL_SECONDS per process unless force=True. A success
+    while in the fatal state clears it - the SAME configured database is
+    back, so this is recovery, not a fallback. Returns get_backend_status().
+    Called by app.py before every page render (ui_helpers.render_database_gate)."""
+    import time as _time
+    global _DB_DISABLED, _DB_FATAL, _BACKEND_WARNING
+    now = _time.monotonic()
+    if not force and now - _LAST_PROBE["at"] < PROBE_INTERVAL_SECONDS:
+        return get_backend_status()
+    _LAST_PROBE["at"] = now
+    if _DB_DISABLED and not _DB_FATAL:
+        return get_backend_status()  # non-strict local degrade: nothing to probe
+    try:
+        with _get_connection() as conn:
+            conn.execute("SELECT 1").fetchone()
+    except Exception as exc:  # noqa: BLE001
+        _handle_db_failure(exc, "probe_database")
+        return get_backend_status()
+    if _DB_FATAL:
+        logger.warning("Database available again (%s) - leaving the fatal state", _RESOLVED_BACKEND)
+        _DB_DISABLED = False
+        _DB_FATAL = False
+        _BACKEND_WARNING = None
+    return get_backend_status()
 
 
 def _get_or_create_id(conn: "_Connection", table: str, unique_cols: dict, name_col: str, name_value: str) -> int:
