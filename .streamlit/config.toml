@@ -1,0 +1,29 @@
+[client]
+showSidebarNavigation = true
+# Hide the Streamlit developer menu/toolbar for end users.
+toolbarMode = "minimal"
+showErrorDetails = "none"
+
+[server]
+headless = true
+port = 8501
+address = "0.0.0.0"
+# TLS terminates at Caddy; Streamlit only listens on the private network.
+# CORS ON: only the MAKU domain may call the server / open its WebSocket.
+# The allowed origin and hosts are written per deployment from MAKU_DOMAIN by
+# configure_streamlit.py (run by docker-entrypoint.sh) into ~/.streamlit/config.toml.
+enableCORS = true
+enableXsrfProtection = true
+maxUploadSize = 10
+enableStaticServing = false
+fileWatcherType = "none"
+runOnSave = false
+
+[browser]
+gatherUsageStats = false
+
+[logger]
+level = "info"
+
+[theme]
+primaryColor = "#0c5c63"

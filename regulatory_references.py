@@ -361,37 +361,37 @@ FORMULA_STANDARDS_MAP: list[dict] = [
     },
     {
         "function": "lee_arc_flash_incident_energy()",
-        "module": "Data Center (reference implementation; not the one actually called by the module below)",
-        "formula_summary": "IE = 2.142e3 * V(kV) * Isc(kA) * t(s) / D(mm)^2  [cal/cm2]",
+        "module": "Data Center (Controlled Critical Environment)",
+        "formula_summary": "IE = 5.12e5 * V(kV) * Ibf(kA) * t(s) / D(mm)^2  [cal/cm2] "
+                            "(= 2.142e6 J/cm2 / 4.184)",
         "cited_standards": ["Ralph Lee open-air arc-flash incident-energy approximation"],
         "validation_status": "Adapted / approximated",
-        "caveat": "A widely-published order-of-magnitude screening method - explicitly NOT a substitute for a "
+        "caveat": "A widely-published, conservative screening method - explicitly NOT a substitute for a "
                   "full IEEE 1584 arc-flash study before authorizing live electrical work.",
     },
     {
         "function": "calculate_datacenter_kinetic_risk() arc_flash_energy_cal",
         "module": "Data Center (Controlled Critical Environment)",
-        "formula_summary": "arc_flash_energy_cal = 2.5 * (electrical_load_kw / 100.0)^2 - a simplified, "
-                            "load-only proxy, NOT the Lee formula above",
-        "cited_standards": ["None - does not implement IEEE 1584 or the Ralph Lee formula"],
-        "validation_status": "Illustrative (not standards-derived)",
-        "caveat": "Uses a tuned illustrative coefficient because only electrical_load_kw is collected in this "
-                  "MVP (not voltage/fault-current/clearing-time/working-distance). A genuine IEEE 1584 arc-flash "
-                  "study - or lee_arc_flash_incident_energy() above, once those parameters are wired in - is "
-                  "required before authorizing live work near this equipment. Do not cite this figure as an "
-                  "IEEE 1584 or Ralph Lee result.",
+        "formula_summary": "Best available source: (1) incident energy from the equipment arc-flash label, "
+                            "(2) Lee screening calculation from voltage, bolted fault current, clearing time "
+                            "and working distance, (3) otherwise UNKNOWN (no number is invented). Electrical "
+                            "load (kW) is not used.",
+        "cited_standards": ["NFPA 70E incident-energy PPE selection", "Ralph Lee approximation"],
+        "validation_status": "Adapted / approximated",
+        "caveat": "A label value is only as current as the site's IEEE 1584 arc-flash study. A Lee value is a "
+                  "screening figure, not an IEEE 1584 result. When neither is available the module reports "
+                  "'study required' and blocks energized work rather than estimating.",
     },
     {
         "function": "calculate_high_rise_kinetic_risk() scaled_wind_speed",
         "module": "High-Rise (Vertical Urban)",
-        "formula_summary": "scaled_wind_speed = ground_wind_speed_knots * exp(0.008 * floor_level)",
-        "cited_standards": ["None - not a certified structural wind-loading calculation"],
-        "validation_status": "Illustrative (not standards-derived)",
-        "caveat": "This file's own module-level docstring loosely describes this as a 'wind power-law profile', "
-                  "but the implementation is an EXPONENTIAL growth curve, not the power-law form ASCE 7 / "
-                  "Eurocode 1 atmospheric boundary-layer wind profiles actually use (v(z) = v_ref*(z/z_ref)^alpha). "
-                  "This entry corrects that imprecision for auditors relying on this table: treat the wind-with-"
-                  "height scaling as an illustrative screening heuristic, not a cited standard calculation.",
+        "formula_summary": "V(z) = V_10m * (z / 10 m) ** alpha, z = floor_level * floor_height; alpha by terrain "
+                            "(ASCE 7 Exposure D 0.11, C 0.15, B 0.25; dense city centre 0.33). A measured "
+                            "working-height anemometer reading overrides the model.",
+        "cited_standards": ["Atmospheric boundary-layer power law (form used by ASCE 7 / Eurocode 1 wind profiles)"],
+        "validation_status": "Adapted / approximated",
+        "caveat": "Mean-wind profile only - not a certified structural wind-loading or gust-factor calculation. "
+                  "Crane manufacturer wind limits at hook height always take precedence.",
     },
     {
         "function": "corroded_capacity_pct()",

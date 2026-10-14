@@ -20,6 +20,8 @@ is written to reflect that distinction, not just to restate the numbers.
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import logging
 import os
 import queue
 import threading
@@ -28,6 +30,70 @@ import requests
 import streamlit as st
 
 from regulatory_references import get_references, get_further_reading
+
+logger = logging.getLogger("maku.ai_advisor")
+
+
+# ---------------------------------------------------------------------------
+# Error hygiene (production hardening)
+# ---------------------------------------------------------------------------
+# 1. Failures are NEVER cached: the cached layer only ever stores successful
+#    model output; any failure raises NarrativeUnavailable *inside* the
+#    cached function, and st.cache_data never stores a raised call.
+# 2. Users never see raw exception text (URLs, status bodies, key
+#    fragments). They see a short localized notice keyed by failure kind;
+#    the technical detail goes to the server log only.
+# 3. Each API key gets its own cache entry (via a one-way fingerprint), so
+#    nobody receives a narrative paid for by a different key, and an
+#    invalid key cannot ride on another key's cached result.
+# 4. Background generation is capped by a process-wide semaphore.
+class NarrativeUnavailable(RuntimeError):
+    """Raised by the low-level request helpers. `.kind` is one of
+    'network', 'timeout', 'auth', 'rate_limit', 'empty_response', 'other'."""
+
+    def __init__(self, kind: str) -> None:
+        super().__init__(kind)
+        self.kind = kind
+
+
+_AI_UNAVAILABLE_NOTES = {
+    "en": {
+        "rate_limit": "AI briefing is busy right now (rate limit). The rule-based briefing above is complete and valid.",
+        "timeout": "AI briefing timed out on a slow connection. The rule-based briefing above is complete and valid.",
+        "network": "AI briefing unavailable - no network connection. The rule-based briefing above is complete and valid.",
+        "auth": "AI briefing unavailable - the AI service key was rejected. Contact your MAKU administrator.",
+        "other": "AI briefing temporarily unavailable. The rule-based briefing above is complete and valid.",
+    },
+    "fr": {
+        "rate_limit": "Briefing IA momentan\u00e9ment satur\u00e9 (limite de d\u00e9bit). Le briefing r\u00e9glementaire ci-dessus est complet et valide.",
+        "timeout": "Le briefing IA a expir\u00e9 (connexion lente). Le briefing r\u00e9glementaire ci-dessus est complet et valide.",
+        "network": "Briefing IA indisponible - pas de connexion r\u00e9seau. Le briefing r\u00e9glementaire ci-dessus est complet et valide.",
+        "auth": "Briefing IA indisponible - cl\u00e9 du service IA refus\u00e9e. Contactez votre administrateur MAKU.",
+        "other": "Briefing IA temporairement indisponible. Le briefing r\u00e9glementaire ci-dessus est complet et valide.",
+    },
+    "ar": {
+        "rate_limit": "\u0645\u0644\u062e\u0635 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a \u0645\u0634\u063a\u0648\u0644 \u062d\u0627\u0644\u064a\u0627\u064b. \u0627\u0644\u0645\u0644\u062e\u0635 \u0627\u0644\u0642\u0627\u0626\u0645 \u0639\u0644\u0649 \u0627\u0644\u0642\u0648\u0627\u0639\u062f \u0623\u0639\u0644\u0627\u0647 \u0643\u0627\u0645\u0644 \u0648\u0635\u0627\u0644\u062d.",
+        "other": "\u0645\u0644\u062e\u0635 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a \u063a\u064a\u0631 \u0645\u062a\u0627\u062d \u0645\u0624\u0642\u062a\u0627\u064b. \u0627\u0644\u0645\u0644\u062e\u0635 \u0627\u0644\u0642\u0627\u0626\u0645 \u0639\u0644\u0649 \u0627\u0644\u0642\u0648\u0627\u0639\u062f \u0623\u0639\u0644\u0627\u0647 \u0643\u0627\u0645\u0644 \u0648\u0635\u0627\u0644\u062d.",
+    },
+}
+
+
+def ai_unavailable_note(lang: str, kind: str) -> str:
+    """Short, user-safe, localized notice for an AI failure kind."""
+    notes = _AI_UNAVAILABLE_NOTES.get(lang, _AI_UNAVAILABLE_NOTES["en"])
+    return notes.get(kind) or notes.get("other") or _AI_UNAVAILABLE_NOTES["en"]["other"]
+
+
+def api_key_fingerprint(api_key: str | None) -> str:
+    """One-way 16-hex-char fingerprint: separates cache entries per key
+    without ever storing the key itself in Streamlit's cache bookkeeping."""
+    if not api_key:
+        return ""
+    return hashlib.sha256(api_key.encode("utf-8")).hexdigest()[:16]
+
+
+_AI_MAX_CONCURRENT_JOBS = max(1, int(os.environ.get("MAKU_AI_MAX_CONCURRENT_JOBS", "4") or 4))
+_AI_JOB_SLOTS = threading.BoundedSemaphore(_AI_MAX_CONCURRENT_JOBS)
 
 def _resolve_ai_config() -> dict:
     """
@@ -260,9 +326,18 @@ def data_center_controls(result: dict) -> list:
     controls = []
     if result["arc_flash_danger"]:
         controls.append(
-            "DANGER: arc-flash incident energy exceeds max PPE rating at this load - "
+            "DANGER: arc-flash incident energy exceeds 40 cal/cm2 - "
             "de-energize equipment before any work; no PPE category permits live work"
         )
+    if result.get("arc_flash_study_required") and result.get("energized_work_planned", True):
+        controls.append(
+            "Arc-flash incident energy is UNKNOWN: no energized work until the equipment's arc-flash "
+            "label or a current arc-flash study (IEEE 1584) confirms incident energy and the required arc rating; "
+            "otherwise establish an electrically safe work condition (lock-out/tag-out, test before touch)"
+        )
+    elif result.get("arc_flash_ppe") and not result["arc_flash_danger"] and result.get("arc_flash_energy_cal"):
+        controls.append(f"Arc-flash PPE for energized work: {result['arc_flash_ppe']} "
+                        f"(source: {result.get('arc_flash_source', 'n/a')})")
     if result["confined_armed_danger"]:
         controls.append(
             "Confined ceiling-void space + armed clean-agent suppression: disarm/isolate "
@@ -587,7 +662,23 @@ def generate_narrative(
     """
     if not api_key:
         return _fallback_narrative(result, controls, lang)
+    try:
+        return _request_narrative_text(result, controls, api_key, lang, enable_web_search, worker_strain_summary)
+    except NarrativeUnavailable as exc:
+        return _fallback_narrative(result, controls, lang) + "\n\n" + ai_unavailable_note(lang, exc.kind)
 
+
+def _request_narrative_text(
+    result: dict,
+    controls: list,
+    api_key: str,
+    lang: str,
+    enable_web_search: bool,
+    worker_strain_summary: list[dict] | None,
+) -> str:
+    """One live Anthropic call. Returns model text, or RAISES
+    NarrativeUnavailable - it never returns a fallback/error string, which
+    is what makes it safe to wrap in st.cache_data."""
     prompt, extra = _build_narrative_request(result, controls, lang, enable_web_search, worker_strain_summary)
     request_body = {
         "model": MODEL,
@@ -595,7 +686,6 @@ def generate_narrative(
         "messages": [{"role": "user", "content": prompt}],
         **extra,
     }
-
     try:
         resp = requests.post(
             ANTHROPIC_URL,
@@ -609,41 +699,57 @@ def generate_narrative(
         )
         resp.raise_for_status()
         data = resp.json()
-        text_parts = [b["text"] for b in data.get("content", []) if b.get("type") == "text"]
-        return "\n".join(text_parts).strip() or _fallback_narrative(result, controls, lang)
-    except Exception as e:
-        return _fallback_narrative(result, controls, lang) + f"\n\n[AI narrative unavailable: {e}]"
+    except Exception as exc:  # noqa: BLE001
+        kind = classify_api_error(exc)
+        logger.warning("Anthropic narrative request failed (%s): %s", kind, exc)
+        raise NarrativeUnavailable(kind) from exc
+    text_parts = [b["text"] for b in data.get("content", []) if b.get("type") == "text"]
+    text = "\n".join(text_parts).strip()
+    if not text:
+        logger.warning("Anthropic narrative request returned no text")
+        raise NarrativeUnavailable("empty_response")
+    return text
 
 
-@st.cache_data(ttl=NARRATIVE_CACHE_TTL_SECONDS, show_spinner=False)
+@st.cache_data(ttl=NARRATIVE_CACHE_TTL_SECONDS, show_spinner=False, max_entries=500)
+def _narrative_success_cached(
+    result: dict,
+    controls: list,
+    key_fingerprint: str,
+    lang: str,
+    enable_web_search: bool,
+    worker_strain_summary: list[dict] | None,
+    _api_key: str,
+) -> str:
+    """Caches SUCCESSFUL model output only (see _request_narrative_text).
+    key_fingerprint is part of the cache key; the raw key (_api_key) is not."""
+    return _request_narrative_text(result, controls, _api_key, lang, enable_web_search, worker_strain_summary)
+
+
 def generate_narrative_cached(
     result: dict,
     controls: list,
-    _api_key: str,
+    _api_key: str | None,
     lang: str = "fr",
     enable_web_search: bool = False,
     worker_strain_summary: list[dict] | None = None,
 ) -> str:
     """
-    Performance layer: identical contract to generate_narrative(), wrapped
-    in st.cache_data with a 30-minute TTL so repeated identical requests
-    (same site result/controls/language/jurisdiction/worker-strain
-    snapshot within that window) return instantly with zero redundant
-    Anthropic API calls - directly answers "prevent redundant commercial
-    LLM calls if site weather/scores haven't changed".
-
-    The api_key parameter is named with a leading underscore (Streamlit's
-    documented convention for "use this value, but don't hash it into the
-    cache key") - the narrative text a given (result, controls, lang,
-    worker_strain_summary) combination produces doesn't depend on which
-    valid key paid for the call, and excluding it also avoids ever
-    embedding a partial key into Streamlit's cache-key bookkeeping.
-
-    This is the NON-streaming path - see generate_narrative_stream_chunks()
-    for the live token-by-token rendering path, which deliberately always
-    calls the API fresh (caching a stream the user is actively watching
-    token-by-token defeats the point of showing it as a stream)."""
-    return generate_narrative(result, controls, _api_key, lang, enable_web_search, worker_strain_summary)
+    Same contract as generate_narrative() (always returns a string, never
+    raises), with a 30-minute cache of successful responses per
+    (inputs, API-key fingerprint). A 429/timeout/network failure is never
+    cached: the next request retries the API instead of replaying an error
+    to every user for half an hour.
+    """
+    if not _api_key:
+        return _fallback_narrative(result, controls, lang)
+    try:
+        return _narrative_success_cached(
+            result, controls, api_key_fingerprint(_api_key), lang, enable_web_search,
+            worker_strain_summary, _api_key,
+        )
+    except NarrativeUnavailable as exc:
+        return _fallback_narrative(result, controls, lang) + "\n\n" + ai_unavailable_note(lang, exc.kind)
 
 
 # ---------------------------------------------------------------------------
@@ -697,7 +803,9 @@ def generate_narrative_stream_chunks(
         if not got_any_text:
             yield _fallback_narrative(result, controls, lang)
     except Exception as e:  # noqa: BLE001 - never let a streaming failure blank the page
-        yield _fallback_narrative(result, controls, lang) + f"\n\n[AI narrative unavailable: {e}]"
+        kind = classify_api_error(e)
+        logger.warning("Anthropic streaming request failed (%s): %s", kind, e)
+        yield "\n\n" + _fallback_narrative(result, controls, lang) + "\n\n" + ai_unavailable_note(lang, kind)
 
 
 # ---------------------------------------------------------------------------
@@ -730,6 +838,8 @@ class NarrativeStreamJob:
     def __init__(self) -> None:
         self._queue: "queue.Queue[str]" = queue.Queue()
         self.done = False
+        # A failure KIND ('rate_limit', 'timeout', ...) - never raw exception
+        # text, so nothing technical can leak into the UI from here.
         self.error: str | None = None
         self.full_text = ""
 
@@ -766,9 +876,11 @@ def _run_stream_worker(job: NarrativeStreamJob, prompt: str, extra: dict, api_ke
     try:
         asyncio.run(_consume())
     except Exception as e:  # noqa: BLE001 - surfaced to the poller, never crashes the thread silently
-        job.error = str(e)
+        job.error = classify_api_error(e)
+        logger.warning("Background narrative job failed (%s): %s", job.error, e)
     finally:
         job.done = True
+        _AI_JOB_SLOTS.release()
 
 
 def start_narrative_background_job(
@@ -790,10 +902,19 @@ def start_narrative_background_job(
     """
     if not api_key or not ANTHROPIC_SDK_AVAILABLE:
         return None
-    prompt, extra = _build_narrative_request(result, controls, lang, enable_web_search, worker_strain_summary)
-    job = NarrativeStreamJob()
-    thread = threading.Thread(target=_run_stream_worker, args=(job, prompt, extra, api_key), daemon=True)
-    thread.start()
+    # Concurrency cap: when every slot is busy, return None so the caller
+    # uses the synchronous cached path instead of piling up threads.
+    if not _AI_JOB_SLOTS.acquire(blocking=False):
+        logger.info("AI background job cap (%s) reached - using synchronous path", _AI_MAX_CONCURRENT_JOBS)
+        return None
+    try:
+        prompt, extra = _build_narrative_request(result, controls, lang, enable_web_search, worker_strain_summary)
+        job = NarrativeStreamJob()
+        thread = threading.Thread(target=_run_stream_worker, args=(job, prompt, extra, api_key), daemon=True)
+        thread.start()
+    except Exception:  # noqa: BLE001 - never leak a slot if the thread could not start
+        _AI_JOB_SLOTS.release()
+        raise
     return job
 
 

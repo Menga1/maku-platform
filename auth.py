@@ -1,117 +1,68 @@
 """
-MAKU - Authentication utility
-==============================
-A minimal login gate for app.py. Renders a centered French-language login
-form ("Identifiant" / "Mot de passe" / "Se connecter") and blocks all
-further script execution (st.stop()) until the credentials match.
+MAKU - Authentication, privacy consent and account self-service
+================================================================
+Login gate for app.py plus the account pages required by the app stores
+(Apple 5.1.1(v), Google Play account-deletion policy) and by GDPR / UAE PDPL.
 
-SECURITY MODEL - FAIL CLOSED, NO HARDCODED CREDENTIALS:
-There is no hardcoded username/password anywhere in this file, and none
-is generated. Credentials are resolved ONLY from configuration external to
-this source file, in this order:
-
-  1. st.secrets["auth"]["users"] - a TOML table of {username: password}
-     (or {username: "sha256:<hex digest>"} for a hashed password) for
-     multiple accounts. See .streamlit/secrets.toml.example.
-  2. st.secrets["auth"]["username"] / ["password"] - single-account form,
-     kept for backward compatibility with the original secrets layout.
-  3. MAKU_AUTH_USERS environment variable - a JSON object, same shape as
-     (1), for deployments that inject config via environment rather than
-     Streamlit secrets (e.g. a container platform).
-  4. MAKU_AUTH_USERNAME / MAKU_AUTH_PASSWORD environment variables -
-     single-account form of (3).
-
-If NONE of the above resolves to at least one configured account, this
-module refuses to render a login form at all - it fails CLOSED (shows a
-configuration-error screen and st.stop()s) rather than falling open to
-any default credential. An unconfigured MAKU deployment is inaccessible,
-never insecurely accessible.
-
-PASSWORD COMPARISON - BCRYPT PRIMARY, SHA-256/PLAINTEXT DEPRECATED (P0
-"AUTHENTICATION & CRYPTOGRAPHIC HARDENING"):
-The recommended, secure-at-rest format is "bcrypt:<bcrypt hash>" - a
-proper adaptive, salted hash verified via bcrypt.checkpw(), immune to
-rainbow-table/GPU-cracking attacks that a bare SHA-256 digest is not (a
-single unsalted SHA-256 hash can be brute-forced at billions of guesses/
-second on commodity hardware; bcrypt is deliberately slow and per-hash
-salted, which is what "secure credentials at rest" actually requires).
-Use hash_password("a real password") to generate one for st.secrets/the
-environment.
-
-Two legacy formats are still ACCEPTED for backward compatibility (an
-operator's existing secrets.toml must not suddenly lock everyone out) but
-are now explicitly DEPRECATED, not a supported steady state:
-  - "sha256:<64-hex-char digest>" - a bare, unsalted SHA-256 hash.
-  - A plain value with no prefix at all (raw plaintext in secrets/env).
-Both still authenticate correctly (compared via hmac.compare_digest(), as
-before), but every successful login using either one now (a) logs a
-DEPRECATED_CREDENTIAL_FORMAT audit event and (b) renders a persistent,
-un-dismissable warning/error in the app urging migration to bcrypt - see
-_credential_format()/_warn_if_deprecated_format() and
-render_deprecated_credential_banner(). This is a deliberate "deprecate,
-don't silently strand operators" migration path rather than a hard
-delete: removing support outright would brick any already-deployed
-secrets.toml the moment this file is updated, which is a worse outage
-than a loud warning.
-
-BRUTE-FORCE MITIGATION: a simple per-session failed-attempt counter locks
-the login form for a short cooldown after repeated failures. This is a
-best-effort, single-process/session mitigation, NOT a substitute for a
-real rate limiter or WAF in front of a production deployment - documented
-honestly rather than oversold.
-
-AUDIT TRAIL: every login attempt (success, failure, or lockout) is written
-to analytics.py's hash-chained audit_log via analytics.log_audit_event() -
-see that module for what "tamper-evident" does and doesn't guarantee here.
-Audit logging failures never block or affect the login flow itself (the
-call is wrapped so a database problem can't become an authentication
-bypass OR a denial of service).
-
-This file only handles auth state - no risk math, no UI beyond the login
-form itself.
+SECURITY MODEL
+--------------
+* FAIL CLOSED, NO HARDCODED CREDENTIALS. Accounts come from:
+    1. the database `users` table (accounts.py) - normal staff accounts,
+       created by an administrator in-app or with manage_users.py;
+    2. deployment-managed bootstrap accounts from st.secrets["auth"] or the
+       MAKU_AUTH_USERS / MAKU_AUTH_USERNAME+MAKU_AUTH_PASSWORD environment
+       variables - for the first administrator only.
+  If neither yields an account, no login form is rendered at all.
+* BCRYPT ONLY. Every stored credential must be "bcrypt:<hash>". Plaintext
+  and unsalted "sha256:" values - previously accepted with a warning - are
+  now REJECTED: the login fails and a REJECTED_CREDENTIAL_FORMAT audit event
+  is written. Generate a value with:
+      python3 manage_users.py hash
+* SERVER-SIDE BRUTE-FORCE LOCKOUT. Attempts are recorded in the database
+  (accounts.login_attempts) and evaluated per username AND per client IP,
+  so refreshing the page, opening a new tab, or switching devices does not
+  reset the counter. If the account store is unreachable, login fails
+  closed.
+* Timing-equalized responses for unknown usernames (a real bcrypt check
+  against a decoy hash), session expiry, explicit logout, and every
+  security event written to the hash-chained audit log.
 """
 
 from __future__ import annotations
 
-import hashlib
-import hmac
 import json
+import logging
 import os
 import time
 
-import bcrypt
 import streamlit as st
+
+import accounts
 
 try:
     import analytics as _analytics
 except Exception:  # noqa: BLE001 - auth must never fail to import because analytics did
     _analytics = None
 
-_SHA256_PREFIX = "sha256:"
-_BCRYPT_PREFIX = "bcrypt:"
-MAX_FAILED_ATTEMPTS = 5
-LOCKOUT_SECONDS = 60
-SESSION_TIMEOUT_MINUTES = int(os.environ.get("MAKU_SESSION_TIMEOUT_MINUTES", "480"))  # 8 hours default
+logger = logging.getLogger("maku.auth")
 
+_SHA256_PREFIX = "sha256:"
+_BCRYPT_PREFIX = accounts.BCRYPT_PREFIX
+SESSION_TIMEOUT_MINUTES = int(os.environ.get("MAKU_SESSION_TIMEOUT_MINUTES", "480"))  # 8 hours default
+BOOTSTRAP_ROLE = "admin"
+
+
+# ---------------------------------------------------------------------------
+# Credential helpers
+# ---------------------------------------------------------------------------
 
 def hash_password(plaintext: str) -> str:
-    """Generates a 'bcrypt:<hash>' value ready to paste into
-    st.secrets["auth"]["users"] (or MAKU_AUTH_USERS/MAKU_AUTH_PASSWORD) as
-    a configured credential - the recommended way to provision a password
-    under the P0 'AUTHENTICATION & CRYPTOGRAPHIC HARDENING' directive.
-    Example (run once, offline, to generate a secrets.toml value):
-
-        python3 -c "import auth; print(auth.hash_password('a real password'))"
-
-    Never called by require_login() itself - this is a provisioning
-    utility for whoever manages secrets/environment for a deployment, not
-    part of the login request path."""
-    return _BCRYPT_PREFIX + bcrypt.hashpw(plaintext.encode("utf-8"), bcrypt.gensalt()).decode("ascii")
+    """'bcrypt:<hash>' - paste into st.secrets / MAKU_AUTH_USERS. Provisioning
+    helper; not part of the login request path."""
+    return accounts.hash_password(plaintext)
 
 
 def _credential_format(configured: str) -> str:
-    """Classifies a configured credential value as "bcrypt" (recommended),
-    "sha256" or "plaintext" (both deprecated - see module docstring)."""
     if configured.startswith(_BCRYPT_PREFIX):
         return "bcrypt"
     if configured.startswith(_SHA256_PREFIX):
@@ -140,16 +91,14 @@ def _parse_users_json(raw: str) -> dict[str, str]:
 
 
 def _configured_users() -> dict[str, str]:
-    """Returns {username: password_or_hash} from whichever source is
-    configured, checked in the priority order documented in the module
-    docstring. Returns an empty dict (never raises) if nothing is
-    configured anywhere - the caller (require_login) treats that as a
-    hard configuration error, not as "no login required"."""
+    """Deployment-managed bootstrap accounts {username: credential}, in
+    priority order: st.secrets users table, st.secrets single account,
+    MAKU_AUTH_USERS JSON, MAKU_AUTH_USERNAME/PASSWORD. {} if none."""
     try:
         users = st.secrets["auth"]["users"]
         if users:
             return {str(k): str(v) for k, v in dict(users).items()}
-    except Exception:  # noqa: BLE001 - secrets.toml absent, key absent, wrong shape, etc.
+    except Exception:  # noqa: BLE001
         pass
 
     try:
@@ -175,88 +124,65 @@ def _configured_users() -> dict[str, str]:
 
 
 def _password_matches(configured: str, supplied: str) -> bool:
-    """Verifies `supplied` against `configured`, dispatching on format:
-      - "bcrypt:<hash>" (recommended) - bcrypt.checkpw(), which is itself
-        constant-time and salted/adaptive by construction.
-      - "sha256:<hex>" (deprecated) - constant-time comparison against
-        sha256(supplied), unchanged from the original implementation.
-      - plain value (deprecated) - constant-time comparison against the
-        raw configured value, unchanged from the original implementation.
-    See the module docstring's PASSWORD COMPARISON section for why the
-    latter two are deprecated but still accepted."""
-    if configured.startswith(_BCRYPT_PREFIX):
-        stored_hash = configured[len(_BCRYPT_PREFIX):].strip().encode("utf-8")
-        try:
-            return bcrypt.checkpw(supplied.encode("utf-8"), stored_hash)
-        except ValueError:
-            # Malformed stored hash (e.g. hand-edited secrets.toml) - fail
-            # closed, never treat a bad hash as "no password required".
-            return False
-    if configured.startswith(_SHA256_PREFIX):
-        expected_hex = configured[len(_SHA256_PREFIX):].strip().lower()
-        supplied_hex = hashlib.sha256(supplied.encode("utf-8")).hexdigest()
-        return hmac.compare_digest(expected_hex, supplied_hex)
-    return hmac.compare_digest(configured, supplied)
+    """bcrypt only. Any other stored format fails closed."""
+    if _credential_format(configured) != "bcrypt":
+        return False
+    return accounts.verify_password(configured, supplied)
 
 
-def _warn_if_deprecated_format(username: str, configured_password: str) -> None:
-    """Called only on a SUCCESSFUL login. Audits (once per successful
-    login, not spammed per keystroke) and flags in session_state - for
-    render_deprecated_credential_banner() to surface post-login - when the
-    account that just authenticated is still using a deprecated sha256/
-    plaintext credential format instead of bcrypt. Never blocks or slows
-    the login itself; see module docstring."""
-    fmt = _credential_format(configured_password)
-    if fmt == "bcrypt":
-        st.session_state["_auth_credential_format_warning"] = None
-        return
-    message = (
-        f"Account '{username}' is authenticating with a deprecated "
-        f"{'SHA-256' if fmt == 'sha256' else 'plaintext'} credential format. "
-        "Regenerate this credential with auth.hash_password(...) and store it "
-        "as 'bcrypt:<hash>' in st.secrets/the environment."
-    )
-    st.session_state["_auth_credential_format_warning"] = message
-    _audit(_analytics.AUDIT_EVENT_DEPRECATED_CREDENTIAL_FORMAT if _analytics
-           else "DEPRECATED_CREDENTIAL_FORMAT", actor=username, detail=message)
+def _database_accounts_available() -> bool:
+    try:
+        return bool(accounts.list_users())
+    except accounts.AccountStoreUnavailable:
+        return False
 
 
 def _verify_credentials(username: str, password: str) -> bool:
-    users = _configured_users()
-    configured_password = users.get(username)
-    if configured_password is None:
-        # Still run a dummy constant-time comparison against a fixed
-        # decoy value so a nonexistent username takes the same code path
-        # (and roughly the same time) as a wrong password for a real
-        # username - avoids trivially timing-based username enumeration.
-        hmac.compare_digest("decoy", password)
+    """True when (username, password) matches a database account or a
+    deployment bootstrap account. Sets the session role on success."""
+    username = (username or "").strip()
+
+    # 1. Database-managed account
+    try:
+        user = accounts.get_user(username) if username else None
+    except accounts.AccountStoreUnavailable:
+        user = None
+    if user is not None:
+        ok = accounts.verify_password(user["password_hash"], password)
+        if ok:
+            st.session_state["_auth_role"] = user["role"]
+            st.session_state["_auth_source"] = "database"
+        return ok
+
+    # 2. Deployment-managed bootstrap account
+    configured = _configured_users().get(username)
+    if configured is None:
+        accounts.burn_equal_time(password)
         return False
-    matched = _password_matches(configured_password, password)
-    if matched:
-        _warn_if_deprecated_format(username, configured_password)
-    return matched
+    if _credential_format(configured) != "bcrypt":
+        accounts.burn_equal_time(password)
+        message = (f"Account '{username}' is configured with a rejected "
+                   f"{'SHA-256' if _credential_format(configured) == 'sha256' else 'plaintext'} credential. "
+                   "Only 'bcrypt:<hash>' values are accepted - run `python3 manage_users.py hash`.")
+        logger.error(message)
+        _audit(_analytics.AUDIT_EVENT_REJECTED_CREDENTIAL_FORMAT if _analytics else "REJECTED_CREDENTIAL_FORMAT",
+               actor=username, detail=message)
+        return False
+    ok = accounts.verify_password(configured, password)
+    if ok:
+        st.session_state["_auth_role"] = BOOTSTRAP_ROLE
+        st.session_state["_auth_source"] = "deployment"
+    return ok
 
 
-def _lockout_state() -> tuple[int, float]:
-    attempts = st.session_state.get("_auth_failed_attempts", 0)
-    locked_until = st.session_state.get("_auth_locked_until", 0.0)
-    return attempts, locked_until
-
-
-def _register_failure(username: str) -> None:
-    attempts, _ = _lockout_state()
-    attempts += 1
-    st.session_state["_auth_failed_attempts"] = attempts
-    if attempts >= MAX_FAILED_ATTEMPTS:
-        st.session_state["_auth_locked_until"] = time.time() + LOCKOUT_SECONDS
-        st.session_state["_auth_failed_attempts"] = 0
-        _audit("LOGIN_LOCKOUT" if _analytics is None else _analytics.AUDIT_EVENT_LOGIN_LOCKOUT,
-               actor=username, detail=f"{MAX_FAILED_ATTEMPTS} failed attempts")
-
-
-def _reset_failures() -> None:
-    st.session_state["_auth_failed_attempts"] = 0
-    st.session_state["_auth_locked_until"] = 0.0
+def get_client_ip() -> str | None:
+    """Visitor IP from the reverse proxy's X-Forwarded-For / X-Real-IP."""
+    try:
+        headers = st.context.headers
+    except Exception:  # noqa: BLE001 - outside a Streamlit runtime (tests)
+        return None
+    from data_feeds import client_ip_from_headers
+    return client_ip_from_headers(headers)
 
 
 def _session_expired() -> bool:
@@ -266,113 +192,355 @@ def _session_expired() -> bool:
     return (time.time() - login_at) > SESSION_TIMEOUT_MINUTES * 60
 
 
+def current_username() -> str:
+    return st.session_state.get("_auth_username", "") or ""
+
+
+def current_role() -> str:
+    return st.session_state.get("_auth_role", "viewer") or "viewer"
+
+
+def is_admin() -> bool:
+    return current_role() == "admin"
+
+
+def _clear_session_identity() -> None:
+    for key in ("authenticated", "_auth_username", "_auth_role", "_auth_source", "_auth_login_at",
+                "_auth_consents"):
+        st.session_state.pop(key, None)
+    st.session_state["authenticated"] = False
+
+
+# ---------------------------------------------------------------------------
+# Login gate
+# ---------------------------------------------------------------------------
+
 def require_login() -> None:
-    """Call this as the very first thing app.py does. Returns immediately
-    if already authenticated AND the session hasn't expired. Otherwise
-    (re)initializes the auth-related session_state keys explicitly - never
-    relies on an implicit default - and renders the login form,
-    st.stop()-ing the script so nothing after this call (module layout,
-    sidebar navigation, st.navigation, any page content) ever executes for
-    an unauthenticated visitor."""
-    # Explicit session-state initialization, not an implicit .get() default -
-    # every key this gate depends on is guaranteed to exist before it is
-    # ever read, so there is no code path where "authenticated" is
-    # implicitly and silently treated as anything other than False.
+    """First call in app.py. Returns only for an authenticated, unexpired
+    session; otherwise renders the login form and st.stop()s."""
     st.session_state.setdefault("authenticated", False)
     st.session_state.setdefault("_auth_username", "")
-    st.session_state.setdefault("_auth_failed_attempts", 0)
-    st.session_state.setdefault("_auth_locked_until", 0.0)
 
     if st.session_state["authenticated"]:
         if _session_expired():
             _audit(_analytics.AUDIT_EVENT_SESSION_EXPIRED if _analytics else "SESSION_EXPIRED",
-                   actor=st.session_state.get("_auth_username", "unknown"))
-            st.session_state["authenticated"] = False
-            st.session_state["_auth_username"] = ""
+                   actor=current_username() or "unknown")
+            _clear_session_identity()
         else:
             return
 
     st.set_page_config(page_title="MAKU - Connexion", page_icon="🔒", layout="centered")
-
-    st.markdown("<div style='height: 8vh'></div>", unsafe_allow_html=True)
-    col_l, col_mid, col_r = st.columns([1, 1.3, 1])
+    st.markdown("<div style='height: 6vh'></div>", unsafe_allow_html=True)
+    _, col_mid, _ = st.columns([1, 1.3, 1])
 
     with col_mid:
-        if os.path.exists("logo_croquis.png"):
-            st.image("logo_croquis.png", width="stretch")
+        for logo in ("assets/logo_croquis.webp",):
+            if os.path.exists(logo):
+                st.image(logo, width="stretch")
+                break
 
-        st.markdown("### 🔒 MAKU — Accès sécurisé")
+        if st.session_state.pop("_account_deleted_notice", False):
+            st.success("Votre compte a été supprimé. / Your account has been deleted.")
+        st.markdown("### 🔒 MAKU — Accès sécurisé / Secure access")
         st.caption("Plateforme d'évaluation des risques cinétiques multi-environnement")
 
-        configured_users = _configured_users()
-        if not configured_users:
-            # FAIL CLOSED: no credential source is configured anywhere.
-            # This is a deployment/configuration error, not a "let anyone
-            # in" situation - render an explanation and stop, with no
-            # form at all, so there is nothing here for a visitor to
-            # submit their way past.
+        if not _configured_users() and not _database_accounts_available():
             st.error(
-                "Aucun identifiant n'est configuré pour cette instance MAKU. "
-                "L'accès est désactivé par sécurité jusqu'à ce qu'un administrateur "
-                "configure `st.secrets[\"auth\"]` (voir `.streamlit/secrets.toml.example`) "
-                "ou les variables d'environnement MAKU_AUTH_USERNAME / MAKU_AUTH_PASSWORD "
-                "(ou MAKU_AUTH_USERS pour plusieurs comptes).",
+                "Aucun identifiant n'est configuré pour cette instance MAKU. L'accès est désactivé "
+                "jusqu'à ce qu'un administrateur crée un compte (manage_users.py) ou configure "
+                "st.secrets[\"auth\"] / MAKU_AUTH_USERS.",
                 icon="🔒",
             )
             _audit(_analytics.AUDIT_EVENT_CONFIG_ERROR if _analytics else "CONFIG_ERROR",
                    actor="system", detail="require_login: no credentials configured")
             st.stop()
 
-        attempts, locked_until = _lockout_state()
-        now = time.time()
-        if locked_until and now < locked_until:
-            remaining = int(locked_until - now)
-            st.error(
-                f"Trop de tentatives échouées. Réessayez dans {remaining} seconde(s).",
-                icon="⏳",
-            )
-            st.stop()
-
         with st.form("login_form"):
-            username = st.text_input("Identifiant")
-            password = st.text_input("Mot de passe", type="password")
-            submitted = st.form_submit_button("Se connecter", width="stretch")
+            username = st.text_input("Identifiant / Username", autocomplete="username")
+            password = st.text_input("Mot de passe / Password", type="password", autocomplete="current-password")
+            submitted = st.form_submit_button("Se connecter / Sign in", width="stretch")
+
+        st.caption(f"[Politique de confidentialité / Privacy policy]({accounts.PRIVACY_POLICY_URL})")
 
         if submitted:
+            username = (username or "").strip()
+            client_ip = get_client_ip()
+            try:
+                locked, retry_after = accounts.lockout_status(username, client_ip)
+            except accounts.AccountStoreUnavailable:
+                st.error("Connexion temporairement indisponible. Réessayez dans quelques minutes. / "
+                         "Sign-in is temporarily unavailable. Please try again in a few minutes.")
+                st.stop()
+
+            if locked:
+                _audit(_analytics.AUDIT_EVENT_LOGIN_LOCKOUT if _analytics else "LOGIN_LOCKOUT",
+                       actor=username or "(empty)", detail=f"ip={client_ip} retry_after={retry_after}s")
+                minutes = max(1, (retry_after + 59) // 60)
+                st.error(f"Trop de tentatives échouées. Réessayez dans {minutes} min. / "
+                         f"Too many failed attempts. Try again in {minutes} min.", icon="⏳")
+                st.stop()
+
             if _verify_credentials(username, password):
-                _reset_failures()
+                try:
+                    accounts.record_login_attempt(username, client_ip, succeeded=True)
+                    if st.session_state.get("_auth_source") == "database":
+                        accounts.mark_login(username)
+                except accounts.AccountStoreUnavailable:
+                    pass
                 st.session_state["authenticated"] = True
                 st.session_state["_auth_username"] = username
                 st.session_state["_auth_login_at"] = time.time()
                 _audit(_analytics.AUDIT_EVENT_LOGIN_SUCCESS if _analytics else "LOGIN_SUCCESS",
-                       actor=username)
+                       actor=username, detail=f"ip={client_ip}")
                 st.rerun()
             else:
-                _register_failure(username or "(empty)")
+                try:
+                    accounts.record_login_attempt(username or "(empty)", client_ip, succeeded=False)
+                except accounts.AccountStoreUnavailable:
+                    pass
                 _audit(_analytics.AUDIT_EVENT_LOGIN_FAILURE if _analytics else "LOGIN_FAILURE",
-                       actor=username or "(empty)")
-                st.error("Identifiant ou mot de passe incorrect.")
+                       actor=username or "(empty)", detail=f"ip={client_ip}")
+                st.error("Identifiant ou mot de passe incorrect. / Incorrect username or password.")
 
     st.stop()
 
 
 def render_deprecated_credential_banner(st_module) -> None:
-    """Call once, post-login, from any page (e.g. right after
-    render_logout_control()). Renders nothing when the current account
-    authenticated with 'bcrypt:...' (the recommended format); renders a
-    persistent warning when it authenticated with a deprecated sha256/
-    plaintext credential - see _warn_if_deprecated_format()."""
-    message = st_module.session_state.get("_auth_credential_format_warning")
-    if message:
-        st_module.warning(f"🔑 {message}", icon="⚠️")
+    """Kept for app.py compatibility. Legacy formats are now rejected at
+    login (see _verify_credentials), so there is nothing to warn about for
+    an authenticated session."""
+    return None
 
 
 def render_logout_control(st_module) -> None:
-    """Small sidebar logout control. Call from the dashboard/pages once
-    authenticated, if you want a visible way to sign out."""
-    if st_module.sidebar.button("🔓 Se déconnecter"):
-        username = st_module.session_state.get("_auth_username", "unknown")
-        _audit(_analytics.AUDIT_EVENT_LOGOUT if _analytics else "LOGOUT", actor=username)
-        st_module.session_state["authenticated"] = False
-        st_module.session_state["_auth_username"] = ""
+    if st_module.sidebar.button("🔓 Se déconnecter / Sign out"):
+        _audit(_analytics.AUDIT_EVENT_LOGOUT if _analytics else "LOGOUT", actor=current_username() or "unknown")
+        _clear_session_identity()
         st_module.rerun()
+
+
+# ---------------------------------------------------------------------------
+# Privacy consent (GDPR / UAE PDPL)
+# ---------------------------------------------------------------------------
+
+_CONSENT_TEXT = {
+    accounts.CONSENT_AI: {
+        "en": ("AI briefings (optional)",
+               "Send the assessment results for this session (risk scores, module, site name, and "
+               "anonymised worker-strain summaries) to Anthropic, PBC to generate a written AI briefing. "
+               "No name, email or GPS coordinates are sent. Without consent you still get the full "
+               "rule-based briefing."),
+        "fr": ("Briefings IA (facultatif)",
+               "Envoyer les résultats d'évaluation (scores, module, nom du site, résumés anonymisés de "
+               "charge physiologique) à Anthropic, PBC pour générer un briefing IA rédigé. Aucun nom, "
+               "e-mail ni coordonnée GPS n'est envoyé. Sans consentement, le briefing réglementaire "
+               "complet reste disponible."),
+    },
+    accounts.CONSENT_LOCATION: {
+        "en": ("Location (optional)",
+               "Use this device's GPS position (or, if GPS is denied, an approximate location from "
+               "your IP address) to pick the nearest site, local weather and the applicable country "
+               "regulations. Location is used for the current session only and is not stored."),
+        "fr": ("Localisation (facultatif)",
+               "Utiliser la position GPS de l'appareil (ou, si refusée, une position approximative "
+               "issue de l'adresse IP) pour choisir le site le plus proche, la météo locale et la "
+               "réglementation applicable. La position n'est utilisée que pour la session en cours "
+               "et n'est pas conservée."),
+    },
+}
+
+
+def _consent_text(purpose: str, lang: str) -> tuple[str, str]:
+    texts = _CONSENT_TEXT[purpose]
+    return texts.get(lang, texts["en"])
+
+
+def session_consents() -> dict:
+    """Cached per session; refreshed whenever the user changes a toggle."""
+    if "_auth_consents" not in st.session_state:
+        try:
+            st.session_state["_auth_consents"] = accounts.get_consents(current_username())
+        except accounts.AccountStoreUnavailable:
+            st.session_state["_auth_consents"] = {p: None for p in accounts.CONSENT_PURPOSES}
+    return st.session_state["_auth_consents"]
+
+
+def has_consent(purpose: str) -> bool:
+    return bool(session_consents().get(purpose))
+
+
+def require_privacy_choices(lang: str = "fr") -> None:
+    """Shown once after login (and again if the privacy policy version
+    changes): the user must make an explicit choice for each optional
+    purpose before using the app. Both toggles start OFF - no pre-ticked
+    consent. Choosing 'off' is always allowed and the app remains fully
+    usable."""
+    consents = session_consents()
+    if all(v is not None for v in consents.values()):
+        return
+
+    st.title("🔐 " + ("Vos choix de confidentialité" if lang == "fr" else "Your privacy choices"))
+    st.write(
+        "MAKU traite vos données conformément au RGPD et à la loi émiratie PDPL. Choisissez ci-dessous ; "
+        "vous pourrez changer d'avis à tout moment dans « Mon compte »."
+        if lang == "fr" else
+        "MAKU processes your data under the GDPR and the UAE PDPL. Make your choices below; you can "
+        "change them at any time under 'My account'."
+    )
+    st.markdown(f"[{'Politique de confidentialité' if lang == 'fr' else 'Privacy policy'}]"
+                f"({accounts.PRIVACY_POLICY_URL}) · v{accounts.PRIVACY_POLICY_VERSION}")
+    with st.form("privacy_choices"):
+        choices = {}
+        for purpose in accounts.CONSENT_PURPOSES:
+            title, body = _consent_text(purpose, lang)
+            choices[purpose] = st.toggle(title, value=False, key=f"consent_init_{purpose}")
+            st.caption(body)
+        if st.form_submit_button("Enregistrer et continuer" if lang == "fr" else "Save and continue",
+                                 type="primary", width="stretch"):
+            try:
+                for purpose, granted in choices.items():
+                    accounts.set_consent(current_username(), purpose, granted)
+                st.session_state.pop("_auth_consents", None)
+                st.rerun()
+            except accounts.AccountStoreUnavailable:
+                st.error("Impossible d'enregistrer vos choix pour le moment." if lang == "fr"
+                         else "Could not save your choices right now. Please try again.")
+    st.stop()
+
+
+# ---------------------------------------------------------------------------
+# "My account" page: consent toggles, data export, password, deletion
+# ---------------------------------------------------------------------------
+
+def render_account_page(lang: str = "fr") -> None:
+    fr = lang == "fr"
+    username = current_username()
+    st.title("👤 " + ("Mon compte" if fr else "My account"))
+    st.caption(f"{'Connecté en tant que' if fr else 'Signed in as'} **{username}** · "
+               f"{'rôle' if fr else 'role'}: {current_role()}")
+
+    # --- Privacy -----------------------------------------------------------
+    st.subheader("🔐 " + ("Confidentialité et consentements" if fr else "Privacy and consent"))
+    consents = session_consents()
+    for purpose in accounts.CONSENT_PURPOSES:
+        title, body = _consent_text(purpose, lang)
+        current = bool(consents.get(purpose))
+        new_value = st.toggle(title, value=current, key=f"consent_toggle_{purpose}")
+        st.caption(body)
+        if new_value != current:
+            try:
+                accounts.set_consent(username, purpose, new_value)
+                st.session_state.pop("_auth_consents", None)
+                st.toast("✅ " + ("Préférence enregistrée" if fr else "Preference saved"))
+                st.rerun()
+            except accounts.AccountStoreUnavailable:
+                st.error("Impossible d'enregistrer." if fr else "Could not save. Please retry.")
+    st.markdown(f"[{'Lire la politique de confidentialité' if fr else 'Read the privacy policy'}]"
+                f"({accounts.PRIVACY_POLICY_URL})")
+
+    # --- Data export -------------------------------------------------------
+    st.subheader("📦 " + ("Exporter mes données" if fr else "Export my data"))
+    st.caption("Copie JSON de toutes les données personnelles associées à votre compte (RGPD art. 15/20)."
+               if fr else "A JSON copy of all personal data linked to your account (GDPR Art. 15/20).")
+    if st.button("Préparer l'export" if fr else "Prepare export", key="export_prepare"):
+        try:
+            st.session_state["_account_export"] = accounts.export_user_data(username)
+        except accounts.AccountStoreUnavailable:
+            st.error("Export indisponible pour le moment." if fr else "Export unavailable right now.")
+    if st.session_state.get("_account_export"):
+        st.download_button("⬇️ " + ("Télécharger (JSON)" if fr else "Download (JSON)"),
+                           data=st.session_state["_account_export"],
+                           file_name=f"maku-data-{username}.json", mime="application/json")
+
+    if st.session_state.get("_auth_source") != "database":
+        st.info("Ce compte est géré par la configuration du déploiement. Contactez votre administrateur MAKU "
+                "pour toute modification ou suppression." if fr else
+                "This account is managed by the deployment configuration. Contact your MAKU administrator "
+                "to change or delete it.")
+        return
+
+    # --- Password ----------------------------------------------------------
+    st.subheader("🔑 " + ("Changer le mot de passe" if fr else "Change password"))
+    with st.form("change_password"):
+        current_pw = st.text_input("Mot de passe actuel" if fr else "Current password", type="password")
+        new_pw = st.text_input("Nouveau mot de passe" if fr else "New password", type="password",
+                               help=f"≥ {accounts.MIN_PASSWORD_LENGTH} caractères / characters")
+        new_pw2 = st.text_input("Confirmer" if fr else "Confirm new password", type="password")
+        if st.form_submit_button("Mettre à jour" if fr else "Update password"):
+            if new_pw != new_pw2:
+                st.error("Les mots de passe ne correspondent pas." if fr else "Passwords do not match.")
+            else:
+                try:
+                    accounts.change_password(username, current_pw, new_pw)
+                    st.success("Mot de passe mis à jour." if fr else "Password updated.")
+                except accounts.AccountError as exc:
+                    st.error(str(exc))
+                except accounts.AccountStoreUnavailable:
+                    st.error("Service indisponible." if fr else "Service unavailable.")
+
+    # --- Delete account ----------------------------------------------------
+    st.subheader("🗑️ " + ("Supprimer mon compte" if fr else "Delete my account"))
+    st.warning(
+        "Supprime définitivement votre compte, vos consentements et toutes les évaluations que vous avez "
+        "réalisées. Les journaux de sécurité horodatés sont conservés comme indiqué dans la politique de "
+        "confidentialité. Cette action est irréversible."
+        if fr else
+        "Permanently deletes your account, your consent records and every assessment you ran. Time-stamped "
+        "security log entries are retained as described in the privacy policy. This cannot be undone."
+    )
+    with st.form("delete_account"):
+        confirm_name = st.text_input(("Tapez votre identifiant pour confirmer" if fr
+                                      else "Type your username to confirm"))
+        confirm_pw = st.text_input("Mot de passe" if fr else "Password", type="password")
+        if st.form_submit_button("Supprimer définitivement" if fr else "Delete permanently", type="primary"):
+            if confirm_name.strip() != username:
+                st.error("L'identifiant ne correspond pas." if fr else "Username does not match.")
+            else:
+                try:
+                    accounts.delete_account(username, confirm_pw, requested_via="in_app")
+                    _clear_session_identity()
+                    st.session_state["_account_deleted_notice"] = True
+                    st.rerun()
+                except accounts.AccountError as exc:
+                    st.error(str(exc))
+                except accounts.AccountStoreUnavailable:
+                    st.error("Service indisponible - rien n'a été supprimé." if fr
+                             else "Service unavailable - nothing was deleted.")
+
+
+# ---------------------------------------------------------------------------
+# Admin: user management
+# ---------------------------------------------------------------------------
+
+def render_admin_users_page(lang: str = "fr") -> None:
+    fr = lang == "fr"
+    st.title("🛠️ " + ("Utilisateurs" if fr else "Users"))
+    if not is_admin():
+        st.error("Accès réservé aux administrateurs." if fr else "Administrators only.")
+        return
+    try:
+        users = accounts.list_users()
+    except accounts.AccountStoreUnavailable:
+        st.error("Base de données indisponible." if fr else "Database unavailable.")
+        return
+    if users:
+        st.dataframe(users, hide_index=True, width="stretch")
+    else:
+        st.info("Aucun compte en base pour l'instant." if fr else "No database accounts yet.")
+
+    st.subheader("➕ " + ("Créer un compte" if fr else "Create account"))
+    with st.form("create_user", clear_on_submit=True):
+        new_username = st.text_input("Identifiant" if fr else "Username")
+        new_email = st.text_input("E-mail (facultatif)" if fr else "Email (optional)")
+        new_role = st.selectbox("Rôle" if fr else "Role", accounts.ROLES, index=accounts.ROLES.index("supervisor"))
+        new_password = st.text_input("Mot de passe initial" if fr else "Initial password", type="password",
+                                     help=f"≥ {accounts.MIN_PASSWORD_LENGTH}")
+        if st.form_submit_button("Créer" if fr else "Create", type="primary"):
+            try:
+                accounts.create_user(new_username, new_password, new_role, created_by=current_username(),
+                                     email=new_email or None)
+                st.success(("Compte créé : " if fr else "Account created: ") + new_username)
+            except accounts.AccountError as exc:
+                st.error(str(exc))
+            except accounts.AccountStoreUnavailable:
+                st.error("Base de données indisponible." if fr else "Database unavailable.")

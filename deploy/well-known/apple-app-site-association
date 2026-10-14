@@ -1,0 +1,16 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["TEAMID1234.ae.maku.app"],
+        "components": [
+          { "/": "/legal/*", "exclude": true, "comment": "Legal pages open in the browser" },
+          { "/": "/*", "comment": "Everything else opens in the MAKU app" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["TEAMID1234.ae.maku.app"]
+  }
+}

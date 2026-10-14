@@ -4,7 +4,7 @@ MAKU Risk Engine
 Rule-based, formula-driven risk calculations for five construction
 environments. Every formula here is a recognized/adapted industry method
 (WBGT approximation, Humidex, ACGIH TLV heat-stress action limits, OEL
-exceedance logic, an exponential wind-with-height scaling heuristic, the
+exceedance logic, a power-law wind-with-height profile, the
 Lee open-air arc-flash equation) so outputs are transparent and auditable -
 not a black box.
 This is the "AI" reasoning layer's foundation; the LLM layer (see
@@ -777,7 +777,40 @@ def calculate_underground_kinetic_risk(ambient_temp: float, geothermal_humidity:
 # Module 4: High-Rise Building Construction (Vertical Urban)
 # ---------------------------------------------------------------------------
 
-HIGH_RISE_WIND_GROWTH_RATE = 0.008  # exponential per-floor amplification constant (urban boundary layer)
+# Atmospheric boundary-layer POWER LAW (the form used by ASCE 7 / Eurocode 1
+# style wind profiles):  V(z) = V_ref * (z / z_ref) ** alpha
+# replaces the earlier exponential e^(0.008 * floor) heuristic, which
+# over-amplified wind on supertall floors (x2.23 at floor 100 vs ~x1.67 for
+# open terrain) and contradicted this project's own documentation.
+#
+# alpha (terrain exponent): mean-wind power-law exponents. Open sea, open
+# country and suburban follow ASCE 7 Exposure D / C / B (1/9, 1/6.5, 1/4);
+# dense city centre uses the classic Davenport value (~1/3). The site
+# engineer selects the terrain category, or better, supplies a measured
+# hook-height anemometer reading which bypasses the model entirely. If the
+# 10 m input is a gust reading, using the mean-wind exponent is conservative
+# (gust profiles are flatter).
+WIND_TERRAIN_EXPONENTS = {
+    "open_sea": 0.11,        # ASCE 7 Exposure D - open water / coastal
+    "open_country": 0.15,    # ASCE 7 Exposure C - flat open terrain
+    "suburban": 0.25,        # ASCE 7 Exposure B - urban/suburban built-up areas
+    "urban_centre": 0.33,    # dense city centre with many tall buildings
+}
+DEFAULT_WIND_TERRAIN = "suburban"
+WIND_REFERENCE_HEIGHT_M = 10.0      # standard meteorological anemometer height
+DEFAULT_FLOOR_HEIGHT_M = 3.5        # typical commercial floor-to-floor height
+
+
+def wind_speed_at_height(reference_wind_speed: float, height_m: float,
+                         terrain_exponent: float = WIND_TERRAIN_EXPONENTS[DEFAULT_WIND_TERRAIN],
+                         reference_height_m: float = WIND_REFERENCE_HEIGHT_M) -> float:
+    """Power-law wind profile. Heights below the reference height return the
+    reference speed unchanged (the power law is not used to REDUCE a 10 m
+    reading near the ground - conservative for crane decisions)."""
+    if reference_wind_speed <= 0:
+        return 0.0
+    z = max(float(height_m), reference_height_m)
+    return reference_wind_speed * (z / reference_height_m) ** terrain_exponent
 
 # Backward-compatible module-level constant - equal to the harmonized USA
 # default profile's wind_shear.crane_suspend_knots value.
@@ -805,11 +838,19 @@ def _crane_wind_bands(suspend_knots: float, restrict_knots: float) -> list:
 
 def calculate_high_rise_kinetic_risk(ground_wind_speed_knots: float, floor_level: float,
                                       crane_load_mass_tons: float,
-                                      regulatory_profile: dict | None = None) -> dict:
+                                      regulatory_profile: dict | None = None,
+                                      terrain: str = DEFAULT_WIND_TERRAIN,
+                                      floor_height_m: float = DEFAULT_FLOOR_HEIGHT_M,
+                                      measured_hook_wind_knots: float | None = None) -> dict:
     """
     Models vertical wind-shear amplification through the urban boundary layer
     and the resulting crane-load oscillation risk for suspended lifts and
     facade/curtain-wall crews working at height.
+
+    Wind at the working floor = power-law profile from the 10 m reference
+    reading (see wind_speed_at_height / WIND_TERRAIN_EXPONENTS). If a
+    measured hook-height / working-height anemometer reading is supplied it
+    is used directly - a measurement always beats a model.
 
     regulatory_profile: a dict from regulatory_country_thresholds.
     get_regulatory_profile(country_code), or None to use the harmonized USA
@@ -824,9 +865,17 @@ def calculate_high_rise_kinetic_risk(ground_wind_speed_knots: float, floor_level
     suspend_knots = profile["wind_shear"]["crane_suspend_knots"]
     restrict_knots = profile["wind_shear"]["crane_restrict_knots"]
 
-    # Exponential wind-shear scaling: wind speed compounds with floor height
-    # as the urban boundary layer thins and turbulence/shear intensify.
-    scaled_wind_speed = ground_wind_speed_knots * math.exp(HIGH_RISE_WIND_GROWTH_RATE * floor_level)
+    if terrain not in WIND_TERRAIN_EXPONENTS:
+        raise ValueError(f"Unknown terrain '{terrain}'. Choose one of {sorted(WIND_TERRAIN_EXPONENTS)}")
+    terrain_exponent = WIND_TERRAIN_EXPONENTS[terrain]
+    working_height_m = max(float(floor_level), 0.0) * floor_height_m
+
+    if measured_hook_wind_knots is not None:
+        scaled_wind_speed = float(measured_hook_wind_knots)
+        wind_source = "Measured at working height"
+    else:
+        scaled_wind_speed = wind_speed_at_height(ground_wind_speed_knots, working_height_m, terrain_exponent)
+        wind_source = f"Power-law model (terrain '{terrain}', alpha={terrain_exponent})"
 
     # Oscillation risk index: drag energy (~v^2) divided by load mass - lighter,
     # high-surface-area facade/curtain-wall loads oscillate far worse than dense
@@ -862,6 +911,8 @@ def calculate_high_rise_kinetic_risk(ground_wind_speed_knots: float, floor_level
     return {
         "module": "High-Rise (Vertical Urban)",
         "scaled_wind_speed": round(scaled_wind_speed, 1),
+        "wind_source": wind_source,
+        "working_height_m": round(working_height_m, 1),
         "oscillation_index": round(oscillation_index, 1),
         "risk_band": band,  # compatibility field for ai_advisor.high_rise_controls / generate_narrative
         "safety_override": safety_override,
@@ -873,6 +924,9 @@ def calculate_high_rise_kinetic_risk(ground_wind_speed_knots: float, floor_level
         "drivers": {
             "Ground wind speed (knots)": ground_wind_speed_knots,
             "Floor level": floor_level,
+            "Working height (m)": round(working_height_m, 1),
+            "Terrain exponent (alpha)": terrain_exponent,
+            "Measured working-height wind (knots)": measured_hook_wind_knots,
             "Crane load mass (tons)": crane_load_mass_tons,
         },
     }
@@ -883,42 +937,100 @@ def calculate_high_rise_kinetic_risk(ground_wind_speed_knots: float, floor_level
 # Environment)
 # ---------------------------------------------------------------------------
 
+# Incident energy -> minimum arc rating, following the NFPA 70E incident-
+# energy method (select PPE with an arc rating >= the calculated incident
+# energy). Category labels are the conventional rating breakpoints.
 ARC_FLASH_PPE = [
-    (1.2, "Category 1"),
-    (8.0, "Category 2"),
-    (25.0, "Category 3"),
-    (40.0, "Category 4"),
-    (float("inf"), "DANGER - exceeds max PPE rating, de-energize / no-go"),
+    (1.2, "Below 1.2 cal/cm2 - second-degree-burn threshold not reached"),
+    (4.0, "Arc rating >= 4 cal/cm2 (PPE Category 1)"),
+    (8.0, "Arc rating >= 8 cal/cm2 (PPE Category 2)"),
+    (25.0, "Arc rating >= 25 cal/cm2 (PPE Category 3)"),
+    (40.0, "Arc rating >= 40 cal/cm2 (PPE Category 4)"),
+    (float("inf"), "DANGER - exceeds 40 cal/cm2: de-energize, no energized work"),
 ]
+
+# Ralph Lee (1982) open-air arc-flash equation:
+#     E [J/cm2]   = 2.142e6 * V(kV) * Ibf(kA) * t(s) / D(mm)^2
+#     E [cal/cm2] = E [J/cm2] / 4.184  ->  constant 5.12e5
+# The previous constant (2.142e3, returned as cal/cm2) under-reported
+# incident energy by a factor of ~239. Locked by
+# test_app.TestLeeArcFlash.test_reference_value.
+LEE_CAL_PER_CM2 = 5.12e5
+DEFAULT_WORKING_DISTANCE_MM = 455.0  # 18 in - typical low-voltage switchgear working distance
+
+ARC_FLASH_SOURCE_LABEL = "Equipment arc-flash label (site arc-flash study)"
+ARC_FLASH_SOURCE_LEE = "Ralph Lee screening calculation (not IEEE 1584)"
+ARC_FLASH_SOURCE_UNKNOWN = "Unknown - arc-flash study or equipment label required"
 
 
 def lee_arc_flash_incident_energy(voltage_kv: float, fault_current_ka: float,
                                    clearing_time_s: float, working_distance_mm: float) -> float:
     """
-    Ralph Lee open-air arc-flash incident-energy approximation (a widely
-    published, order-of-magnitude method used for early-stage/illustrative
-    hazard screening - not a substitute for a full IEEE 1584 arc-flash
-    study before live work is authorized):
-        IE = 2.142e3 * V(kV) * Isc(kA) * t(s) / D(mm)^2   [cal/cm^2]
+    Ralph Lee open-air arc-flash incident energy in cal/cm2:
+        IE = 5.12e5 * V(kV) * Ibf(kA) * t(s) / D(mm)^2
 
-    Kept as the full voltage/fault-current/clearing-time/working-distance
-    reference implementation. calculate_datacenter_kinetic_risk() below uses
-    a simplified load-only variant per the current module spec (only
-    electrical_load_kw is collected from the UI); this function/PPE mapping
-    remain available if those individual switchgear parameters are wired in
-    later.
+    A widely published, deliberately conservative screening method (it
+    tends to over-predict at low voltage). It is NOT a substitute for an
+    IEEE 1584 arc-flash study before energized work is authorized.
     """
-    working_distance_mm = max(working_distance_mm, 1.0)
-    return 2.142e3 * voltage_kv * fault_current_ka * clearing_time_s / (working_distance_mm ** 2)
+    if voltage_kv <= 0 or fault_current_ka <= 0 or clearing_time_s <= 0:
+        raise ValueError("voltage_kv, fault_current_ka and clearing_time_s must all be > 0")
+    working_distance_mm = max(float(working_distance_mm), 1.0)
+    return LEE_CAL_PER_CM2 * voltage_kv * fault_current_ka * clearing_time_s / (working_distance_mm ** 2)
 
 
 def arc_flash_ppe_category(incident_energy_cal_cm2: float) -> str:
     return risk_band(incident_energy_cal_cm2, ARC_FLASH_PPE)
 
 
+def resolve_arc_flash_incident_energy(label_incident_energy_cal: float | None = None,
+                                      voltage_kv: float | None = None,
+                                      fault_current_ka: float | None = None,
+                                      clearing_time_s: float | None = None,
+                                      working_distance_mm: float = DEFAULT_WORKING_DISTANCE_MM,
+                                      ) -> tuple[float | None, str]:
+    """Picks the best available incident-energy source, best first:
+      1. the value printed on the equipment's arc-flash label (from the
+         site's engineering study),
+      2. a Lee screening calculation when voltage, bolted fault current and
+         clearing time are all known,
+      3. otherwise None - MAKU never invents an incident-energy number.
+    Electrical LOAD (kW) is deliberately not an input: incident energy is
+    driven by available fault current and protective-device clearing time,
+    not by how much load happens to be connected."""
+    if label_incident_energy_cal is not None and label_incident_energy_cal >= 0:
+        return float(label_incident_energy_cal), ARC_FLASH_SOURCE_LABEL
+    if voltage_kv and fault_current_ka and clearing_time_s:
+        return (lee_arc_flash_incident_energy(voltage_kv, fault_current_ka, clearing_time_s, working_distance_mm),
+                ARC_FLASH_SOURCE_LEE)
+    return None, ARC_FLASH_SOURCE_UNKNOWN
+
+
+def datacenter_arc_flash(label_incident_energy_cal: float | None = None,
+                         voltage_kv: float | None = None,
+                         fault_current_ka: float | None = None,
+                         clearing_time_s: float | None = None,
+                         working_distance_mm: float = DEFAULT_WORKING_DISTANCE_MM) -> dict:
+    """Arc-flash triage for the Data Center module:
+         1. equipment label value      -> used as-is
+         2. Lee screening calculation  -> when V, Ibf and t are all known
+         3. otherwise                  -> "study required", no number
+    Returns {"incident_energy_cal": float | None, "source": str,
+             "ppe": str, "study_required": bool}."""
+    energy, source = resolve_arc_flash_incident_energy(
+        label_incident_energy_cal, voltage_kv, fault_current_ka, clearing_time_s, working_distance_mm,
+    )
+    if energy is None:
+        return {"incident_energy_cal": None, "source": source,
+                "ppe": "Unknown - obtain arc-flash label/study before energized work", "study_required": True}
+    return {"incident_energy_cal": energy, "source": source,
+            "ppe": arc_flash_ppe_category(energy), "study_required": False}
+
+
 DATACENTER_ARC_FLASH_DANGER_CAL = 40.0  # incident energy above which no PPE category permits live work
 DATACENTER_THERMAL_DIFF_CRITICAL_C = 25.0  # hot/cold-aisle delta considered critical for commissioning crews
 DATACENTER_HOT_AISLE_CRITICAL_C = 45.0     # hot-aisle temp considered critical on its own
+DEFAULT_COLD_AISLE_C = 22.0
 
 DATACENTER_ARC_FLASH_BANDS = [
     (4, "LOW"), (8, "MODERATE"), (25, "HIGH"), (999999, "CRITICAL"),
@@ -929,38 +1041,49 @@ DATACENTER_THERMAL_BANDS = [
 DATACENTER_SEVERITY_RANK = {"LOW": 0, "MODERATE": 1, "HIGH": 2, "CRITICAL": 3}
 
 
-def calculate_datacenter_kinetic_risk(electrical_load_kw: float, hot_aisle_temp: float,
+def calculate_datacenter_kinetic_risk(electrical_load_kw: float | None, hot_aisle_temp: float,
                                        ceiling_void_confined: bool, gas_system_armed: bool,
-                                       regulatory_profile: dict | None = None) -> dict:
+                                       regulatory_profile: dict | None = None, *,
+                                       label_incident_energy_cal: float | None = None,
+                                       voltage_kv: float | None = None,
+                                       fault_current_ka: float | None = None,
+                                       clearing_time_s: float | None = None,
+                                       working_distance_mm: float = DEFAULT_WORKING_DISTANCE_MM,
+                                       cold_aisle_temp_c: float = DEFAULT_COLD_AISLE_C,
+                                       energized_work_planned: bool = True) -> dict:
     """
     Evaluates electrical (arc-flash) and thermal (hot-aisle/cold-aisle) risk
     for MEP electrical, mechanical, and fire-suppression commissioning crews
-    in a live/energizing data center. Arc-flash incident energy scales
-    sharply with electrical load - a simplified, load-driven variant of the
-    Ralph Lee open-air arc-flash approximation used elsewhere in this engine
-    (see lee_arc_flash_incident_energy for the full voltage/Isc/time/distance
-    form used when those parameters are known individually).
+    in a live/energizing data center.
+
+    electrical_load_kw is recorded for context only and is NOT used in any
+    safety calculation (see resolve_arc_flash_incident_energy for why).
+    When incident energy cannot be established, the arc-flash hazard is
+    rated HIGH (if energized work is planned) with an explicit "study
+    required" flag - never silently rated LOW.
     Ref: MAKU Project Concept - Module 5 (Controlled Critical Environment)
     """
     profile = _resolve_profile(regulatory_profile)
-    # Simplified load-driven arc-flash incident-energy scaling: incident
-    # energy grows with the square of electrical load, reflecting how fault
-    # current/available energy compounds as switchgear capacity increases.
-    # (2.5 cal/cm2 per (100 kW)^2 is a tuned illustrative coefficient, not a
-    # measured constant - documented here as an MVP assumption.)
-    arc_flash_energy_cal = 2.5 * (electrical_load_kw / 100.0) ** 2
 
-    # Standard cold-aisle containment target is assumed ~22 degC; the thermal
-    # differential is what matters for commissioning crews moving between
-    # aisles, not the absolute hot-aisle reading alone.
-    assumed_cold_aisle_c = 22.0
-    thermal_differential = round(hot_aisle_temp - assumed_cold_aisle_c, 1)
+    triage = datacenter_arc_flash(label_incident_energy_cal, voltage_kv, fault_current_ka,
+                                  clearing_time_s, working_distance_mm)
+    arc_flash_energy_cal = triage["incident_energy_cal"]
+    arc_flash_source = triage["source"]
+    arc_flash_study_required = triage["study_required"]
 
-    arc_flash_band = risk_band(arc_flash_energy_cal, DATACENTER_ARC_FLASH_BANDS)
+    thermal_differential = round(hot_aisle_temp - cold_aisle_temp_c, 1)
+
+    arc_flash_ppe = triage["ppe"]
+    if arc_flash_study_required:
+        arc_flash_band = "HIGH" if energized_work_planned else "LOW"
+        arc_flash_danger = False
+    else:
+        arc_flash_band = risk_band(arc_flash_energy_cal, DATACENTER_ARC_FLASH_BANDS)
+        arc_flash_danger = arc_flash_energy_cal > DATACENTER_ARC_FLASH_DANGER_CAL
+
     thermal_band = risk_band(thermal_differential, DATACENTER_THERMAL_BANDS)
     band = max((arc_flash_band, thermal_band), key=lambda b: DATACENTER_SEVERITY_RANK[b])
 
-    arc_flash_danger = arc_flash_energy_cal > DATACENTER_ARC_FLASH_DANGER_CAL
     thermal_critical = (
         thermal_differential >= DATACENTER_THERMAL_DIFF_CRITICAL_C
         or hot_aisle_temp >= DATACENTER_HOT_AISLE_CRITICAL_C
@@ -974,15 +1097,24 @@ def calculate_datacenter_kinetic_risk(electrical_load_kw: float, hot_aisle_temp:
     if safety_override:
         band = "CRITICAL"
 
-    # ---- Risk matrix breakdown: arc-flash, thermal differential, and
-    # confined-space/armed-suppression scored independently. ---------------
-    risk_matrix = aggregate_risk_matrix([
-        score_hazard(
+    if arc_flash_study_required:
+        arc_score = score_hazard(
+            "Arc-flash incident energy",
+            4 if energized_work_planned else 1,
+            severity_from_band(arc_flash_band),
+            note="Incident energy unknown - no equipment label or fault data supplied",
+        )
+    else:
+        arc_score = score_hazard(
             "Arc-flash incident energy",
             likelihood_from_margin(arc_flash_energy_cal, DATACENTER_ARC_FLASH_DANGER_CAL, 15.0),
             severity_from_band(arc_flash_band),
-            note=f"{round(arc_flash_energy_cal, 1)} cal/cm2 vs {DATACENTER_ARC_FLASH_DANGER_CAL} cal/cm2 danger threshold",
-        ),
+            note=f"{round(arc_flash_energy_cal, 2)} cal/cm2 ({arc_flash_source}) vs "
+                 f"{DATACENTER_ARC_FLASH_DANGER_CAL} cal/cm2 danger threshold",
+        )
+
+    risk_matrix = aggregate_risk_matrix([
+        arc_score,
         score_hazard(
             "Hot/cold-aisle thermal differential",
             likelihood_from_margin(thermal_differential, DATACENTER_THERMAL_DIFF_CRITICAL_C, 10.0),
@@ -1000,7 +1132,11 @@ def calculate_datacenter_kinetic_risk(electrical_load_kw: float, hot_aisle_temp:
 
     return {
         "module": "Data Center (Controlled Critical Environment)",
-        "arc_flash_energy_cal": round(arc_flash_energy_cal, 1),
+        "arc_flash_energy_cal": None if arc_flash_study_required else round(arc_flash_energy_cal, 2),
+        "arc_flash_source": arc_flash_source,
+        "arc_flash_ppe": arc_flash_ppe,
+        "arc_flash_study_required": arc_flash_study_required,
+        "energized_work_planned": energized_work_planned,
         "thermal_differential": thermal_differential,
         "risk_band": band,  # compatibility field for ai_advisor.data_center_controls / generate_narrative
         "safety_override": safety_override,
@@ -1014,14 +1150,19 @@ def calculate_datacenter_kinetic_risk(electrical_load_kw: float, hot_aisle_temp:
         "regulatory_country_code": profile["country_code"],
         "regulatory_profile_label": profile["label"],
         "drivers": {
-            "Electrical load (kW)": electrical_load_kw,
+            "Arc-flash incident energy source": arc_flash_source,
+            "Label incident energy (cal/cm2)": label_incident_energy_cal,
+            "System voltage (kV)": voltage_kv,
+            "Bolted fault current (kA)": fault_current_ka,
+            "Protective-device clearing time (s)": clearing_time_s,
+            "Working distance (mm)": working_distance_mm,
+            "Electrical load (kW) - context only, not used in arc-flash maths": electrical_load_kw,
             "Hot-aisle temperature (C)": hot_aisle_temp,
-            "Assumed cold-aisle target (C)": assumed_cold_aisle_c,
+            "Cold-aisle setpoint (C)": cold_aisle_temp_c,
             "Confined ceiling-void space": ceiling_void_confined,
             "Gaseous suppression system armed": gas_system_armed,
         },
     }
-
 
 # ---------------------------------------------------------------------------
 # Module 6: Wind Energy (Onshore/Offshore)

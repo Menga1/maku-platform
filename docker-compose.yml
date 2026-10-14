@@ -1,0 +1,107 @@
+# =============================================================================
+# MAKU production stack - one Linux VM (2 vCPU / 4 GB RAM is plenty)
+#
+#   caddy   : HTTPS (automatic Let's Encrypt certificates), WebSocket proxy,
+#             security headers, mobile-store verification files, legal pages
+#   app     : MAKU Streamlit application (this repository's Dockerfile)
+#   db      : PostgreSQL 16 with a persistent volume
+#   backup  : nightly pg_dump, 14-day retention, into ./backups
+#
+# Start:   docker compose up -d --build
+# Logs:    docker compose logs -f app
+# Update:  git pull && docker compose up -d --build
+#
+# Using a managed database instead (AWS RDS, Azure Database for PostgreSQL,
+# Supabase, Neon)? In .env set DATABASE_URL to that server and remove
+# COMPOSE_PROFILES=localdb - the local db/backup services then never start.
+# =============================================================================
+name: maku
+
+services:
+  db:
+    image: postgres:16-alpine
+    profiles: ["localdb"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-maku}
+      POSTGRES_USER: ${POSTGRES_USER:-maku}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [backend]
+    logging: &default-logging
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+  app:
+    build: .
+    image: maku-app:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-maku}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-maku}}
+    volumes:
+      # Firebase service account for push (optional): put the JSON in ./secrets/
+      - ./secrets:/run/maku-secrets:ro
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false
+    networks: [backend, frontend]
+    logging: *default-logging
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      MAKU_DOMAIN: ${MAKU_DOMAIN:?Set MAKU_DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/well-known:/srv/well-known:ro
+      - ./deploy/site:/srv/site:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [app]
+    networks: [frontend]
+    logging: *default-logging
+
+  backup:
+    image: postgres:16-alpine
+    profiles: ["localdb"]
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGDATABASE: ${POSTGRES_DB:-maku}
+      PGUSER: ${POSTGRES_USER:-maku}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_HOUR_UTC: ${BACKUP_HOUR_UTC:-0}
+    volumes:
+      - ./deploy/backup.sh:/backup.sh:ro
+      - ./backups:/backups
+    entrypoint: ["/bin/sh", "/backup.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [backend]
+    logging: *default-logging
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+
+networks:
+  frontend:
+  backend:
+    internal: true

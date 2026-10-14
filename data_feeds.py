@@ -11,9 +11,21 @@ Centralizes every "Automatique / Temps Reel" data acquisition path:
 
 No public, free, keyless real-time API exists for underground gas/dust
 sensors, crane-mounted anemometers, or data-center current transformers, so
-Modules 3-5 use a bounded random-walk simulator that mimics a live industrial
-sensor feed (slow drift + occasional spikes) rather than a static value. This
-is clearly labeled "Simulation" in the UI - it is not presented as real data.
+Modules 3-5 can use a bounded random-walk simulator - but ONLY in demo mode.
+
+DATA-PROVENANCE CONTRACT (production hardening):
+  * Every payload returned by this module carries "is_live": bool.
+    True  = a real reading from a real provider.
+    False = simulated / mock / fallback data. The UI MUST show the red
+            "SIMULATED DATA" banner (ui_helpers.render_feed_status_banner)
+            and the assessment is stamped as simulated in logs and PDFs.
+  * Mock fallbacks and sensor simulators are DISABLED unless the operator
+    sets the environment variable MAKU_DEMO_MODE=1. In production a failed
+    feed raises DataFeedError and the page reverts to manual, human-verified
+    entry - fabricated numbers are never substituted silently.
+  * Only successful live fetches are cached (@st.cache_data never caches a
+    function that raises), so a transient outage is not frozen into the
+    cache for the TTL.
 
 Mathematical Isolation rule still applies here: this file only ACQUIRES
 numbers (from the network or from the simulator). All risk math stays in
@@ -22,6 +34,8 @@ risk_engine.py - nothing in this file computes risk, WBGT, humidex, etc.
 
 from __future__ import annotations
 
+import logging
+import os
 import random
 import time
 
@@ -29,6 +43,8 @@ import requests
 import streamlit as st
 
 from regulatory_country_thresholds import FALLBACK_COUNTRY_CODE, FALLBACK_WARNING_MESSAGE
+
+logger = logging.getLogger("maku.data_feeds")
 
 REQUEST_TIMEOUT = 6          # seconds - fail fast rather than hang the UI
 CACHE_TTL_SECONDS = 30       # avoid hammering the public API on every rerun
@@ -47,6 +63,44 @@ class DataFeedError(Exception):
     """Raised whenever a live or simulated feed cannot be retrieved.
     The calling page catches this, shows a dashboard warning, and reverts
     to manual/simulation sliders."""
+
+
+def demo_mode_enabled() -> bool:
+    """True only when the operator explicitly opts in with MAKU_DEMO_MODE=1.
+    Read at call time (not import time) so tests and operators can toggle it."""
+    return os.environ.get("MAKU_DEMO_MODE", "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _resolve_mock_permission(allow_mock_fallback: bool | None) -> bool:
+    """None (the default everywhere) means "follow the deployment": mock
+    fallbacks allowed only in demo mode. An explicit True/False from a caller
+    (tests, offline tooling) is honored as given."""
+    return demo_mode_enabled() if allow_mock_fallback is None else bool(allow_mock_fallback)
+
+
+def _require_demo_mode(source_label: str) -> None:
+    """Simulated sensor streams exist only for demos/training. In production
+    they refuse to run, so the page falls back to manual measured input."""
+    if not demo_mode_enabled():
+        raise DataFeedError(
+            f"{source_label}: no live sensor integration is configured for this deployment. "
+            "Enter measured values manually."
+        )
+
+
+def combine_provenance(payloads) -> str:
+    """Overall provenance of one assessment's inputs:
+      "SIMULATED" if ANY input payload is not live (simulator or mock),
+      "LIVE"      if at least one live feed and nothing simulated,
+      "MANUAL"    if every input was entered by hand (payloads all None)."""
+    seen_live = False
+    for payload in payloads:
+        if payload is None:
+            continue
+        if not payload.get("is_live", False):
+            return "SIMULATED"
+        seen_live = True
+    return "LIVE" if seen_live else "MANUAL"
 
 
 def _maybe_simulate_dropout(source_label: str) -> None:
@@ -76,9 +130,11 @@ def fetch_solar_live(lat: float = SOLAR_COORDS["lat"], lon: float = SOLAR_COORDS
             "shortwave_radiation": float(current["shortwave_radiation"]),
             "fetched_at": current.get("time"),
             "source": "Open-Meteo /v1/forecast",
+            "is_live": True,
         }
     except Exception as exc:  # noqa: BLE001 - any failure -> safe fallback
-        raise DataFeedError(f"Open-Meteo forecast API: {exc}") from exc
+        logger.warning("Open-Meteo forecast API failed: %s", exc)
+        raise DataFeedError("Open-Meteo forecast API unavailable") from exc
 
 
 FORECAST_CACHE_TTL_SECONDS = 1800  # 30 min - daily forecasts don't need 30s freshness
@@ -111,9 +167,11 @@ def fetch_solar_forecast(lat: float = SOLAR_COORDS["lat"], lon: float = SOLAR_CO
             "uv_index_max": [float(v) for v in daily["uv_index_max"]],
             "shortwave_radiation_sum": [float(v) for v in daily["shortwave_radiation_sum"]],
             "source": "Open-Meteo /v1/forecast (daily)",
+            "is_live": True,
         }
     except Exception as exc:  # noqa: BLE001
-        raise DataFeedError(f"Open-Meteo daily forecast API: {exc}") from exc
+        logger.warning("Open-Meteo daily forecast API failed: %s", exc)
+        raise DataFeedError("Open-Meteo daily forecast API unavailable") from exc
 
 
 # ---------------------------------------------------------------------------
@@ -154,9 +212,11 @@ def fetch_offshore_live(lat: float = OFFSHORE_COORDS["lat"], lon: float = OFFSHO
             "ocean_current_velocity_ms": float(m_current.get("ocean_current_velocity") or 0.0),
             "fetched_at": f_current.get("time"),
             "source": "Open-Meteo /v1/forecast + Marine API",
+            "is_live": True,
         }
     except Exception as exc:  # noqa: BLE001 - any failure -> safe fallback
-        raise DataFeedError(f"Open-Meteo forecast/marine API: {exc}") from exc
+        logger.warning("Open-Meteo forecast/marine API failed: %s", exc)
+        raise DataFeedError("Open-Meteo forecast/marine API unavailable") from exc
 
 
 @st.cache_data(ttl=FORECAST_CACHE_TTL_SECONDS, show_spinner=False)
@@ -186,9 +246,11 @@ def fetch_offshore_forecast(lat: float = OFFSHORE_COORDS["lat"], lon: float = OF
             "temperature_2m_max": [float(v) for v in daily["temperature_2m_max"]],
             "wind_speed_10m_max_kn": [float(v) for v in daily["wind_speed_10m_max"]],
             "source": "Open-Meteo /v1/forecast (daily)",
+            "is_live": True,
         }
     except Exception as exc:  # noqa: BLE001
-        raise DataFeedError(f"Open-Meteo daily forecast API: {exc}") from exc
+        logger.warning("Open-Meteo daily forecast API failed: %s", exc)
+        raise DataFeedError("Open-Meteo daily forecast API unavailable") from exc
 
 
 # ---------------------------------------------------------------------------
@@ -209,6 +271,7 @@ def _walk(state_key: str, base: float, lo: float, hi: float, step: float,
 # Module 3 - Metros & Tunnels (simulated LoRaWAN sensor-hub stream)
 # ---------------------------------------------------------------------------
 def simulate_tunnel_telemetry() -> dict:
+    _require_demo_mode("LoRaWAN Tunnel Sensor Hub")
     _maybe_simulate_dropout("LoRaWAN Tunnel Sensor Hub")
     return {
         "ambient_temp": _walk("tun_temp", 30.0, 18.0, 42.0, 0.6),
@@ -217,6 +280,7 @@ def simulate_tunnel_telemetry() -> dict:
         "gas_co_ppm": _walk("tun_co", 12.0, 0.0, 55.0, 1.5),
         "fetched_at": time.strftime("%H:%M:%S"),
         "source": "LoRaWAN Tunnel Sensor Hub (simulated MQTT stream)",
+        "is_live": False,
     }
 
 
@@ -224,6 +288,7 @@ def simulate_tunnel_telemetry() -> dict:
 # Module 4 - High-Rise (simulated crane anemometer / oscillation telemetry)
 # ---------------------------------------------------------------------------
 def simulate_crane_telemetry(floor_level: int) -> dict:
+    _require_demo_mode("Crane Anemometer / Oscillation Sensor")
     _maybe_simulate_dropout("Crane Anemometer / Oscillation Sensor")
     # Altitude shear-stress factor: wind load amplifies with height (power-law
     # style boost), consistent with the physical model already used in
@@ -235,6 +300,7 @@ def simulate_crane_telemetry(floor_level: int) -> dict:
         "shear_factor": round(shear_factor, 2),
         "fetched_at": time.strftime("%H:%M:%S"),
         "source": "Crane Anemometer & Oscillation Sensors (simulated telemetry)",
+        "is_live": False,
     }
 
 
@@ -242,12 +308,14 @@ def simulate_crane_telemetry(floor_level: int) -> dict:
 # Module 5 - Data Centers (simulated current transformer / thermal probes)
 # ---------------------------------------------------------------------------
 def simulate_datacenter_telemetry() -> dict:
+    _require_demo_mode("Current Transformer / Thermal Probe array")
     _maybe_simulate_dropout("Current Transformer / Thermal Probe array")
     return {
         "electrical_load_kw": _walk("dc_load", 400.0, 20.0, 1950.0, 25.0),
         "hot_aisle_temp": _walk("dc_temp", 34.0, 20.0, 54.0, 0.5),
         "fetched_at": time.strftime("%H:%M:%S"),
         "source": "Current Transformers & Thermal Probes (simulated telemetry)",
+        "is_live": False,
     }
 
 
@@ -300,6 +368,7 @@ def _mock_universal_weather(lat: float, lon: float) -> dict:
         "pressure_hpa": round(1008.0 + (seed % 12), 1),
         "fetched_at": time.strftime("%H:%M:%S"),
         "source": "Mock fallback data (no live network reachable)",
+        "is_live": False,
     }
 
 
@@ -316,6 +385,7 @@ def _mock_air_quality(lat: float, lon: float) -> dict:
         "no2_ugm3": round(3.0 + (seed % 40), 1),
         "fetched_at": time.strftime("%H:%M:%S"),
         "source": "Mock fallback data (no live network reachable)",
+        "is_live": False,
     }
 
 
@@ -323,47 +393,47 @@ AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
 
 
 @st.cache_data(ttl=CACHE_TTL_SECONDS, show_spinner=False)
-def fetch_air_quality_live(lat: float, lon: float, allow_mock_fallback: bool = True) -> dict:
+def _fetch_air_quality_cached(lat: float, lon: float) -> dict:
+    """Live Open-Meteo Air Quality reading. Raises on any failure, so only
+    successful readings are ever cached."""
+    params = {
+        "latitude": lat, "longitude": lon,
+        "current": "pm2_5,pm10,ozone,nitrogen_dioxide",
+        "timezone": "auto",
+    }
+    resp = requests.get(AIR_QUALITY_URL, params=params, timeout=REQUEST_TIMEOUT)
+    resp.raise_for_status()
+    current = resp.json()["current"]
+    return {
+        "pm2_5_ugm3": float(current["pm2_5"]),
+        "pm10_ugm3": float(current.get("pm10") or 0.0),
+        "o3_ugm3": float(current.get("ozone") or 0.0),
+        "no2_ugm3": float(current.get("nitrogen_dioxide") or 0.0),
+        "fetched_at": current.get("time"),
+        "source": "Open-Meteo Air Quality API",
+        "is_live": True,
+    }
+
+
+def fetch_air_quality_live(lat: float, lon: float, allow_mock_fallback: bool | None = None) -> dict:
     """
     Real, free, keyless ambient PM2.5/PM10/O3/NO2 reading (Open-Meteo Air
-    Quality API - a different endpoint/service than the weather forecast
-    API used elsewhere in this file, but the same provider and the same
-    keyless/free-tier pattern). Originally added for the Australia
-    'bushfire smoke' ambient air-quality feature (regulatory_country_
-    thresholds.py's AUSTRALIA profile 'bushfire_smoke_aqi_bands'), and
-    extended to PM10/O3/NO2 for the general ambient air-quality /
-    FFP3-mask screening cross-check (see risk_engine.
-    classify_ambient_air_quality()). The function itself is
-    country-agnostic - any module/country could use a real ambient
-    pollutant reading.
+    Quality API).
 
     Returns {"pm2_5_ugm3", "pm10_ugm3", "o3_ugm3", "no2_ugm3": float,
-    "fetched_at": str, "source": str}.
-    Falls back to mock data on any failure unless allow_mock_fallback=False
-    (in which case it raises DataFeedError), matching
-    fetch_live_weather_universal()'s honest fallback pattern.
+    "fetched_at": str, "source": str, "is_live": bool}.
+
+    On failure: raises DataFeedError in production. Only when mock fallback
+    is permitted (MAKU_DEMO_MODE=1, or allow_mock_fallback=True explicitly)
+    is an illustrative mock returned - tagged is_live=False and never cached.
     """
     try:
-        params = {
-            "latitude": lat, "longitude": lon,
-            "current": "pm2_5,pm10,ozone,nitrogen_dioxide",
-            "timezone": "auto",
-        }
-        resp = requests.get(AIR_QUALITY_URL, params=params, timeout=REQUEST_TIMEOUT)
-        resp.raise_for_status()
-        current = resp.json()["current"]
-        return {
-            "pm2_5_ugm3": float(current["pm2_5"]),
-            "pm10_ugm3": float(current.get("pm10", 0.0)),
-            "o3_ugm3": float(current.get("ozone", 0.0)),
-            "no2_ugm3": float(current.get("nitrogen_dioxide", 0.0)),
-            "fetched_at": current.get("time"),
-            "source": "Open-Meteo Air Quality API",
-        }
+        return _fetch_air_quality_cached(lat, lon)
     except Exception as exc:  # noqa: BLE001
-        if allow_mock_fallback:
+        logger.warning("Open-Meteo Air Quality API failed: %s", exc)
+        if _resolve_mock_permission(allow_mock_fallback):
             return _mock_air_quality(lat, lon)
-        raise DataFeedError(f"Open-Meteo Air Quality API: {exc}") from exc
+        raise DataFeedError("Open-Meteo Air Quality API unavailable") from exc
 
 
 def _fetch_openweathermap(lat: float, lon: float, api_key: str) -> dict:
@@ -388,6 +458,7 @@ def _fetch_openweathermap(lat: float, lon: float, api_key: str) -> dict:
         "pressure_hpa": float(current.get("pressure", 1013.0)),
         "fetched_at": time.strftime("%H:%M:%S", time.localtime(current.get("dt", time.time()))),
         "source": "OpenWeatherMap One Call API",
+        "is_live": True,
     }
 
 
@@ -413,35 +484,42 @@ def _fetch_open_meteo_universal(lat: float, lon: float) -> dict:
         "pressure_hpa": float(current.get("surface_pressure", 1013.0)),
         "fetched_at": current.get("time"),
         "source": "Open-Meteo /v1/forecast",
+        "is_live": True,
     }
 
 
 @st.cache_data(ttl=CACHE_TTL_SECONDS, show_spinner=False)
+def _fetch_live_weather_cached(lat: float, lon: float, _api_key: str | None) -> dict:
+    """Real providers only: OpenWeatherMap (if a key is supplied) then
+    Open-Meteo. Raises if both fail, so failures are never cached. The key
+    is excluded from the cache key (leading underscore) - the weather at a
+    coordinate does not depend on which key fetched it."""
+    if _api_key:
+        try:
+            return _fetch_openweathermap(lat, lon, _api_key)
+        except Exception as exc:  # noqa: BLE001 - fall through to next provider
+            logger.info("OpenWeatherMap failed, trying Open-Meteo: %s", exc)
+    return _fetch_open_meteo_universal(lat, lon)
+
+
 def fetch_live_weather_universal(lat: float, lon: float, api_key: str | None = None,
-                                  allow_mock_fallback: bool = True) -> dict:
+                                  allow_mock_fallback: bool | None = None) -> dict:
     """
-    GPS-driven weather ingestion with a three-tier provider chain:
-    OpenWeatherMap (if api_key given) -> Open-Meteo (free/keyless) -> mock.
+    GPS-driven weather ingestion: OpenWeatherMap (if api_key given) ->
+    Open-Meteo (free/keyless). Mock data only when explicitly permitted
+    (MAKU_DEMO_MODE=1 or allow_mock_fallback=True), tagged is_live=False.
 
     Returns: temperature_2m (C), relative_humidity_2m (%), wind_speed_10m_kn,
-    wind_gusts_10m_kn, uv_index, pressure_hpa, fetched_at, source.
-
-    Raises DataFeedError only if allow_mock_fallback=False and every real
-    provider fails - callers that want the "mock is a fallback, not a
-    silent default" behavior enforced (e.g. a unit test asserting the real
-    API path) should pass allow_mock_fallback=False.
+    wind_gusts_10m_kn, uv_index, pressure_hpa, fetched_at, source, is_live.
+    Raises DataFeedError when every real provider fails and mock is not permitted.
     """
-    if api_key:
-        try:
-            return _fetch_openweathermap(lat, lon, api_key)
-        except Exception:  # noqa: BLE001 - fall through to next provider
-            pass
     try:
-        return _fetch_open_meteo_universal(lat, lon)
+        return _fetch_live_weather_cached(lat, lon, api_key)
     except Exception as exc:  # noqa: BLE001
-        if allow_mock_fallback:
+        logger.warning("All live weather providers failed: %s", exc)
+        if _resolve_mock_permission(allow_mock_fallback):
             return _mock_universal_weather(lat, lon)
-        raise DataFeedError(f"All live weather providers failed: {exc}") from exc
+        raise DataFeedError("All live weather providers are unavailable") from exc
 
 
 # ---------------------------------------------------------------------------
@@ -588,11 +666,13 @@ def fetch_wearable_telemetry(worker_pseudonym: str, baseline_hr: float = 78.0) -
     walk (keyed by pseudonym in session state), so a multi-worker
     dashboard shows plausible, independently-varying readings per
     person rather than one shared number."""
+    _require_demo_mode(f"Wearable HR Stream ({worker_pseudonym})")
     _maybe_simulate_dropout(f"Wearable HR Stream ({worker_pseudonym})")
     return {
         "heart_rate": _walk(f"wearable_hr_{worker_pseudonym}", baseline_hr, 55.0, 195.0, 4.0, spike_chance=0.10, spike_mult=2.0),
         "fetched_at": time.strftime("%H:%M:%S"),
         "source": "Garmin/Polar-style wearable stream (simulated MVP - no live wearable API integrated)",
+        "is_live": False,
     }
 
 
@@ -600,62 +680,68 @@ def fetch_wearable_telemetry(worker_pseudonym: str, baseline_hr: float = 78.0) -
 # IP-based location fallback (Field Inspection: browser GPS permission
 # blocked/denied on site)
 # ---------------------------------------------------------------------------
-IP_GEOLOCATION_URL = "https://ip-api.com/json/"
+# ipapi.co serves HTTPS on its free tier (ip-api.com's free tier is plain
+# HTTP only, so the previous HTTPS URL could never succeed). The lookup MUST
+# use the visitor's IP: a server-side call without one geolocates the cloud
+# server itself, not the phone on site.
+IP_GEOLOCATION_URL = "https://ipapi.co/{ip}/json/"
+
+
+def client_ip_from_headers(headers) -> str | None:
+    """Best-effort visitor IP from reverse-proxy headers (Caddy/nginx set
+    X-Forwarded-For / X-Real-IP). Returns None when unavailable."""
+    if not headers:
+        return None
+    try:
+        forwarded = headers.get("X-Forwarded-For") or headers.get("x-forwarded-for") or ""
+        if forwarded:
+            return forwarded.split(",")[0].strip() or None
+        real_ip = headers.get("X-Real-Ip") or headers.get("X-Real-IP") or headers.get("x-real-ip")
+        return real_ip.strip() if real_ip else None
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def _mock_ip_geolocation() -> dict:
-    """Deterministic mock fallback when the free IP-geolocation API is
-    unreachable - centers on the app's existing UAE illustrative site
-    coordinates (SOLAR_COORDS) so downstream weather/country lookups still
-    have somewhere sensible to point at, exactly like every other mock
-    fallback in this file."""
+    """Demo-mode-only mock: centers on the app's illustrative UAE site."""
     return {
         "lat": SOLAR_COORDS["lat"], "lon": SOLAR_COORDS["lon"],
         "city": "", "country_name": "",
         "source": "Mock fallback data (no live network reachable)",
         "precise": False,
+        "is_live": False,
     }
 
 
-def fetch_ip_geolocation_fallback(allow_mock_fallback: bool = True) -> dict:
+def fetch_ip_geolocation_fallback(client_ip: str | None = None,
+                                  allow_mock_fallback: bool | None = None) -> dict:
     """
-    When a user blocks/denies the browser's GPS permission on site (the
-    Field Inspection section's primary path), this resolves an
-    approximate location from the request's own public IP address via
-    ip-api.com's free, keyless endpoint - no browser permission prompt
-    needed - so the app can still auto-load the nearest weather-station
-    grid and the appropriate localized regulatory profile instead of
-    forcing a fully manual country pick.
-
-    IP geolocation is inherently coarse (city/ISP-level, not GPS-precise -
-    "precise": False is always returned to make that limitation explicit
-    to callers/UI) and reflects the network egress point, which for a
-    site behind a corporate VPN or satellite uplink may not be the actual
-    job-site location at all - this is a best-effort fallback, one rung
-    below real GPS, never presented as equivalent to it.
+    Approximate (city-level) location from the visitor's public IP, used
+    only when the device's GPS permission is denied. Always "precise": False.
 
     Returns {"lat", "lon": float, "city", "country_name": str,
-    "source": str, "precise": bool}. Falls back to mock data on any
-    failure unless allow_mock_fallback=False (in which case it raises
-    DataFeedError), matching this file's standard fallback pattern.
+    "source": str, "precise": bool, "is_live": bool}.
+    Raises DataFeedError on failure (or when no visitor IP is known) unless
+    mock fallback is permitted (demo mode).
     """
     try:
-        resp = requests.get(
-            IP_GEOLOCATION_URL,
-            params={"fields": "status,message,lat,lon,city,country"},
-            timeout=REQUEST_TIMEOUT,
-        )
+        if not client_ip:
+            raise DataFeedError("Visitor IP address unknown (no X-Forwarded-For header)")
+        resp = requests.get(IP_GEOLOCATION_URL.format(ip=client_ip), timeout=REQUEST_TIMEOUT,
+                            headers={"User-Agent": NOMINATIM_USER_AGENT})
         resp.raise_for_status()
         data = resp.json()
-        if data.get("status") != "success":
-            raise DataFeedError(data.get("message", "IP geolocation lookup failed"))
+        if data.get("error") or data.get("latitude") is None:
+            raise DataFeedError(data.get("reason", "IP geolocation lookup failed"))
         return {
-            "lat": float(data["lat"]), "lon": float(data["lon"]),
-            "city": data.get("city", ""), "country_name": data.get("country", ""),
-            "source": "ip-api.com IP geolocation (approximate)",
+            "lat": float(data["latitude"]), "lon": float(data["longitude"]),
+            "city": data.get("city", "") or "", "country_name": data.get("country_name", "") or "",
+            "source": "ipapi.co IP geolocation (approximate)",
             "precise": False,
+            "is_live": True,
         }
     except Exception as exc:  # noqa: BLE001
-        if allow_mock_fallback:
+        logger.warning("IP geolocation failed: %s", exc)
+        if _resolve_mock_permission(allow_mock_fallback):
             return _mock_ip_geolocation()
-        raise DataFeedError(f"ip-api.com IP geolocation: {exc}") from exc
+        raise DataFeedError("IP geolocation unavailable") from exc

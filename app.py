@@ -35,13 +35,24 @@ analytics/data_feeds/ui_helpers, and renders results.
 from __future__ import annotations
 
 import io
+import logging
 import math
 import os
 
 import pandas as pd
 import streamlit as st
 
-from auth import require_login, render_logout_control, render_deprecated_credential_banner
+from auth import (
+    require_login, render_logout_control, render_deprecated_credential_banner,
+    require_privacy_choices, render_account_page, render_admin_users_page,
+    has_consent, is_admin, get_client_ip,
+)
+from accounts import CONSENT_AI, CONSENT_LOCATION
+from mobile_bridge import (
+    detect_shell, in_mobile_shell, shell_platform, request_native_location, request_native_photo,
+    request_push_token, send_assessment_to_shell,
+)
+import push
 from i18n import t, language_selector, LANGUAGES
 from risk_engine import (
     calculate_solar_albedo_heat_risk,
@@ -49,6 +60,10 @@ from risk_engine import (
     calculate_underground_kinetic_risk,
     calculate_high_rise_kinetic_risk,
     calculate_datacenter_kinetic_risk,
+    WIND_TERRAIN_EXPONENTS,
+    DEFAULT_WIND_TERRAIN,
+    DEFAULT_FLOOR_HEIGHT_M,
+    DEFAULT_WORKING_DISTANCE_MM,
     calculate_wind_energy_kinetic_risk,
     calculate_mining_quarrying_kinetic_risk,
     calculate_marine_port_kinetic_risk,
@@ -99,6 +114,8 @@ from ui_helpers import (
     render_stream_arm_toggle,
     render_stream_not_armed_note,
     render_feed_ok_banner,
+    render_feed_status_banner,
+    render_simulated_data_banner,
     render_data_unavailable_banner,
     render_db_fatal_banner,
     render_virtual_library,
@@ -130,6 +147,8 @@ from data_feeds import (
     MARINE_PORT_COORDS,
     DataFeedError,
     CACHE_TTL_SECONDS,
+    combine_provenance,
+    demo_mode_enabled,
 )
 
 try:
@@ -148,8 +167,8 @@ try:
 except ImportError:
     TTS_LIBRARY_AVAILABLE = False
 
-LOGO_MODERNE_PATH = "logo_moderne.png"
-LOGO_CROQUIS_PATH = "logo_croquis.png"
+LOGO_MODERNE_PATH = "assets/logo_moderne.webp"
+LOGO_CROQUIS_PATH = "assets/logo_croquis.webp"
 
 # ---------------------------------------------------------------------------
 # Illustrative reference coordinates for the Field Inspection / geolocation
@@ -229,7 +248,11 @@ def is_inside_geofence(lat: float, lon: float, radius_km: float = GEOFENCE_RADIU
 # see auth.py for the fail-closed credential-resolution and lockout logic.
 # ---------------------------------------------------------------------------
 st.session_state.setdefault("authenticated", False)
+# Remember for the session whether the native iOS/Android shell opened us.
+detect_shell()
 require_login()
+# GDPR / UAE PDPL: explicit, un-pre-ticked choices before first use.
+require_privacy_choices(st.session_state.get("lang", "fr"))
 if not st.session_state.get("authenticated", False):
     # Defense in depth: require_login() already st.stop()s the script for
     # an unauthenticated visitor, so this line should be unreachable - but
@@ -259,6 +282,13 @@ def _render_ai_layer_sidebar(lang: str) -> str:
     working exactly as before."""
     server_key = get_configured_ai_api_key()
     st.sidebar.subheader(t("ai_layer_header", lang))
+    if not has_consent(CONSENT_AI):
+        st.sidebar.caption(
+            "🔒 Briefings IA désactivés (vos choix de confidentialité). Activez-les dans « Mon compte »."
+            if lang == "fr" else
+            "🔒 AI briefings are off (your privacy choices). Turn them on under 'My account'."
+        )
+        return None
     if server_key:
         st.sidebar.caption(
             "🔑 " + ("Clé API configurée par le serveur (aucune saisie requise)." if lang == "fr"
@@ -717,7 +747,7 @@ def _poll_narrative_job(key_prefix: str, lang: str) -> None:
         return
 
     final_text = job.full_text
-    if job.error and not final_text:
+    if job.error:
         # The background job failed before streaming any real text (e.g.
         # a bad key, or the network path AsyncAnthropic uses being
         # blocked) - fall back to the synchronous, TTL-cached generator
@@ -764,12 +794,13 @@ def render_ai_narrative(
     mercy."""
     try:
         return _render_ai_narrative_body(result, controls, api_key, lang, enable_web_search, key_prefix)
-    except Exception as exc:  # noqa: BLE001 - the AI layer must never take the rest of the page down with it
+    except Exception:  # noqa: BLE001 - the AI layer must never take the rest of the page down with it
+        logging.getLogger("maku.app").exception("AI narrative rendering failed")
         offline_narrative = generate_narrative(result, controls, api_key="", lang=lang)
         st.warning(
-            f"Couche IA temporairement indisponible - résumé hors-ligne affiché ci-dessous. ({exc})"
+            "Couche IA temporairement indisponible - résumé hors-ligne affiché ci-dessous."
             if lang == "fr" else
-            f"AI advisory layer temporarily unavailable - showing the offline summary below. ({exc})"
+            "AI advisory layer temporarily unavailable - showing the offline summary below."
         )
         st.write(offline_narrative)
         st.session_state["latest_ai_narrative"] = offline_narrative
@@ -819,12 +850,14 @@ def _render_ai_narrative_body(
 
     if st.session_state.get(pending_key):
         st.session_state[pending_key] = False
+        job = None
         if api_key and ANTHROPIC_SDK_AVAILABLE:
             job = start_narrative_background_job(
                 result, controls, api_key, lang,
                 enable_web_search=enable_web_search,
                 worker_strain_summary=worker_strain_summary,
             )
+        if job is not None:
             st.session_state[job_key] = job
             st.session_state[f"{key_prefix}_narrative_fallback_args"] = dict(
                 result=result, controls=controls, api_key=api_key, lang=lang,
@@ -1026,6 +1059,13 @@ def render_org_context_selector(lang: str) -> None:
     set_org_context(st, organization=organization, project=project, site=site)
 
 
+def render_result_provenance(result: dict, lang: str) -> None:
+    """Re-shows the red banner next to the RESULT (not only next to the
+    inputs) whenever any input was simulated."""
+    if result.get("data_provenance") == "SIMULATED":
+        render_simulated_data_banner(st, lang, "Assessment computed from simulated inputs")
+
+
 def alert_with_regulation(base_message: str, result: dict) -> str:
     """Appends the regulatory profile that actually produced this result to
     an alert/TTS message - e.g. 'CRITICAL ALERT: ... — France (Code du
@@ -1097,6 +1137,8 @@ def render_uv_and_bushfire_smoke_panel(lang: str, country_code: str, uv_index: f
             st.subheader(t("bushfire_smoke_header", lang))
             try:
                 aq = fetch_air_quality_live(lat, lon)
+                if not aq.get("is_live"):
+                    render_simulated_data_banner(st, lang, aq.get("source", ""))
                 pm25 = aq["pm2_5_ugm3"]
                 smoke_category = classify_bushfire_smoke_pm25(pm25, bands)
                 st.metric("PM2.5", f"{pm25} µg/m³", help=smoke_category)
@@ -1122,6 +1164,8 @@ def render_extended_air_quality_panel(lang: str, lat: float, lon: float) -> None
         except DataFeedError as exc:
             st.info(str(exc))
             return
+        if not aq.get("is_live"):
+            render_simulated_data_banner(st, lang, aq.get("source", ""))
 
         classification = classify_ambient_air_quality(
             pm25_ugm3=aq.get("pm2_5_ugm3", 0.0),
@@ -1201,6 +1245,7 @@ def render_multi_site_heat_overview(lang: str) -> None:
                     "site_id": site_id,
                     "ambient_temp": weather["temperature_2m"],
                     "relative_humidity": weather["relative_humidity_2m"],
+                    "data": "LIVE" if weather.get("is_live") else "SIMULATED",
                 })
             except DataFeedError:
                 continue
@@ -1208,7 +1253,10 @@ def render_multi_site_heat_overview(lang: str) -> None:
             st.info(t("field_inspection_error_generic", lang))
             return
         sites_df = pd.DataFrame(rows)
-        scored = calculate_multi_site_heat_risk(sites_df)
+        if (sites_df["data"] != "LIVE").any():
+            render_simulated_data_banner(st, lang, "Multi-site overview")
+        scored = calculate_multi_site_heat_risk(sites_df.drop(columns=["data"]))
+        scored.insert(1, "data", sites_df["data"].values)
         st.dataframe(scored, width="stretch")
 
 
@@ -1233,6 +1281,20 @@ def render_field_inspection_section(lang: str) -> None:
     """
     st.subheader(t("field_inspection_header", lang))
     st.caption(t("field_inspection_caption", lang))
+
+    if not has_consent(CONSENT_LOCATION):
+        st.info(
+            "📍 La localisation est désactivée (vos choix de confidentialité). Activez-la dans « Mon compte » "
+            "pour utiliser le GPS et la détection automatique du pays."
+            if lang == "fr" else
+            "📍 Location is off (your privacy choices). Turn it on under 'My account' to use GPS and "
+            "automatic country detection."
+        )
+        return
+
+    if in_mobile_shell():
+        _render_native_field_inspection(lang)
+        return
 
     if not GEOLOCATION_AVAILABLE:
         st.info(
@@ -1296,6 +1358,149 @@ def render_field_inspection_section(lang: str) -> None:
     _render_field_position_result(lang, lat, lon, accuracy=coords.get("accuracy"), key_suffix="gps")
 
 
+
+def _render_native_field_inspection(lang: str) -> None:
+    """Field inspection inside the iOS/Android app: native GPS fix and native
+    camera, through the mobile bridge (mobile_bridge.py <-> mobile/www/js/app.js)."""
+    fr = lang == "fr"
+    col_gps, col_photo = st.columns(2)
+    with col_gps:
+        if st.button("📍 " + ("Position GPS du téléphone" if fr else "Use phone GPS"), key="native_gps_btn",
+                     width="stretch"):
+            st.session_state["native_gps_nonce"] = st.session_state.get("native_gps_nonce", 0) + 1
+            st.session_state.pop("field_gps_last_result", None)
+    with col_photo:
+        if st.button("📷 " + ("Photo du site" if fr else "Take site photo"), key="native_photo_btn",
+                     width="stretch"):
+            st.session_state["native_photo_nonce"] = st.session_state.get("native_photo_nonce", 0) + 1
+            st.session_state["native_photo_pending"] = True
+
+    # --- camera -----------------------------------------------------------
+    if st.session_state.get("native_photo_pending"):
+        photo = request_native_photo(key=f"native_photo_{st.session_state['native_photo_nonce']}")
+        if photo is None:
+            st.caption("📷 " + ("Appareil photo ouvert…" if fr else "Camera open…"))
+        else:
+            st.session_state["native_photo_pending"] = False
+            if isinstance(photo, bytes):
+                _store_site_photo(photo)
+            elif photo.get("error") not in ("cancelled",):
+                st.warning("Appareil photo indisponible." if fr else "Camera unavailable.")
+    _render_site_photos(lang)
+
+    # --- GPS ----------------------------------------------------------------
+    nonce = st.session_state.get("native_gps_nonce")
+    if not nonce:
+        return
+    location = st.session_state.get("field_gps_last_result")
+    if location is None:
+        location = request_native_location(key=f"native_gps_{nonce}")
+        if location is None:
+            st.info(t("field_inspection_loading", lang))
+            return
+        st.session_state["field_gps_last_result"] = location
+    if "error" in location:
+        code = location["error"].get("code")
+        st.warning(t({1: "field_inspection_denied", 2: "field_inspection_unavailable",
+                      3: "field_inspection_timeout"}.get(code, "field_inspection_error_generic"), lang))
+        _render_ip_geolocation_fallback(lang, key_suffix="native_gps_error")
+        return
+    coords = location.get("coords", {})
+    if coords.get("latitude") is None or coords.get("longitude") is None:
+        st.warning(t("field_inspection_error_generic", lang))
+        return
+    _render_field_position_result(lang, coords["latitude"], coords["longitude"],
+                                  accuracy=coords.get("accuracy"), key_suffix="native")
+
+
+MAX_SITE_PHOTOS = 6
+
+
+def _store_site_photo(photo: bytes) -> None:
+    """Keeps up to MAX_SITE_PHOTOS compressed JPEGs in the session; they are
+    embedded in the PDF report (ui_helpers._build_report_pdf)."""
+    try:
+        from PIL import Image
+        img = Image.open(io.BytesIO(photo))
+        img = img.convert("RGB")
+        img.thumbnail((1280, 1280))
+        buf = io.BytesIO()
+        img.save(buf, "JPEG", quality=72, optimize=True)
+        photo = buf.getvalue()
+    except Exception:  # noqa: BLE001 - keep the original bytes if PIL can't read it
+        pass
+    photos = st.session_state.setdefault("site_photos", [])
+    photos.append(photo)
+    del photos[:-MAX_SITE_PHOTOS]
+
+
+def _render_site_photos(lang: str) -> None:
+    photos = st.session_state.get("site_photos") or []
+    if not photos:
+        return
+    st.caption(("Photos jointes au rapport PDF" if lang == "fr" else "Photos attached to the PDF report")
+               + f" ({len(photos)}/{MAX_SITE_PHOTOS})")
+    cols = st.columns(min(len(photos), 3))
+    for idx, photo in enumerate(photos):
+        cols[idx % len(cols)].image(photo, width="stretch")
+    if st.button("🗑️ " + ("Retirer les photos" if lang == "fr" else "Remove photos"), key="clear_site_photos"):
+        st.session_state["site_photos"] = []
+        st.rerun()
+
+
+def render_push_opt_in(lang: str, where: str) -> None:
+    """Stop-work push alerts on this phone (native shell only). The OS
+    permission prompt is only triggered by this explicit tap, after the
+    explanation - never on launch."""
+    if not in_mobile_shell() or st.session_state.get("_push_registered"):
+        return
+    fr = lang == "fr"
+    with st.container(border=True):
+        st.markdown("🔔 **" + ("Alertes d'arrêt de travail" if fr else "Stop-work alerts") + "**")
+        st.caption(
+            "Recevez une notification quand une évaluation de votre organisation déclenche un dépassement "
+            "de sécurité." if fr else
+            "Get a notification when an assessment in your organisation triggers a safety override."
+        )
+        if st.button("Activer sur ce téléphone" if fr else "Turn on for this phone", key=f"push_optin_{where}"):
+            st.session_state["_push_nonce"] = st.session_state.get("_push_nonce", 0) + 1
+    nonce = st.session_state.get("_push_nonce")
+    if not nonce:
+        return
+    reply = request_push_token(key=f"push_token_{where}_{nonce}")
+    if reply is None:
+        return
+    if reply.get("token"):
+        try:
+            push.register_device(st.session_state.get("_auth_username", ""), reply["token"],
+                                 reply.get("platform") or shell_platform() or "", get_org_context(st)["organization"])
+            st.session_state["_push_registered"] = True
+            st.success("Alertes activées." if fr else "Alerts turned on.")
+        except Exception:  # noqa: BLE001
+            st.error("Impossible d'enregistrer cet appareil." if fr else "Could not register this device.")
+    elif reply.get("error") == "denied":
+        st.info("Notifications refusées - activez-les dans les réglages du téléphone." if fr
+                else "Notifications are off - turn them on in the phone's Settings.")
+    st.session_state.pop("_push_nonce", None)
+
+
+def on_assessment_logged(result: dict, controls: list) -> None:
+    """After every logged assessment: cache it on the phone for offline use
+    and push a stop-work alert to the organisation if it raised an override."""
+    from analytics import MODULE_KEY_METRIC
+    metric_field = MODULE_KEY_METRIC.get(result.get("module", ""))
+    label = {
+        "perceived_temp": "Perceived temperature (°C)", "humidex": "Humidex",
+        "scaled_wind_speed": "Wind at working height (kn)", "arc_flash_energy_cal": "Arc-flash energy (cal/cm²)",
+        "hub_height_wind_speed_ms": "Hub-height wind (m/s)", "noise_dose_pct": "Noise dose (%)",
+        "tide_clearance_margin_m": "Tide clearance margin (m)",
+    }.get(metric_field or "", metric_field or "")
+    send_assessment_to_shell(result, controls, key_metric_label=label,
+                             key_metric_value=result.get(metric_field) if metric_field else None)
+    if result.get("safety_override"):
+        ctx = get_org_context(st)
+        push.notify_stop_work(result, ctx["organization"], ctx.get("site") or result.get("module", ""))
+
 def _render_field_position_result(lang: str, lat: float, lon: float,
                                    accuracy: float | None = None, key_suffix: str = "gps") -> None:
     """Shared position-result rendering (metrics, geofence check, map,
@@ -1347,7 +1552,7 @@ def _render_ip_geolocation_fallback(lang: str, key_suffix: str) -> None:
     st.caption(t("ip_geo_fallback_note", lang))
     if st.button(t("ip_geo_fallback_button", lang), key=f"ip_geo_fallback_{key_suffix}"):
         try:
-            ip_location = fetch_ip_geolocation_fallback()
+            ip_location = fetch_ip_geolocation_fallback(client_ip=get_client_ip())
         except DataFeedError as exc:
             st.warning(str(exc))
             return
@@ -1355,6 +1560,8 @@ def _render_ip_geolocation_fallback(lang: str, key_suffix: str) -> None:
 
     ip_location = st.session_state.get("field_ip_fallback_result")
     if ip_location:
+        if not ip_location.get("is_live"):
+            render_simulated_data_banner(st, lang, ip_location.get("source", ""))
         st.caption(f"{ip_location['source']} · {ip_location.get('city', '')} {ip_location.get('country_name', '')}")
         _render_field_position_result(lang, ip_location["lat"], ip_location["lon"], key_suffix="ip")
 
@@ -1370,7 +1577,7 @@ def render_daily_briefing_section(lang: str) -> None:
     st.subheader(t("daily_briefing_header", lang))
     st.caption(t("daily_briefing_caption", lang))
 
-    api_key = st.session_state.get("api_key", "")
+    api_key = (get_configured_ai_api_key() or st.session_state.get("api_key", "")) if has_consent(CONSENT_AI) else ""
     col1, col2 = st.columns(2)
     with col1:
         site_name = st.text_input(t("daily_briefing_site_label", lang), value="MAKU Site", key="briefing_site_name")
@@ -1379,7 +1586,14 @@ def render_daily_briefing_section(lang: str) -> None:
 
     if st.button(t("daily_briefing_generate_button", lang), key="briefing_generate_button"):
         tasks = [line.strip() for line in tasks_raw.splitlines() if line.strip()]
-        weather_summary = fetch_live_weather_universal(24.4539, 54.3773, api_key=None)
+        try:
+            weather_summary = fetch_live_weather_universal(24.4539, 54.3773, api_key=None)
+            if not weather_summary.get("is_live"):
+                render_simulated_data_banner(st, lang, weather_summary.get("source", ""))
+        except DataFeedError:
+            weather_summary = {"note": "Live weather unavailable - verify conditions on site before the talk."}
+            st.warning("Météo en direct indisponible - vérifiez les conditions sur site."
+                       if lang == "fr" else "Live weather unavailable - verify conditions on site.")
         result = generate_daily_briefing(site_name, tasks, weather_summary, api_key or None, lang)
         st.session_state["daily_briefing_script"] = result["script"]
 
@@ -1633,14 +1847,19 @@ def render_dashboard():
 
     st.subheader(t("dashboard_module_col_header", lang))
 
+    render_push_opt_in(lang, where="dashboard")
+
     st.markdown("---")
     render_field_inspection_section(lang)
 
     st.markdown("---")
     render_multi_site_heat_overview(lang)
 
-    st.markdown("---")
-    render_worker_physiology_section(lang)
+    # Worker heart-rate strain screening is a health feature (Apple 1.4.1,
+    # Google Play Health apps declaration). Off unless the operator opts in.
+    if os.environ.get("MAKU_ENABLE_WORKER_PHYSIOLOGY", "").strip().lower() in ("1", "true", "yes", "on"):
+        st.markdown("---")
+        render_worker_physiology_section(lang)
 
     st.markdown("---")
     render_tomorrow_briefing_section(lang, api_key)
@@ -1694,6 +1913,7 @@ def render_solar_farms():
     collects inputs (manual sliders or the live Open-Meteo feed), calls
     the engine, and renders the result."""
     st.set_page_config(page_title="MAKU - Solar Farms", page_icon="☀️", layout="wide")
+    feed_payload = None  # set when a live/simulated feed supplied the inputs
     inject_mobile_css()
 
     lang = language_selector(st)
@@ -1718,7 +1938,8 @@ def render_solar_farms():
     if data_mode == "auto":
         try:
             live = fetch_solar_live()
-            render_feed_ok_banner(st, lang, live["source"], live["fetched_at"], cache_ttl_seconds=CACHE_TTL_SECONDS)
+            render_feed_status_banner(st, lang, live, cache_ttl_seconds=CACHE_TTL_SECONDS)
+            feed_payload = live
             ambient_temp = live["temperature_2m"]
             uv_index = live["uv_index"]
             ghi = live["shortwave_radiation"]
@@ -1785,14 +2006,17 @@ def render_solar_farms():
         )
         controls = get_controls(result)
 
+        result["data_provenance"] = combine_provenance([feed_payload])
         log_assessment(st, result)
         st.session_state["latest_risk_result"] = result
         st.session_state["latest_controls"] = controls
+        on_assessment_logged(result, controls)
         st.session_state["solar_narrative_pending_regen"] = True
 
     if st.session_state.get("latest_risk_result", {}).get("module") == "Solar (Desert)":
         result = st.session_state["latest_risk_result"]
         controls = st.session_state["latest_controls"]
+        render_result_provenance(result, lang)
 
         if result["risk_level"] == "CRITICAL":
             st.error(alert_with_regulation(t("solar_critical_alert", lang), result))
@@ -1851,6 +2075,7 @@ def render_offshore_oil_gas():
     are shown as context-only readouts since the current risk_engine
     formula doesn't consume them."""
     st.set_page_config(page_title="MAKU - Offshore Oil & Gas", page_icon="🌊", layout="wide")
+    feed_payload = None  # set when a live/simulated feed supplied the inputs
     inject_mobile_css()
 
     lang = language_selector(st)
@@ -1874,7 +2099,8 @@ def render_offshore_oil_gas():
     if data_mode == "auto":
         try:
             live = fetch_offshore_live()
-            render_feed_ok_banner(st, lang, live["source"], live["fetched_at"], cache_ttl_seconds=CACHE_TTL_SECONDS)
+            render_feed_status_banner(st, lang, live, cache_ttl_seconds=CACHE_TTL_SECONDS)
+            feed_payload = live
             ambient_temp = live["temperature_2m"]
             relative_humidity = live["relative_humidity_2m"]
             wind_speed = live["wind_speed_10m_kn"]
@@ -1933,14 +2159,17 @@ def render_offshore_oil_gas():
         )
         controls = get_controls(result)
 
+        result["data_provenance"] = combine_provenance([feed_payload])
         log_assessment(st, result)
         st.session_state["latest_risk_result"] = result
         st.session_state["latest_controls"] = controls
+        on_assessment_logged(result, controls)
         st.session_state["offshore_narrative_pending_regen"] = True
 
     if st.session_state.get("latest_risk_result", {}).get("module") == "Offshore (Marine)":
         result = st.session_state["latest_risk_result"]
         controls = st.session_state["latest_controls"]
+        render_result_provenance(result, lang)
 
         if result["safety_override"]:
             render_stop_work_trigger_registry(st, get_stop_work_triggers(result.get("module")), lang)
@@ -1995,6 +2224,7 @@ def render_metros_tunnels():
     sensor-hub stream - clearly labeled as simulated, never presented as
     real data."""
     st.set_page_config(page_title="MAKU - Metros & Tunnels", page_icon="🚇", layout="wide")
+    feed_payload = None  # set when a live/simulated feed supplied the inputs
     inject_mobile_css()
 
     lang = language_selector(st)
@@ -2019,7 +2249,8 @@ def render_metros_tunnels():
         if armed:
             try:
                 telemetry = simulate_tunnel_telemetry()
-                render_feed_ok_banner(st, lang, telemetry["source"], telemetry["fetched_at"])
+                render_feed_status_banner(st, lang, telemetry)
+                feed_payload = telemetry
                 ambient_temp = telemetry["ambient_temp"]
                 geothermal_humidity = telemetry["geothermal_humidity"]
                 pm25 = telemetry["pm25"]
@@ -2063,14 +2294,17 @@ def render_metros_tunnels():
         )
         controls = get_controls(result)
 
+        result["data_provenance"] = combine_provenance([feed_payload])
         log_assessment(st, result)
         st.session_state["latest_risk_result"] = result
         st.session_state["latest_controls"] = controls
+        on_assessment_logged(result, controls)
         st.session_state["underground_narrative_pending_regen"] = True
 
     if st.session_state.get("latest_risk_result", {}).get("module") == "Underground (Tunnel/Metro)":
         result = st.session_state["latest_risk_result"]
         controls = st.session_state["latest_controls"]
+        render_result_provenance(result, lang)
 
         if result["safety_override"]:
             render_stop_work_trigger_registry(st, get_stop_work_triggers(result.get("module")), lang)
@@ -2122,6 +2356,7 @@ def render_high_rise():
     "Automatique" mode arms a bounded random-walk simulator clearly
     labeled as simulated."""
     st.set_page_config(page_title="MAKU - High-Rise", page_icon="🏙️", layout="wide")
+    feed_payload = None  # set when a live/simulated feed supplied the inputs
     inject_mobile_css()
 
     lang = language_selector(st)
@@ -2148,7 +2383,8 @@ def render_high_rise():
         if armed:
             try:
                 telemetry = simulate_crane_telemetry(floor_level)
-                render_feed_ok_banner(st, lang, telemetry["source"], telemetry["fetched_at"])
+                render_feed_status_banner(st, lang, telemetry)
+                feed_payload = telemetry
                 ground_wind_speed_knots = telemetry["ground_wind_speed_knots"]
                 crane_load_mass_tons = telemetry["crane_load_mass_tons"]
 
@@ -2168,9 +2404,31 @@ def render_high_rise():
         st.subheader(t("highrise_env_data_header", lang))
         col1, col2 = st.columns(2)
         with col1:
-            ground_wind_speed_knots = st.slider(t("highrise_ground_wind_label", lang), 0.0, 55.0, 15.0, 0.5)
+            ground_wind_speed_knots = st.number_input(t("highrise_ground_wind_label", lang) + " (10 m)",
+                                                      0.0, 80.0, 15.0, 0.5)
         with col2:
-            crane_load_mass_tons = st.slider(t("highrise_crane_load_label", lang), 0.5, 25.0, 4.0, 0.5)
+            crane_load_mass_tons = st.number_input(t("highrise_crane_load_label", lang), 0.5, 60.0, 4.0, 0.5)
+
+    fr = lang == "fr"
+    _terrain_labels = {
+        "open_sea": "Mer / côte - ASCE D (α 0.11)" if fr else "Open sea / coast - ASCE D (α 0.11)",
+        "open_country": "Terrain dégagé - ASCE C (α 0.15)" if fr else "Open country - ASCE C (α 0.15)",
+        "suburban": "Urbain / périurbain - ASCE B (α 0.25)" if fr else "Urban / suburban - ASCE B (α 0.25)",
+        "urban_centre": "Centre-ville très dense (α 0.33)" if fr else "Dense city centre (α 0.33)",
+    }
+    col1, col2, col3 = st.columns(3)
+    terrain = col1.selectbox("Rugosité du terrain" if fr else "Terrain roughness", list(WIND_TERRAIN_EXPONENTS),
+                             index=list(WIND_TERRAIN_EXPONENTS).index(DEFAULT_WIND_TERRAIN),
+                             format_func=lambda v: _terrain_labels[v], key="hr_terrain")
+    floor_height_m = col2.number_input("Hauteur d'étage (m)" if fr else "Floor-to-floor height (m)",
+                                       2.5, 6.0, DEFAULT_FLOOR_HEIGHT_M, 0.1, key="hr_floor_h")
+    use_measured = col3.checkbox("Vent mesuré à la hauteur de travail" if fr else "Wind measured at working height",
+                                 key="hr_use_measured")
+    measured_hook_wind_knots = (
+        st.number_input("Vent mesuré au crochet / à l'étage (kn)" if fr else "Measured hook / floor wind (kn)",
+                        0.0, 100.0, 20.0, 0.5, key="hr_measured")
+        if use_measured else None
+    )
 
     st.markdown("---")
 
@@ -2180,17 +2438,23 @@ def render_high_rise():
             floor_level=floor_level,
             crane_load_mass_tons=crane_load_mass_tons,
             regulatory_profile=country_thresholds,
+            terrain=terrain,
+            floor_height_m=floor_height_m,
+            measured_hook_wind_knots=measured_hook_wind_knots,
         )
         controls = get_controls(result)
 
+        result["data_provenance"] = combine_provenance([feed_payload])
         log_assessment(st, result)
         st.session_state["latest_risk_result"] = result
         st.session_state["latest_controls"] = controls
+        on_assessment_logged(result, controls)
         st.session_state["highrise_narrative_pending_regen"] = True
 
     if st.session_state.get("latest_risk_result", {}).get("module") == "High-Rise (Vertical Urban)":
         result = st.session_state["latest_risk_result"]
         controls = st.session_state["latest_controls"]
+        render_result_provenance(result, lang)
 
         if result["safety_override"]:
             render_stop_work_trigger_registry(st, get_stop_work_triggers(result.get("module")), lang)
@@ -2204,7 +2468,7 @@ def render_high_rise():
             st.success(t("highrise_standard_ok", lang))
 
         col1, col2, col3 = st.columns(3)
-        col1.metric(t("scaled_wind_label", lang), f"{result['scaled_wind_speed']} kn")
+        col1.metric(t("scaled_wind_label", lang), f"{result['scaled_wind_speed']} kn", help=result["wind_source"])
         col2.metric(t("oscillation_index_label", lang), result["oscillation_index"])
         col3.metric(t("crane_gate_label", lang), f"{country_thresholds['wind_shear']['crane_suspend_knots']} kn")
         crane_suspend_mph = country_thresholds["wind_shear"].get("crane_suspend_mph")
@@ -2256,6 +2520,7 @@ def render_data_centers():
     are site/operational facts, not sensor readings, so they're always
     manual checkboxes even in auto mode."""
     st.set_page_config(page_title="MAKU - Data Centers", page_icon="🖥️", layout="wide")
+    feed_payload = None  # set when a live/simulated feed supplied the inputs
     inject_mobile_css()
 
     lang = language_selector(st)
@@ -2279,7 +2544,8 @@ def render_data_centers():
         if armed:
             try:
                 telemetry = simulate_datacenter_telemetry()
-                render_feed_ok_banner(st, lang, telemetry["source"], telemetry["fetched_at"])
+                render_feed_status_banner(st, lang, telemetry)
+                feed_payload = telemetry
                 electrical_load_kw = telemetry["electrical_load_kw"]
                 hot_aisle_temp = telemetry["hot_aisle_temp"]
 
@@ -2298,9 +2564,59 @@ def render_data_centers():
         st.subheader(t("datacenter_env_data_header", lang))
         col1, col2 = st.columns(2)
         with col1:
-            electrical_load_kw = st.slider(t("datacenter_load_label", lang), 20.0, 2000.0, 400.0, 10.0)
+            hot_aisle_temp = st.number_input(t("datacenter_hot_aisle_label", lang), 15.0, 60.0, 34.0, 0.5)
         with col2:
-            hot_aisle_temp = st.slider(t("datacenter_hot_aisle_label", lang), 20.0, 55.0, 34.0, 0.5)
+            electrical_load_kw = st.number_input(
+                t("datacenter_load_label", lang) + (" (contexte)" if lang == "fr" else " (context only)"),
+                0.0, 5000.0, 400.0, 10.0,
+                help=("Enregistré pour le rapport uniquement - la charge n'entre pas dans le calcul d'arc électrique."
+                      if lang == "fr" else
+                      "Recorded for the report only - load is not used in the arc-flash calculation."),
+            )
+
+    fr = lang == "fr"
+    st.subheader("⚡ " + ("Énergie incidente d'arc électrique" if fr else "Arc-flash incident energy"))
+    st.caption(
+        "Source par ordre de préférence : (1) étiquette arc électrique de l'équipement, (2) calcul de "
+        "dépistage Lee à partir des données de défaut, (3) inconnue - aucune valeur n'est inventée."
+        if fr else
+        "Best source first: (1) the equipment's arc-flash label, (2) a Lee screening calculation from fault "
+        "data, (3) unknown - MAKU never invents a value."
+    )
+    arc_source = st.radio(
+        "Source" if fr else "Source",
+        options=["label", "lee", "unknown"],
+        format_func=lambda v: {
+            "label": "Étiquette de l'équipement" if fr else "Equipment arc-flash label",
+            "lee": "Calcul Lee (tension, courant de défaut, temps de coupure)" if fr
+                   else "Lee calculation (voltage, fault current, clearing time)",
+            "unknown": "Inconnue / pas encore étudiée" if fr else "Unknown / not yet studied",
+        }[v],
+        index=2,  # default "unknown": never pre-fill an incident-energy number
+        horizontal=True, key="dc_arc_source",
+    )
+    label_incident_energy_cal = voltage_kv = fault_current_ka = clearing_time_s = None
+    working_distance_mm = DEFAULT_WORKING_DISTANCE_MM
+    if arc_source == "label":
+        label_incident_energy_cal = st.number_input(
+            "Énergie incidente sur l'étiquette (cal/cm²)" if fr else "Incident energy on the label (cal/cm²)",
+            min_value=0.0, max_value=200.0, value=None, step=0.1, key="dc_label_ie",
+            placeholder="ex. 6.4" if fr else "e.g. 6.4")
+    elif arc_source == "lee":
+        c1, c2, c3, c4 = st.columns(4)
+        voltage_kv = c1.number_input("Tension (kV)" if fr else "Voltage (kV)", 0.208, 35.0, 0.48, 0.001,
+                                     format="%.3f", key="dc_v")
+        fault_current_ka = c2.number_input("Courant de défaut franc (kA)" if fr else "Bolted fault current (kA)",
+                                           0.5, 120.0, 25.0, 0.5, key="dc_isc")
+        clearing_time_s = c3.number_input("Temps de coupure (s)" if fr else "Clearing time (s)",
+                                          0.01, 2.0, 0.1, 0.01, key="dc_t")
+        working_distance_mm = c4.number_input("Distance de travail (mm)" if fr else "Working distance (mm)",
+                                              300.0, 2000.0, DEFAULT_WORKING_DISTANCE_MM, 5.0, key="dc_d")
+    c1, c2 = st.columns(2)
+    cold_aisle_temp_c = c1.number_input("Consigne allée froide (°C)" if fr else "Cold-aisle setpoint (°C)",
+                                        15.0, 32.0, 22.0, 0.5, key="dc_cold")
+    energized_work_planned = c2.checkbox("Travaux sous tension prévus" if fr else "Energized work planned",
+                                         value=True, key="dc_energized")
 
     st.subheader(t("confined_clean_agent_label", lang))
     col1, col2 = st.columns(2)
@@ -2318,30 +2634,52 @@ def render_data_centers():
             ceiling_void_confined=ceiling_void_confined,
             gas_system_armed=gas_system_armed,
             regulatory_profile=country_thresholds,
+            label_incident_energy_cal=label_incident_energy_cal,
+            voltage_kv=voltage_kv,
+            fault_current_ka=fault_current_ka,
+            clearing_time_s=clearing_time_s,
+            working_distance_mm=working_distance_mm,
+            cold_aisle_temp_c=cold_aisle_temp_c,
+            energized_work_planned=energized_work_planned,
         )
         controls = get_controls(result)
 
+        result["data_provenance"] = combine_provenance([feed_payload])
         log_assessment(st, result)
         st.session_state["latest_risk_result"] = result
         st.session_state["latest_controls"] = controls
+        on_assessment_logged(result, controls)
         st.session_state["datacenter_narrative_pending_regen"] = True
 
     if st.session_state.get("latest_risk_result", {}).get("module") == "Data Center (Controlled Critical Environment)":
         result = st.session_state["latest_risk_result"]
         controls = st.session_state["latest_controls"]
+        render_result_provenance(result, lang)
 
         if result["safety_override"]:
             render_stop_work_trigger_registry(st, get_stop_work_triggers(result.get("module")), lang)
             st.error(t("safety_override", lang))
             st.error(alert_with_regulation(t("datacenter_critical_alert", lang), result))
             render_tts_button(alert_with_regulation(t("datacenter_critical_alert", lang), result), lang, key="datacenter_tts")
-        elif result["risk_band"] == "HIGH":
+        elif result["risk_band"] in ("HIGH", "MODERATE"):
             st.warning(t("datacenter_high_alert", lang))
         else:
             st.success(t("datacenter_standard_ok", lang))
 
         col1, col2, col3 = st.columns(3)
-        col1.metric(t("arc_flash_energy_label", lang), f"{result['arc_flash_energy_cal']} cal/cm²")
+        if result["arc_flash_energy_cal"] is None:
+            col1.metric(t("arc_flash_energy_label", lang), "Inconnue" if lang == "fr" else "Unknown")
+            st.error(
+                "⚡ Énergie incidente inconnue : aucun travail sous tension tant que l'étiquette ou une étude "
+                "d'arc électrique (IEEE 1584) n'a pas confirmé l'énergie et la tenue EPI requise."
+                if lang == "fr" else
+                "⚡ Incident energy unknown: no energized work until the equipment label or an arc-flash study "
+                "(IEEE 1584) confirms the incident energy and the required arc rating."
+            )
+        else:
+            col1.metric(t("arc_flash_energy_label", lang), f"{result['arc_flash_energy_cal']} cal/cm²",
+                        help=result["arc_flash_source"])
+            st.caption(f"EPI / PPE: {result['arc_flash_ppe']} · {result['arc_flash_source']}")
         col2.metric(t("thermal_differential_label", lang), f"{result['thermal_differential']} °C")
         col3.metric(t("esd_risk_label", lang), result["risk_band"])
 
@@ -2384,6 +2722,7 @@ def render_wind_energy():
     for wind speed; lightning and offshore sea-state are always manual
     inputs since they're site observations, not generic weather-API fields."""
     st.set_page_config(page_title="MAKU - Wind Energy", page_icon="💨", layout="wide")
+    feed_payload = None  # set when a live/simulated feed supplied the inputs
     inject_mobile_css()
 
     lang = language_selector(st)
@@ -2415,7 +2754,8 @@ def render_wind_energy():
             # mock numbers under a green "live" banner.
             live = fetch_live_weather_universal(WIND_ENERGY_COORDS["lat"], WIND_ENERGY_COORDS["lon"],
                                                  allow_mock_fallback=False)
-            render_feed_ok_banner(st, lang, live["source"], live["fetched_at"], cache_ttl_seconds=CACHE_TTL_SECONDS)
+            render_feed_status_banner(st, lang, live, cache_ttl_seconds=CACHE_TTL_SECONDS)
+            feed_payload = live
             hub_height_wind_speed_ms = round(live["wind_speed_10m_kn"] * 0.514444, 1)  # knots -> m/s
             st.metric(t("windenergy_wind_label", lang), f"{hub_height_wind_speed_ms} m/s")
         except DataFeedError as exc:
@@ -2449,14 +2789,17 @@ def render_wind_energy():
         )
         controls = get_controls(result)
 
+        result["data_provenance"] = combine_provenance([feed_payload])
         log_assessment(st, result)
         st.session_state["latest_risk_result"] = result
         st.session_state["latest_controls"] = controls
+        on_assessment_logged(result, controls)
         st.session_state["windenergy_narrative_pending_regen"] = True
 
     if st.session_state.get("latest_risk_result", {}).get("module") == "Wind Energy (Onshore/Offshore)":
         result = st.session_state["latest_risk_result"]
         controls = st.session_state["latest_controls"]
+        render_result_provenance(result, lang)
 
         if result["safety_override"]:
             render_stop_work_trigger_registry(st, get_stop_work_triggers(result.get("module")), lang)
@@ -2511,6 +2854,7 @@ def render_mining_quarrying():
     manual-input only. Noise criterion/exchange-rate come from the sidebar
     country selector (Module 5a) rather than a hardcoded constant."""
     st.set_page_config(page_title="MAKU - Mining & Quarrying", page_icon="⛏️", layout="wide")
+    feed_payload = None  # set when a live/simulated feed supplied the inputs
     inject_mobile_css()
 
     lang = language_selector(st)
@@ -2560,14 +2904,17 @@ def render_mining_quarrying():
         )
         controls = get_controls(result)
 
+        result["data_provenance"] = combine_provenance([feed_payload])
         log_assessment(st, result)
         st.session_state["latest_risk_result"] = result
         st.session_state["latest_controls"] = controls
+        on_assessment_logged(result, controls)
         st.session_state["mining_narrative_pending_regen"] = True
 
     if st.session_state.get("latest_risk_result", {}).get("module") == "Mining & Quarrying":
         result = st.session_state["latest_risk_result"]
         controls = st.session_state["latest_controls"]
+        render_result_provenance(result, lang)
 
         if result["safety_override"]:
             render_stop_work_trigger_registry(st, get_stop_work_triggers(result.get("module")), lang)
@@ -2623,6 +2970,7 @@ def render_marine_port_construction():
     module is manual-input only (same reasoning as Underground/High-Rise/
     Data Center: no natural live-feed source exists for these readings)."""
     st.set_page_config(page_title="MAKU - Marine & Port Construction", page_icon="⚓", layout="wide")
+    feed_payload = None  # set when a live/simulated feed supplied the inputs
     inject_mobile_css()
 
     lang = language_selector(st)
@@ -2671,14 +3019,17 @@ def render_marine_port_construction():
         )
         controls = get_controls(result)
 
+        result["data_provenance"] = combine_provenance([feed_payload])
         log_assessment(st, result)
         st.session_state["latest_risk_result"] = result
         st.session_state["latest_controls"] = controls
+        on_assessment_logged(result, controls)
         st.session_state["marineport_narrative_pending_regen"] = True
 
     if st.session_state.get("latest_risk_result", {}).get("module") == "Marine & Port Construction":
         result = st.session_state["latest_risk_result"]
         controls = st.session_state["latest_controls"]
+        render_result_provenance(result, lang)
 
         if result["safety_override"]:
             render_stop_work_trigger_registry(st, get_stop_work_triggers(result.get("module")), lang)
@@ -2752,8 +3103,35 @@ MODULE_PAGES = {
     "Marine & Port Construction": page_marineport,
 }
 
-pg = st.navigation([
+def render_account():
+    st.set_page_config(page_title="MAKU - My account", page_icon="👤", layout="centered")
+    inject_mobile_css()
+    lang = language_selector(st)
+    render_logout_control(st)
+    render_account_page(lang)
+    render_push_opt_in(lang, where="account")
+
+
+def render_admin_users():
+    st.set_page_config(page_title="MAKU - Users", page_icon="🛠️", layout="wide")
+    inject_mobile_css()
+    lang = language_selector(st)
+    render_logout_control(st)
+    render_admin_users_page(lang)
+
+
+page_account = st.Page(render_account, title="My account", icon="👤", url_path="account")
+page_admin_users = st.Page(render_admin_users, title="Users (admin)", icon="🛠️", url_path="admin-users")
+
+_pages = [
     page_dashboard, page_solar, page_offshore, page_underground, page_highrise, page_datacenter,
-    page_windenergy, page_mining, page_marineport,
-])
+    page_windenergy, page_mining, page_marineport, page_account,
+]
+if is_admin():
+    _pages.append(page_admin_users)
+
+if demo_mode_enabled():
+    st.sidebar.error("DEMO MODE - simulated data enabled", icon="🧪")
+
+pg = st.navigation(_pages)
 pg.run()
