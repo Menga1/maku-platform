@@ -38,24 +38,24 @@ STRINGS = {
     # --- Global / sidebar ---
     "app_title": {"fr": "🏗️ MAKU", "en": "🏗️ MAKU", "ar": "🏗️ MAKU", "es": "🏗️ MAKU", "zh": '🏗️ MAKU', "ja": '🏗️ MAKU', "hi": '🏗️ MAKU', "ur": '🏗️ MAKU', "da": '🏗️ MAKU', "nl": '🏗️ MAKU', "no": '🏗️ MAKU', "sv": '🏗️ MAKU', "pt": '🏗️ MAKU', "de": '🏗️ MAKU'},
     "app_tagline": {
-        "fr": "IA Multi-Environnement pour l'Évaluation des Risques Cinétiques - "
-              "Mega-Souterrain, Offshore, Solaire, Tours & Data Centers",
-        "en": "Multi-Environment AI for Kinetic Risk Assessment - Mega-Underground, "
-              "Offshore, Solar, High-Rise & Data Center construction",
-        "ar": "منصة ذكاء اصطناعي متعددة البيئات لتقييم المخاطر الحركية - الأنفاق "
-              "الكبرى، المنشآت البحرية، الطاقة الشمسية، الأبراج ومراكز البيانات",
-        "es": "IA Multi-Entorno para la Evaluación de Riesgos Cinéticos - "
-              "Mega-Subterráneo, Offshore, Solar, Torres y Centros de Datos",
-              "zh": '多环境人工智能动能风险评估平台 —— 大型地下工程、海上、太阳能、高层建筑与数据中心施工',
-              "ja": 'マルチ環境対応AIキネティックリスク評価 — 大規模地下、洋上、太陽光、高層ビル、データセンター建設',
-              "hi": 'बहु-पर्यावरण एआई गतिज जोखिम मूल्यांकन - मेगा-भूमिगत, अपतटीय, सौर, ऊंची इमारतें और डेटा केंद्र निर्माण',
-              "ur": 'ملٹی انوائرنمنٹ اے آئی کائنیٹک رسک اسیسمنٹ - میگا انڈرگراؤنڈ، آف شور، سولر، بلند عمارات اور ڈیٹا سینٹر تعمیرات',
-              "da": 'Multi-miljø AI til kinetisk risikovurdering - Mega-undergrund, offshore, sol, højhuse og datacenterbyggeri',
-              "nl": 'Multi-omgeving AI voor kinetische risicobeoordeling - Mega-ondergronds, offshore, zonne-energie, hoogbouw en datacenterbouw',
-              "no": 'Multi-miljø AI for kinetisk risikovurdering - Mega-undergrunn, offshore, sol, høyhus og datasenterbygging',
-              "sv": 'AI för kinetisk riskbedömning i flera miljöer - Mega-underjordiskt, offshore, sol, höghus och datacenterbyggande',
-              "pt": 'IA Multi-Ambiente para Avaliação de Riscos Cinéticos - Construção de Mega-Subterrâneos, Offshore, Solar, Torres e Centros de Dados',
-              "de": 'Multi-Umgebungs-KI für kinetische Risikobewertung - Mega-Untergrund-, Offshore-, Solar-, Hochhaus- und Rechenzentrumsbau',
+        "fr": "IA Multi-Environnement pour l'Évaluation des Risques Cinétiques - Solaire, Offshore, "
+              "Métros & Tunnels, Tours, Data Centers, Éolien, Mines & Carrières, Maritime & Portuaire",
+        "en": "Multi-Environment AI for Kinetic Risk Assessment - Solar, Offshore, Metros & Tunnels, "
+              "High-Rise, Data Centers, Wind Energy, Mining & Quarrying, Marine & Port",
+        "ar": "منصة ذكاء اصطناعي متعددة البيئات لتقييم المخاطر الحركية - الطاقة الشمسية، المنشآت البحرية، "
+              "المترو والأنفاق، الأبراج، مراكز البيانات، طاقة الرياح، المناجم والمحاجر، الموانئ والأعمال البحرية",
+        "es": "IA Multi-Entorno para la Evaluación de Riesgos Cinéticos - Solar, Offshore, Metros y Túneles, "
+              "Torres, Centros de Datos, Eólica, Minería y Canteras, Marítimo y Portuario",
+        "zh": '多环境人工智能动能风险评估平台 —— 太阳能、海上油气、地铁与隧道、高层建筑、数据中心、风能、采矿与采石、海事与港口',
+        "ja": 'マルチ環境対応AIキネティックリスク評価 — 太陽光、洋上石油・ガス、地下鉄・トンネル、高層ビル、データセンター、風力、鉱山・採石、海洋・港湾',
+        "hi": 'बहु-पर्यावरण एआई गतिज जोखिम मूल्यांकन - सौर, अपतटीय, मेट्रो और सुरंगें, ऊंची इमारतें, डेटा केंद्र, पवन ऊर्जा, खनन और उत्खनन, समुद्री और बंदरगाह',
+        "ur": 'ملٹی انوائرنمنٹ اے آئی کائنیٹک رسک اسیسمنٹ - سولر، آف شور، میٹرو اور سرنگیں، بلند عمارات، ڈیٹا سینٹر، ونڈ انرجی، کان کنی اور کھدائی، سمندری اور بندرگاہ',
+        "da": 'Multi-miljø AI til kinetisk risikovurdering - Sol, offshore, metro og tunneler, højhuse, datacentre, vindenergi, minedrift og stenbrud, marine og havne',
+        "nl": 'Multi-omgeving AI voor kinetische risicobeoordeling - Zonne-energie, offshore, metro en tunnels, hoogbouw, datacenters, windenergie, mijnbouw en groeven, maritiem en havens',
+        "no": 'Multi-miljø AI for kinetisk risikovurdering - Sol, offshore, T-bane og tunneler, høyhus, datasentre, vindkraft, gruvedrift og steinbrudd, marint og havn',
+        "sv": 'AI för kinetisk riskbedömning i flera miljöer - Sol, offshore, tunnelbana och tunnlar, höghus, datacenter, vindkraft, gruvor och stenbrott, marint och hamn',
+        "pt": 'IA Multi-Ambiente para Avaliação de Riscos Cinéticos - Solar, Offshore, Metrôs e Túneis, Torres, Centros de Dados, Eólica, Mineração e Pedreiras, Marítimo e Portuário',
+        "de": 'Multi-Umgebungs-KI für kinetische Risikobewertung - Solar, Offshore, U-Bahn und Tunnel, Hochhäuser, Rechenzentren, Windenergie, Bergbau und Steinbrüche, Marine und Hafen',
     },
     "lang_label": {"fr": "Langue", "en": "Language", "ar": "اللغة", "es": "Idioma", "zh": '语言', "ja": '言語', "hi": 'भाषा', "ur": 'زبان', "da": 'Sprog', "nl": 'Taal', "no": 'Språk', "sv": 'Språk', "pt": 'Idioma', "de": 'Sprache'},
     "ai_layer_header": {

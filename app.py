@@ -1813,7 +1813,7 @@ def render_dashboard():
     inject_mobile_css()
 
     if os.path.exists(LOGO_CROQUIS_PATH):
-        st.sidebar.image(LOGO_CROQUIS_PATH, width="stretch", caption="The Five Worlds of MAKU")
+        st.sidebar.image(LOGO_CROQUIS_PATH, width="stretch", caption="The Eight Worlds of MAKU")
 
     lang = language_selector(st)
     country_thresholds = render_country_selector(lang)
