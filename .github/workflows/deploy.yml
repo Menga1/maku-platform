@@ -67,6 +67,14 @@ jobs:
         working-directory: .
         run: |
           required="ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD"
+          # Signing secrets present but no Play service account yet (the Play
+          # Console app is not created): build and keep the signed AAB instead
+          # of failing, so it can be uploaded by hand the first time.
+          if [ "$PLAY_BUILD_ONLY" != "true" ] && [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ] && [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::warning title=Build only::PLAY_SERVICE_ACCOUNT_JSON not set - building the signed AAB without uploading (see docs/MOBILE_CI.md)"
+            echo "PLAY_BUILD_ONLY=true" >> "$GITHUB_ENV"
+            PLAY_BUILD_ONLY=true
+          fi
           [ "$PLAY_BUILD_ONLY" = "true" ] || required="PLAY_SERVICE_ACCOUNT_JSON $required"
           missing=""; count=0
           for name in $required; do
