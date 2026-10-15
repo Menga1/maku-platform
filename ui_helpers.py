@@ -635,8 +635,10 @@ def render_applied_controls_selector(st_module, controls: list, lang: str = "fr"
         if lang == "fr" else
         "Select which of the controls above have actually been implemented, to calculate residual risk."
     )
+    from translations import engine as _engine_text
     return st_module.multiselect(
         label, options=controls, default=[], help=help_text,
+        format_func=lambda control: _engine_text(control, lang),
         key=f"applied_controls_{key_suffix}",
     )
 

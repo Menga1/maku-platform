@@ -26,6 +26,7 @@ import os
 import queue
 import threading
 
+from translations import engine as _engine_text
 import requests
 import streamlit as st
 
@@ -885,8 +886,10 @@ def _fallback_narrative(result: dict, controls: list, lang: str = "fr") -> str:
     regulatory_basis = _regulatory_basis(result)
 
     template = _FALLBACK_NARRATIVE_MAIN.get(lang, _FALLBACK_NARRATIVE_MAIN["fr"])
+    # The engine's own vocabulary is English; show it in the reader's language.
     text = template.format(
-        band=band, hazard=hazard, top_control=top_control, regulatory_basis=regulatory_basis
+        band=_engine_text(band, lang), hazard=_engine_text(hazard, lang),
+        top_control=_engine_text(top_control, lang), regulatory_basis=regulatory_basis,
     )
     if elevated:
         text += _FALLBACK_NARRATIVE_ELEVATED_SUFFIX.get(lang, _FALLBACK_NARRATIVE_ELEVATED_SUFFIX["fr"])

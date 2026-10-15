@@ -56,6 +56,7 @@ import analytics
 import push
 from maku_core import InputError, residual_risk_for, run_assessment
 from i18n import t, language_selector, LANGUAGES
+from translations import engine as engine_text, drivers_table
 from risk_engine import (
     calculate_solar_albedo_heat_risk,
     calculate_marine_humidex_risk,
@@ -522,7 +523,7 @@ def _render_acgih_reference_panel(lang: str, ambient_temp: float, relative_humid
             "Recommended ratio" if lang != "fr" else "Cycle recommandé",
             adv_result["recommended_work_rest_ratio"] or ("STOP WORK" if lang != "fr" else "ARRÊT"),
         )
-        adv_c3.metric("Band" if lang != "fr" else "Bande", adv_result["risk_band"])
+        adv_c3.metric("Band" if lang != "fr" else "Bande", engine_text(adv_result["risk_band"], lang))
 
         if adv_result["safety_override"]:
             if adv_result["requires_physiological_monitoring"]:
@@ -769,6 +770,7 @@ def _poll_narrative_job(key_prefix: str, lang: str) -> None:
         )
 
     st.session_state["latest_ai_narrative"] = final_text
+    st.session_state["latest_ai_narrative_lang"] = lang
     st.session_state.pop(job_key, None)
     st.session_state.pop(f"{key_prefix}_narrative_fallback_args", None)
     st.rerun()
@@ -809,6 +811,7 @@ def render_ai_narrative(
         )
         st.write(offline_narrative)
         st.session_state["latest_ai_narrative"] = offline_narrative
+        st.session_state["latest_ai_narrative_lang"] = lang
         st.session_state.pop(f"{key_prefix}_narrative_job", None)
         return offline_narrative
 
@@ -875,6 +878,7 @@ def _render_ai_narrative_body(
                 worker_strain_summary=worker_strain_summary,
             )
             st.session_state["latest_ai_narrative"] = narrative
+            st.session_state["latest_ai_narrative_lang"] = lang
             st.session_state.pop(job_key, None)
             st.caption(t("narrative_cached_note", lang))
 
@@ -884,6 +888,17 @@ def _render_ai_narrative_body(
         return job.full_text or st.session_state.get("latest_ai_narrative", "")
 
     narrative = st.session_state.get("latest_ai_narrative", "")
+    if narrative and st.session_state.get("latest_ai_narrative_lang", lang) != lang:
+        # The user switched language after the briefing was written: show it
+        # again in the new language (cached generation, no extra LLM call for
+        # a result already briefed in that language within the cache TTL).
+        narrative = generate_narrative_cached(
+            result, controls, api_key, lang,
+            enable_web_search=enable_web_search,
+            worker_strain_summary=worker_strain_summary,
+        )
+        st.session_state["latest_ai_narrative"] = narrative
+        st.session_state["latest_ai_narrative_lang"] = lang
     st.write(narrative)
     return narrative
 
@@ -2095,11 +2110,11 @@ def render_solar_farms():
 
         col1, col2, col3 = st.columns(3)
         col1.metric(t("perceived_temp_label", lang), f"{result['perceived_temp']} °C")
-        col2.metric(t("risk_level_label", lang), result["risk_level"])
+        col2.metric(t("risk_level_label", lang), engine_text(result["risk_level"], lang))
         col3.metric(t("shift_rotation_label", lang), result["max_shift_duration"])
 
         st.subheader(t("drivers_label", lang))
-        st.table({k: str(v) for k, v in result["drivers"].items()})
+        st.table(drivers_table(result["drivers"], lang, yes=t("yes", lang), no=t("no", lang)))
 
         st.subheader(t("briefing_label", lang))
         narrative = render_ai_narrative(result, controls, api_key, lang, enable_web_search, key_prefix="solar")
@@ -2107,7 +2122,7 @@ def render_solar_farms():
 
         st.subheader(t("controls_label", lang))
         for control in controls:
-            st.markdown(f"- {control}")
+            st.markdown(f"- {engine_text(control, lang)}")
 
         st.markdown("---")
         render_hse_disclaimer(st, lang=lang, compact=True)
@@ -2246,14 +2261,14 @@ def render_offshore_oil_gas():
 
         col1, col2, col3 = st.columns(3)
         col1.metric(t("humidex_label", lang), f"{result['humidex']} °C")
-        col2.metric(t("risk_band_label", lang), result["risk_band"])
+        col2.metric(t("risk_band_label", lang), engine_text(result["risk_band"], lang))
         col3.metric(
             t("wind_status_label", lang),
             t(_WIND_STATUS_KEY.get(result["wind_risk_status"], "wind_status_normal"), lang),
         )
 
         st.subheader(t("drivers_label", lang))
-        st.table({k: str(v) for k, v in result["drivers"].items()})
+        st.table(drivers_table(result["drivers"], lang, yes=t("yes", lang), no=t("no", lang)))
 
         st.subheader(t("briefing_label", lang))
         narrative = render_ai_narrative(result, controls, api_key, lang, enable_web_search, key_prefix="offshore")
@@ -2261,7 +2276,7 @@ def render_offshore_oil_gas():
 
         st.subheader(t("controls_label", lang))
         for control in controls:
-            st.markdown(f"- {control}")
+            st.markdown(f"- {engine_text(control, lang)}")
 
         st.markdown("---")
         render_hse_disclaimer(st, lang=lang, compact=True)
@@ -2381,12 +2396,12 @@ def render_metros_tunnels():
 
         col1, col2, col3, col4 = st.columns(4)
         col1.metric(t("underground_perceived_temp_label", lang), f"{result['perceived_temp']} °C")
-        col2.metric(t("risk_band_label", lang), result["risk_band"])
+        col2.metric(t("risk_band_label", lang), engine_text(result["risk_band"], lang))
         col3.metric(t("gas_exceeds_label", lang), t("yes", lang) if result["gas_exceeds"] else t("no", lang))
         col4.metric(t("dust_exceeds_label", lang), t("yes", lang) if result["dust_exceeds"] else t("no", lang))
 
         st.subheader(t("drivers_label", lang))
-        st.table({k: str(v) for k, v in result["drivers"].items()})
+        st.table(drivers_table(result["drivers"], lang, yes=t("yes", lang), no=t("no", lang)))
 
         st.subheader(t("briefing_label", lang))
         narrative = render_ai_narrative(result, controls, api_key, lang, enable_web_search, key_prefix="underground")
@@ -2394,7 +2409,7 @@ def render_metros_tunnels():
 
         st.subheader(t("controls_label", lang))
         for control in controls:
-            st.markdown(f"- {control}")
+            st.markdown(f"- {engine_text(control, lang)}")
 
         st.markdown("---")
         render_hse_disclaimer(st, lang=lang, compact=True)
@@ -2545,10 +2560,10 @@ def render_high_rise():
         render_regulatory_badge(st, country_thresholds["country_code"], "wind_shear", show_description=False)
 
         st.subheader(t("risk_band_label", lang))
-        st.write(result["risk_band"])
+        st.write(engine_text(result["risk_band"], lang))
 
         st.subheader(t("drivers_label", lang))
-        st.table({k: str(v) for k, v in result["drivers"].items()})
+        st.table(drivers_table(result["drivers"], lang, yes=t("yes", lang), no=t("no", lang)))
 
         st.subheader(t("briefing_label", lang))
         narrative = render_ai_narrative(result, controls, api_key, lang, enable_web_search, key_prefix="highrise")
@@ -2556,7 +2571,7 @@ def render_high_rise():
 
         st.subheader(t("controls_label", lang))
         for control in controls:
-            st.markdown(f"- {control}")
+            st.markdown(f"- {engine_text(control, lang)}")
 
         st.markdown("---")
         render_hse_disclaimer(st, lang=lang, compact=True)
@@ -2744,7 +2759,7 @@ def render_data_centers():
                         help=result["arc_flash_source"])
             st.caption(f"EPI / PPE: {result['arc_flash_ppe']} · {result['arc_flash_source']}")
         col2.metric(t("thermal_differential_label", lang), f"{result['thermal_differential']} °C")
-        col3.metric(t("esd_risk_label", lang), result["risk_band"])
+        col3.metric(t("esd_risk_label", lang), engine_text(result["risk_band"], lang))
 
         if result["arc_flash_danger"]:
             st.caption(f"⚠️ {t('arc_flash_energy_label', lang)} > {DATACENTER_ARC_FLASH_DANGER_CAL} cal/cm²")
@@ -2752,7 +2767,7 @@ def render_data_centers():
             st.caption(f"⚠️ {t('confined_clean_agent_label', lang)}")
 
         st.subheader(t("drivers_label", lang))
-        st.table({k: str(v) for k, v in result["drivers"].items()})
+        st.table(drivers_table(result["drivers"], lang, yes=t("yes", lang), no=t("no", lang)))
 
         st.subheader(t("briefing_label", lang))
         narrative = render_ai_narrative(result, controls, api_key, lang, enable_web_search, key_prefix="datacenter")
@@ -2760,7 +2775,7 @@ def render_data_centers():
 
         st.subheader(t("controls_label", lang))
         for control in controls:
-            st.markdown(f"- {control}")
+            st.markdown(f"- {engine_text(control, lang)}")
 
         st.markdown("---")
         render_hse_disclaimer(st, lang=lang, compact=True)
@@ -2880,10 +2895,10 @@ def render_wind_energy():
         col3.metric(t("ctv_status_label", lang), result["ctv_transfer_status"])
 
         st.subheader(t("risk_band_label", lang))
-        st.write(result["risk_band"])
+        st.write(engine_text(result["risk_band"], lang))
 
         st.subheader(t("drivers_label", lang))
-        st.table({k: str(v) for k, v in result["drivers"].items()})
+        st.table(drivers_table(result["drivers"], lang, yes=t("yes", lang), no=t("no", lang)))
 
         st.subheader(t("briefing_label", lang))
         narrative = render_ai_narrative(result, controls, api_key, lang, enable_web_search, key_prefix="windenergy")
@@ -2891,7 +2906,7 @@ def render_wind_energy():
 
         st.subheader(t("controls_label", lang))
         for control in controls:
-            st.markdown(f"- {control}")
+            st.markdown(f"- {engine_text(control, lang)}")
 
         st.markdown("---")
         render_hse_disclaimer(st, lang=lang, compact=True)
@@ -2996,10 +3011,10 @@ def render_mining_quarrying():
         render_regulatory_badge(st, country_thresholds["country_code"], "silica", show_description=False)
 
         st.subheader(t("risk_band_label", lang))
-        st.write(result["risk_band"])
+        st.write(engine_text(result["risk_band"], lang))
 
         st.subheader(t("drivers_label", lang))
-        st.table({k: str(v) for k, v in result["drivers"].items()})
+        st.table(drivers_table(result["drivers"], lang, yes=t("yes", lang), no=t("no", lang)))
 
         st.subheader(t("briefing_label", lang))
         narrative = render_ai_narrative(result, controls, api_key, lang, enable_web_search, key_prefix="mining")
@@ -3007,7 +3022,7 @@ def render_mining_quarrying():
 
         st.subheader(t("controls_label", lang))
         for control in controls:
-            st.markdown(f"- {control}")
+            st.markdown(f"- {engine_text(control, lang)}")
 
         st.markdown("---")
         render_hse_disclaimer(st, lang=lang, compact=True)
@@ -3107,10 +3122,10 @@ def render_marine_port_construction():
         col1, col2, col3 = st.columns(3)
         col1.metric(t("tide_margin_label", lang), f"{result['tide_clearance_margin_m']} m")
         col2.metric(t("hardware_capacity_label", lang), f"{result['hardware_remaining_capacity_pct']}%")
-        col3.metric(t("risk_band_label", lang), result["risk_band"])
+        col3.metric(t("risk_band_label", lang), engine_text(result["risk_band"], lang))
 
         st.subheader(t("drivers_label", lang))
-        st.table({k: str(v) for k, v in result["drivers"].items()})
+        st.table(drivers_table(result["drivers"], lang, yes=t("yes", lang), no=t("no", lang)))
 
         st.subheader(t("briefing_label", lang))
         narrative = render_ai_narrative(result, controls, api_key, lang, enable_web_search, key_prefix="marineport")
@@ -3118,7 +3133,7 @@ def render_marine_port_construction():
 
         st.subheader(t("controls_label", lang))
         for control in controls:
-            st.markdown(f"- {control}")
+            st.markdown(f"- {engine_text(control, lang)}")
 
         st.markdown("---")
         render_hse_disclaimer(st, lang=lang, compact=True)
@@ -3143,15 +3158,21 @@ def render_marine_port_construction():
 # object returned by st.Page(), not just a file path.
 # ===========================================================================
 
-page_dashboard = st.Page(render_dashboard, title="Dashboard", icon="🛡️", default=True)
-page_solar = st.Page(render_solar_farms, title="Solar Farms", icon="☀️")
-page_offshore = st.Page(render_offshore_oil_gas, title="Offshore Oil & Gas", icon="🌊")
-page_underground = st.Page(render_metros_tunnels, title="Metros & Tunnels", icon="🚇")
-page_highrise = st.Page(render_high_rise, title="High Rise", icon="🏗️")
-page_datacenter = st.Page(render_data_centers, title="Data Centers", icon="🏢")
-page_windenergy = st.Page(render_wind_energy, title="Wind Energy", icon="💨")
-page_mining = st.Page(render_mining_quarrying, title="Mining & Quarrying", icon="⛏️")
-page_marineport = st.Page(render_marine_port_construction, title="Marine & Port", icon="⚓")
+# Sidebar page names follow the selected language. The language widget's
+# own state is read first: on the rerun triggered by changing it, that is
+# already the new choice, while session_state["lang"] is only updated later
+# in the page script.
+_nav_lang = LANGUAGES.get(st.session_state.get("lang_selector_widget"), st.session_state.get("lang", "fr"))
+
+page_dashboard = st.Page(render_dashboard, title=t("page_dashboard", _nav_lang), icon="🛡️", default=True)
+page_solar = st.Page(render_solar_farms, title=t("page_solar", _nav_lang), icon="☀️")
+page_offshore = st.Page(render_offshore_oil_gas, title=t("page_offshore", _nav_lang), icon="🌊")
+page_underground = st.Page(render_metros_tunnels, title=t("page_underground", _nav_lang), icon="🚇")
+page_highrise = st.Page(render_high_rise, title=t("page_highrise", _nav_lang), icon="🏗️")
+page_datacenter = st.Page(render_data_centers, title=t("page_datacenter", _nav_lang), icon="🏢")
+page_windenergy = st.Page(render_wind_energy, title=t("page_windenergy", _nav_lang), icon="💨")
+page_mining = st.Page(render_mining_quarrying, title=t("page_mining", _nav_lang), icon="⛏️")
+page_marineport = st.Page(render_marine_port_construction, title=t("page_marineport", _nav_lang), icon="⚓")
 
 # Maps each SITE_COORDINATES module name to its Page object, so the closest-
 # site lookup in render_field_inspection_section() can route straight there.
@@ -3183,8 +3204,8 @@ def render_admin_users():
     render_admin_users_page(lang)
 
 
-page_account = st.Page(render_account, title="My account", icon="👤", url_path="account")
-page_admin_users = st.Page(render_admin_users, title="Users (admin)", icon="🛠️", url_path="admin-users")
+page_account = st.Page(render_account, title=t("page_account", _nav_lang), icon="👤", url_path="account")
+page_admin_users = st.Page(render_admin_users, title=t("page_admin_users", _nav_lang), icon="🛠️", url_path="admin-users")
 
 _pages = [
     page_dashboard, page_solar, page_offshore, page_underground, page_highrise, page_datacenter,

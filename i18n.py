@@ -25,6 +25,8 @@ Usage:
     st.header(t("solar_header", lang))
 """
 
+import translations as _translations
+
 LANGUAGES = {
     "Français": "fr", "English": "en", "العربية": "ar", "Español": "es",
     "中文": "zh", "日本語": "ja", "हिन्दी": "hi", "اردو": "ur",
@@ -2172,15 +2174,37 @@ STRINGS = {
     },
     "generating_live_note": {"fr": "Génération en direct...", "en": "Generating live..."},
     "narrative_cached_note": {"fr": "⚡ Résultat en cache (< 30 min)", "en": "⚡ Cached result (< 30 min)"},
+    # Sidebar page names (other languages: translations/<lang>.py UI dict)
+    "page_dashboard": {"fr": "Tableau de bord", "en": "Dashboard"},
+    "page_solar": {"fr": "Fermes solaires", "en": "Solar Farms"},
+    "page_offshore": {"fr": "Pétrole et gaz offshore", "en": "Offshore Oil & Gas"},
+    "page_underground": {"fr": "Métros et tunnels", "en": "Metros & Tunnels"},
+    "page_highrise": {"fr": "Tours", "en": "High Rise"},
+    "page_datacenter": {"fr": "Data centers", "en": "Data Centers"},
+    "page_windenergy": {"fr": "Éolien", "en": "Wind Energy"},
+    "page_mining": {"fr": "Mines et carrières", "en": "Mining & Quarrying"},
+    "page_marineport": {"fr": "Maritime et portuaire", "en": "Marine & Port"},
+    "page_account": {"fr": "Mon compte", "en": "My account"},
+    "page_admin_users": {"fr": "Utilisateurs (admin)", "en": "Users (admin)"},
 }
 
 
 def t(key: str, lang: str = DEFAULT_LANG) -> str:
     """Look up a UI string by key for the given language code (defaults to French)."""
     entry = STRINGS.get(key)
+    if entry is not None and lang in entry:
+        return entry[lang]
+    # Keys added after the first two languages live in translations/<lang>.py.
+    extra = _translations.ui(key, lang)
+    if extra is not None:
+        return extra
     if entry is None:
         return key
-    return entry.get(lang, entry.get(DEFAULT_LANG, key))
+    # Last resort: English for every language except French itself, so a
+    # missing translation never shows a third language the user didn't pick.
+    if lang == "fr":
+        return entry.get("fr", entry.get("en", key))
+    return entry.get("en", entry.get(DEFAULT_LANG, key))
 
 
 def is_rtl(lang: str) -> bool:
