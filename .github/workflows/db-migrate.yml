@@ -1,0 +1,61 @@
+# Database setup / migrations for a managed PostgreSQL (e.g. Neon) used by
+# the Streamlit Community Cloud deployment, which has no start-up hook of its
+# own. Run it by hand: Actions -> "Database migrate" -> Run workflow.
+#
+# Repository secrets (Settings -> Secrets and variables -> Actions):
+#   MIGRATION_DATABASE_URL  the database OWNER's connection string
+#                           (on Neon: the neondb_owner string, pooling OFF)
+#   DATABASE_URL            the same host and database, user maku_app and a
+#                           password of your choice (letters and digits only)
+#
+# scripts/init_db.py creates the maku_app role (or updates its password),
+# applies every migration including row-level security, grants maku_app
+# least privilege, then reconnects AS maku_app to prove RLS is enforced.
+# The connection strings never appear in the log (redacted by init_db.py).
+name: Database migrate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-migrate
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check secrets
+        env:
+          MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          missing=""
+          [ -n "$MIGRATION_DATABASE_URL" ] || missing="$missing MIGRATION_DATABASE_URL"
+          [ -n "$DATABASE_URL" ] || missing="$missing DATABASE_URL"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create role, migrate, verify row-level security
+        env:
+          MAKU_ENV: production
+          MAKU_DB_WAIT_SECONDS: "60"
+          MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python scripts/init_db.py
