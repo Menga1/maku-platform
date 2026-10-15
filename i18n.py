@@ -665,15 +665,10 @@ STRINGS = {
         "es": "☀️ Granjas Solares a Gran Escala - Entorno Desértico",
     },
     "solar_caption": {
-        "fr": "Albédo de surface + charge thermique radiative liée au GHI pour les "
-              "équipes MEP d'installation de trackers/modules",
-        "en": "Land surface albedo + GHI-driven radiant heat load forecasting for "
-              "MEP tracker/module crews",
-        "ar": "انعكاسية سطح الأرض (Albedo) + التنبؤ بالحمل الحراري الإشعاعي الناتج "
-              "عن GHI لطواقم تركيب متتبعات/وحدات الألواح",
-        "es": "Albedo de la superficie terrestre + previsión de carga térmica "
-              "radiante impulsada por GHI para cuadrillas MEP de instalación de "
-              "seguidores/módulos",
+        'fr': 'Estimation de la charge thermique radiante (albédo du sol + rayonnement GHI + UV) pour les équipes de montage des trackers et modules',
+        'en': 'Radiant heat-load estimate from land-surface albedo, GHI and UV for tracker/module assembly crews',
+        'ar': 'تقدير الحمل الحراري الإشعاعي من انعكاسية سطح الأرض والإشعاع الشمسي الكلي والأشعة فوق البنفسجية لفرق تركيب المتتبعات والألواح',
+        'es': 'Estimación de la carga térmica radiante (albedo del suelo, GHI y UV) para cuadrillas de montaje de seguidores y módulos',
     },
     "solar_env_data_header": {
         "fr": "Données environnementales",
@@ -706,10 +701,10 @@ STRINGS = {
         "es": "Índice UV",
     },
     "solar_surface_label": {
-        "fr": "Type de surface (simulation capteurs SIG)",
-        "en": "Surface type (simulated GIS sensor feed)",
-        "ar": "نوع السطح (محاكاة بيانات مستشعرات نظم المعلومات الجغرافية)",
-        "es": "Tipo de superficie (simulación de sensores SIG)",
+        'fr': 'Type de surface',
+        'en': 'Surface type',
+        'ar': 'نوع السطح',
+        'es': 'Tipo de superficie',
     },
     "surf_pure_desert_sand": {
         "fr": "Sable désertique pur",
@@ -931,15 +926,10 @@ STRINGS = {
         "es": "🚇 Metros y Túneles - Infraestructura Subterránea",
     },
     "underground_caption": {
-        "fr": "Charge thermique du tunnelier + corrélation OEL en temps réel générant "
-              "des dépassements de sécurité prédictifs pour les équipes électriques MEP",
-        "en": "TBM heat load + real-time OEL correlation generating predictive safety "
-              "overrides for MEP electrical crews",
-        "ar": "الحمل الحراري لآلة حفر الأنفاق + ربط آني بحدود التعرض المهني (OEL) "
-              "لتوليد تجاوزات سلامة تنبؤية لطواقم الأعمال الكهربائية",
-        "es": "Carga térmica de la tuneladora + correlación OEL en tiempo real que "
-              "genera anulaciones de seguridad predictivas para cuadrillas "
-              "eléctricas MEP",
+        'fr': "Chaleur du tunnel, CO et PM2,5 comparés aux valeurs limites d'exposition professionnelle pour déclencher les arrêts de travail",
+        'en': 'Tunnel heat, CO and PM2.5 checked against occupational exposure limits to trigger stop-work overrides',
+        'ar': 'مقارنة حرارة النفق وأول أكسيد الكربون والجسيمات PM2.5 بحدود التعرض المهني لتفعيل أوامر إيقاف العمل',
+        'es': 'Calor del túnel, CO y PM2,5 comparados con los límites de exposición profesional para activar paradas de trabajo',
     },
     "gas_exceeds_label": {
         "fr": "Limite gaz OEL dépassée",
@@ -1065,14 +1055,10 @@ STRINGS = {
         "es": "🏙️ Construcción de Torres - Entorno Urbano Vertical",
     },
     "highrise_caption": {
-        "fr": "Jumeau numérique BIM 3D + télémétrie d'anémomètres multi-niveaux pour "
-              "une matrice de risque de cisaillement du vent étage par étage",
-        "en": "3D BIM digital twin + multi-level anemometer telemetry driving a "
-              "floor-by-floor wind-shear risk matrix",
-        "ar": "توأم رقمي ثلاثي الأبعاد (BIM) + قياس بُعد لأجهزة قياس الرياح متعددة "
-              "المستويات، لبناء مصفوفة مخاطر قص الرياح طابقاً بطابق",
-        "es": "Gemelo digital BIM 3D + telemetría de anemómetros multinivel que "
-              "alimenta una matriz de riesgo de cizallamiento de viento piso a piso",
+        'fr': "Vent à la hauteur de travail (profil en loi de puissance, ou mesure d'anémomètre) comparé aux seuils grue et façade, étage par étage",
+        'en': 'Wind at working height (power-law profile, or a measured anemometer reading) checked against crane and facade gates, floor by floor',
+        'ar': 'الرياح على ارتفاع العمل (منحنى قانون القوة أو قراءة مقياس الرياح) مقارنةً بعتبات الرافعة والواجهة، طابقاً بطابق',
+        'es': 'Viento a la altura de trabajo (perfil de ley de potencia o lectura de anemómetro) comparado con los umbrales de grúa y fachada, piso a piso',
     },
     "crane_gate_label": {"fr": "Seuil grue", "en": "Crane gate", "ar": "عتبة الرافعة", "es": "Umbral de grúa"},
     "facade_gate_label": {
@@ -1204,18 +1190,10 @@ STRINGS = {
               "Crítico Controlado",
     },
     "datacenter_caption": {
-        "fr": "Cartographie thermique IoT allée chaude/froide + méthode Lee pour "
-              "l'arc électrique, croisée avec les conditions d'espace confiné et "
-              "d'agent propre",
-        "en": "Rack-level IoT hot-aisle/cold-aisle thermal mapping + Lee-method "
-              "arc-flash screening, cross-referenced against confined-space and "
-              "clean-agent commissioning conditions",
-        "ar": "رسم خرائط حرارية عبر إنترنت الأشياء للممرات الساخنة/الباردة على "
-              "مستوى الرفوف + فحص طاقة القوس الكهربائي بطريقة Lee، مع الربط بظروف "
-              "الأماكن المحصورة وأنظمة الإطفاء بالغاز النظيف",
-        "es": "Mapeo térmico IoT de pasillo caliente/frío a nivel de rack + "
-              "detección de arco eléctrico por método Lee, contrastado con las "
-              "condiciones de espacio confinado y agente limpio",
+        'fr': "Énergie incidente d'arc électrique (méthode Lee) et écart de température allée chaude/froide, croisés avec les conditions d'espace confiné et d'agent propre",
+        'en': 'Lee-method arc-flash incident energy and hot/cold-aisle temperature differential, cross-referenced against confined-space and clean-agent commissioning conditions',
+        'ar': 'طاقة القوس الكهربائي الساقطة (طريقة Lee) وفرق الحرارة بين الممرات الساخنة والباردة، مع الربط بظروف الأماكن المحصورة وأنظمة الإطفاء بالغاز النظيف',
+        'es': 'Energía incidente de arco eléctrico (método Lee) y diferencia de temperatura pasillo caliente/frío, contrastadas con las condiciones de espacio confinado y agente limpio',
     },
     "esd_risk_label": {
         "fr": "Risque ESD",
