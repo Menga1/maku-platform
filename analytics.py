@@ -23,8 +23,8 @@ choice, not a code choice:
     malformed, or the connection drops/fails for any reason, this file no
     longer silently redirects writes to SQLite or to ephemeral
     session_state. Instead it freezes the database layer entirely
-    (is_db_fatal() becomes True, every write/read call degrades to a
-    no-op/empty result rather than a different store) and records the
+    (is_db_fatal() becomes True, every write/read raises
+    PersistenceError rather than touching a different store) and records the
     literal CRITICAL_DB_ERROR_MESSAGE constant for the dashboard to
     surface via get_backend_status(). This is a deliberate change from
     "degrade, never break" to "a configured production backend either
@@ -62,9 +62,16 @@ app.py stops every page with an explicit error (ui_helpers.render_database_
 gate). probe_database() clears the fatal state again once the SAME
 configured database answers - recovery, never substitution.
 
-Outside strict mode (development / demo / tests) with no DATABASE_URL, a
-local SQLite file is the intended store; if it cannot be opened, this file
-degrades to the per-session in-memory log - see _db_ok().
+NO SUBSTITUTE STORE IN ANY ENVIRONMENT (audit mandate C3): outside strict
+mode with no DATABASE_URL, a local SQLite file is the intended store. If the
+configured store fails - in any environment - the database layer is frozen
+(is_db_fatal()), writes raise PersistenceError (never reported as saved) and
+reads raise PersistenceError (never shown as an empty history). There is no
+in-memory session log any more.
+
+ROW-LEVEL SECURITY (PostgreSQL, migration 0003): every connection carries the
+server-side identity of the caller (_apply_identity) so the database itself
+enforces organization isolation. See acting_as()/system_context().
 
 SESSION-SCOPED VIEW vs ALL-TIME HISTORY:
 get_log_dataframe()/monthly_summary()/build_monthly_excel() keep their
@@ -89,7 +96,9 @@ site that doesn't pass them explicitly still works unchanged - this is an
 additive column set, not a schema requiring a new required argument
 anywhere.
 
-AUDIT TRAIL - TAMPER-EVIDENT, NOT TAMPER-PROOF:
+AUDIT TRAIL - TAMPER-EVIDENT, APPEND-ONLY FOR THE APPLICATION ROLE:
+(On PostgreSQL the application role has no UPDATE/DELETE/TRUNCATE on
+audit_log - migration 0003. The table owner still can.)
 log_audit_event() writes a hash-chained ledger: each row's row_hash covers
 its own fields AND the previous row's row_hash, so altering or deleting a
 past row breaks the chain from that point forward - detectable via
@@ -113,6 +122,7 @@ import os
 import sqlite3
 import threading
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 
 import warnings
@@ -129,7 +139,7 @@ import db as _db
 logger = logging.getLogger("maku.analytics")
 from openpyxl.chart import LineChart, Reference
 
-LOG_SESSION_KEY = "assessment_log"          # legacy in-memory fallback store
+LOG_SESSION_KEY = "assessment_log"          # removed in-memory store; never written (audit C3)
 SESSION_ID_KEY = "_analytics_session_id"
 ORG_CONTEXT_KEY = "_analytics_org_context"
 
@@ -146,7 +156,7 @@ CRITICAL_DB_ERROR_MESSAGE = (
 # Alembic revision the code expects (migrations/versions). In strict mode the
 # app refuses to use a database whose alembic_version differs - run
 # `python scripts/init_db.py` (or `alembic upgrade head`) to migrate.
-SCHEMA_REVISION = "0002_tenancy"
+SCHEMA_REVISION = "0003_row_level_security"
 PROBE_INTERVAL_SECONDS = 5.0
 
 DB_PATH = os.environ.get("MAKU_DB_PATH", "maku_site_data.db")
@@ -230,16 +240,6 @@ def is_db_fatal() -> bool:
     return _DB_FATAL
 
 
-def _disable_db(reason: str = "") -> None:
-    """Non-fatal degrade: only reached when no Postgres/Supabase backend
-    was ever configured for this process (see module docstring). Falls
-    through to the legacy session_state fallback, as before."""
-    global _DB_DISABLED
-    _DB_DISABLED = True
-    if reason:
-        _set_backend_warning(reason)
-
-
 def _disable_db_fatal(reason: str) -> None:
     """FAIL-FAST path (P0): the configured production database is missing,
     misconfigured, unreachable or not migrated. Freezes the database layer
@@ -256,20 +256,26 @@ def _disable_db_fatal(reason: str) -> None:
                         _db.redact_url(DATABASE_URL) if DATABASE_URL else "<not configured>")
 
 
+class PersistenceError(RuntimeError):
+    """A read or write of safety records could not be completed. Raised
+    instead of returning a substitute result (audit mandate C3): a failed
+    write is never reported as saved, a failed read is never shown as an
+    empty history."""
+
+
 def _handle_db_failure(exc: Exception, context: str) -> None:
     """Central failure handler for every database call site in this file.
-    Routes to the fatal, freeze-everything path when a Postgres/Supabase
-    backend was explicitly configured (DATABASE_URL) - the only case the
-    P0 FAIL-FAST directive covers - and to the original graceful degrade
-    otherwise (no DATABASE_URL at all -> SQLite is the intended backend
-    here, not a fallback from Postgres, so keeping the app usable via
-    session_state in that specific case is not the "silent redirect" the
-    directive is about)."""
-    if _db.strict_persistence() or (DATABASE_URL and _is_postgres_url(DATABASE_URL)):
-        _disable_db_fatal(f"{CRITICAL_DB_ERROR_MESSAGE} ({context}: {exc.__class__.__name__}: {exc})")
-    else:
-        _disable_db(f"Could not reach the database ({context}) - reverting to this "
-                     "session's in-memory log only.")
+    Every environment fails closed (audit mandate C3): the database layer is
+    frozen with an explicit CRITICAL error. There is no in-memory or
+    alternative-store substitute anywhere - in development too, so the
+    behaviour tested locally is the behaviour shipped."""
+    _disable_db_fatal(f"{CRITICAL_DB_ERROR_MESSAGE} ({context}: {exc.__class__.__name__}: {exc})")
+
+
+def _require_db(context: str) -> None:
+    """Raises PersistenceError while the database layer is frozen."""
+    if not _db_ok():
+        raise PersistenceError(f"{CRITICAL_DB_ERROR_MESSAGE} ({context})")
 
 
 def reset_fatal_state_for_testing() -> None:
@@ -648,29 +654,110 @@ def ensure_schema(conn: "_Connection") -> None:
         conn.execute(stmt)
 
 
+# ---------------------------------------------------------------------------
+# Database identity (audit mandate B3/B5): PostgreSQL row-level security
+# (migration 0003) decides from the settings below which organizations a
+# transaction may touch. They come from the SERVER-SIDE session
+# (tenancy.principal_from_session) - never from request parameters - or from
+# an explicit acting_as()/system_context() block for work that has no
+# Streamlit session (push threads, operator CLI scripts). A thread with
+# neither is anonymous and sees no organization data (fail closed).
+# ---------------------------------------------------------------------------
+_IDENTITY = threading.local()
+
+
+@contextmanager
+def acting_as(principal):
+    """Runs the block's database work as `principal` (a tenancy.Principal).
+    Used to carry the signed-in user's identity into a background thread."""
+    previous = getattr(_IDENTITY, "principal", None)
+    _IDENTITY.principal = principal
+    try:
+        yield principal
+    finally:
+        _IDENTITY.principal = previous
+
+
+def system_context():
+    """Platform-administrator identity for trusted operator tools run on the
+    server (manage_users.py, scripts/). Never used by request handling."""
+    import tenancy
+    return acting_as(tenancy.Principal("system", platform_admin=True))
+
+
+def current_principal():
+    import tenancy
+    principal = getattr(_IDENTITY, "principal", None)
+    if principal is not None:
+        return principal
+    try:
+        import streamlit as _st
+        return tenancy.principal_from_session(_st)
+    except Exception:  # noqa: BLE001 - no session available: anonymous
+        return tenancy.ANONYMOUS
+
+
+def _apply_identity(conn: "_Connection") -> None:
+    """Transaction-local, so it ends with the transaction and never leaks to
+    the next user of the pooled connection."""
+    principal = current_principal()
+    conn.execute("SELECT set_config('maku.username', ?, true), set_config('maku.platform_admin', ?, true)",
+                 (principal.username or "", "on" if principal.platform_admin else "off"))
+
+
+class RowLevelSecurityBypassed(_db.ProductionConfigError):
+    """The application is connected as a role PostgreSQL does not apply RLS to."""
+
+
+def verify_rls_enforced(conn: "_Connection") -> None:
+    """Strict mode refuses to run as a superuser, a BYPASSRLS role or the
+    owner of the tables: PostgreSQL would silently skip row-level security."""
+    row = conn.execute(
+        "SELECT r.rolsuper, r.rolbypassrls, "
+        "EXISTS (SELECT 1 FROM pg_tables t WHERE t.schemaname = current_schema() "
+        "        AND t.tablename = 'assessment_log' AND t.tableowner = current_user), "
+        "(SELECT c.relrowsecurity FROM pg_class c WHERE c.oid = to_regclass('assessment_log')) "
+        "FROM pg_roles r WHERE r.rolname = current_user").fetchone()
+    superuser, bypass, owner, rls_on = row
+    if superuser or bypass or owner or not rls_on:
+        raise RowLevelSecurityBypassed(
+            "The application database role would bypass row-level security "
+            f"(superuser={bool(superuser)}, bypassrls={bool(bypass)}, table owner={bool(owner)}, "
+            f"rls enabled={bool(rls_on)}). Connect DATABASE_URL as the application role and run "
+            "migrations with MIGRATION_DATABASE_URL (see docs/DEPLOYMENT.md).")
+
+
 def _get_connection() -> _Connection:
-    """Pooled connection (db.py) with the schema guaranteed to exist. The
-    schema is created/migrated once per backend per process, not on every
-    call."""
+    """Pooled connection (db.py) with the schema guaranteed to exist and, on
+    PostgreSQL, the caller's identity applied for row-level security. The
+    schema is created/migrated once per backend per process."""
     backend = _resolve_backend()
     raw = backend.connect()
     conn = _Connection(raw, backend.dialect)
-    if backend.key not in _SCHEMA_READY:
-        with _SCHEMA_LOCK:
-            if backend.key not in _SCHEMA_READY:
-                try:
-                    if _db.strict_persistence():
-                        # Production never creates or alters tables on the fly:
-                        # the schema must have been migrated explicitly.
-                        verify_schema_revision(conn)
-                    else:
-                        ensure_schema(conn)
-                    raw.commit()
-                except Exception:
-                    raw.rollback()
-                    raw.close()
-                    raise
-                _SCHEMA_READY.add(backend.key)
+    try:
+        if backend.key not in _SCHEMA_READY:
+            with _SCHEMA_LOCK:
+                if backend.key not in _SCHEMA_READY:
+                    try:
+                        if _db.strict_persistence() or conn.dialect == "postgres":
+                            # PostgreSQL and production never create or alter
+                            # tables on the fly: the schema (and its row-level
+                            # security) comes only from the versioned migrations.
+                            verify_schema_revision(conn)
+                            if _db.strict_persistence() and conn.dialect == "postgres":
+                                verify_rls_enforced(conn)
+                        else:
+                            ensure_schema(conn)   # local SQLite development only
+                        raw.commit()
+                    except Exception:
+                        raw.rollback()
+                        raise
+                    _SCHEMA_READY.add(backend.key)
+        if conn.dialect == "postgres":
+            _apply_identity(conn)
+    except Exception:
+        raw.close()
+        raise
     return conn
 
 
@@ -719,8 +806,6 @@ def probe_database(force: bool = False) -> dict:
     if not force and now - _LAST_PROBE["at"] < PROBE_INTERVAL_SECONDS:
         return get_backend_status()
     _LAST_PROBE["at"] = now
-    if _DB_DISABLED and not _DB_FATAL:
-        return get_backend_status()  # non-strict local degrade: nothing to probe
     try:
         with _get_connection() as conn:
             conn.execute("SELECT 1").fetchone()
@@ -760,16 +845,30 @@ def _get_or_create_id(conn: "_Connection", table: str, unique_cols: dict, name_c
         # specific DBAPI extension) - RETURNING id is the portable
         # Postgres way to get the newly-inserted row's id back.
         insert_sql += " RETURNING id"
+    # A savepoint keeps the surrounding PostgreSQL transaction usable when
+    # the INSERT fails (a failed statement otherwise aborts it).
+    savepoint = conn.dialect == "postgres"
+    if savepoint:
+        conn.execute("SAVEPOINT maku_get_or_create")
     try:
         cur = conn.execute(insert_sql, tuple(where_vals))
         new_id = cur.fetchone()[0] if conn.dialect == "postgres" else cur.lastrowid
+        if savepoint:
+            conn.execute("RELEASE SAVEPOINT maku_get_or_create")
         if new_id:
             return int(new_id)
-    except Exception:  # noqa: BLE001 - lost the UNIQUE-constraint race to a concurrent insert
-        pass
+        failure: Exception | None = None
+    except Exception as exc:  # noqa: BLE001 - maybe lost the UNIQUE race to a concurrent insert
+        if savepoint:
+            conn.execute("ROLLBACK TO SAVEPOINT maku_get_or_create")
+        failure = exc
     cur = conn.execute(f"SELECT id FROM {table} WHERE {where_clause}", tuple(where_vals))
     row = cur.fetchone()
-    return int(row[0]) if row else 0
+    if row:
+        return int(row[0])
+    # Not a lost race (e.g. row-level security refused the insert): report
+    # the real failure - never a made-up id.
+    raise failure or RuntimeError(f"could not create {table} row")
 
 
 def get_or_create_organization_id(organization: str) -> int | None:
@@ -836,7 +935,6 @@ def list_organizations(st_module) -> list[str]:
 # else in this codebase (or a caller outside it) breaks if it referenced
 # the old SQLite-specific function names directly.
 _sqlite_ok = _db_ok
-_disable_sqlite = _disable_db
 
 
 def _get_session_id(st_module) -> str:
@@ -888,10 +986,7 @@ def set_org_context(st_module, organization: str = "", project: str = "", site: 
 
     project = project or DEFAULT_PROJECT
     site = site or ""
-    if not _db_ok():
-        ctx = _org_context(organization or DEFAULT_ORGANIZATION, project, site)
-        st_module.session_state[ORG_CONTEXT_KEY] = ctx
-        return ctx
+    _require_db("set_org_context")   # never an unchecked context (fail closed)
 
     principal = tenancy.principal_from_session(st_module)
     try:
@@ -930,7 +1025,7 @@ def set_org_context(st_module, organization: str = "", project: str = "", site: 
         raise
     except Exception as exc:  # noqa: BLE001
         _handle_db_failure(exc, "set_org_context")
-        ctx = _org_context(organization or DEFAULT_ORGANIZATION, project, site)
+        raise PersistenceError(CRITICAL_DB_ERROR_MESSAGE) from exc
     st_module.session_state[ORG_CONTEXT_KEY] = ctx
     return ctx
 
@@ -945,12 +1040,15 @@ def get_org_context(st_module) -> dict:
     """The session's validated Organization/Project/Site and their ids. If
     none was set yet, resolves the default (the user's first accessible
     organization) through set_org_context(), so every caller gets a context
-    that passed the server-side access check. Never raises."""
+    that passed the server-side access check. Raises PersistenceError only
+    when the database is unavailable."""
     ctx = st_module.session_state.get(ORG_CONTEXT_KEY)
     if ctx is not None:
         return ctx
     try:
         return set_org_context(st_module)
+    except PersistenceError:
+        raise   # a database failure is reported as such, never as "no organization"
     except Exception:  # noqa: BLE001
         return _org_context("", DEFAULT_PROJECT, "")
 
@@ -963,9 +1061,8 @@ def require_scope(st_module, action: str) -> dict:
     next request, not at the next login. Raises tenancy.TenantAccessDenied."""
     import tenancy
 
+    _require_db("require_scope")     # no access decision without the database
     ctx = get_org_context(st_module)
-    if not _db_ok():
-        return ctx  # development degrade (strict mode never reaches this)
     tenancy.require_access(tenancy.principal_from_session(st_module), ctx.get("organization_id"), action)
     return ctx
 
@@ -1065,84 +1162,62 @@ def log_assessment(st_module, result: dict, organization: str | None = None,
     else:
         proj_id, site_row_id = ctx.get("project_id"), ctx.get("site_id")
 
-    if _db_ok():
-        session_id = _get_session_id(st_module)
-        try:
-            with _get_connection() as conn:
-                conn.execute(
-                    """INSERT INTO assessment_log
-                       (session_id, timestamp, module, risk_band, safety_override, key_metric,
-                        primary_hazard, organization, project, site,
-                        organization_id, project_id, site_id, username, data_provenance)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (session_id, row["timestamp"], row["module"], row["risk_band"],
-                     int(row["safety_override"]), row["key_metric"], row["primary_hazard"],
-                     row["organization"], row["project"], row["site"],
-                     org_id, proj_id, site_row_id, username, row["data_provenance"]),
-                )
-            return
-        except Exception as exc:  # noqa: BLE001 - any backend failure -> handled centrally
-            _handle_db_failure(exc, "log_assessment")
-
-    if is_db_fatal():
-        # FAIL-FAST: a configured Postgres/Supabase backend is down. Freeze
-        # writes entirely rather than silently redirecting this assessment
-        # into ephemeral session_state - see module docstring.
+    _require_db("log_assessment")
+    session_id = _get_session_id(st_module)
+    try:
+        with _get_connection() as conn:
+            conn.execute(
+                """INSERT INTO assessment_log
+                   (session_id, timestamp, module, risk_band, safety_override, key_metric,
+                    primary_hazard, organization, project, site,
+                    organization_id, project_id, site_id, username, data_provenance)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (session_id, row["timestamp"], row["module"], row["risk_band"],
+                 int(row["safety_override"]), row["key_metric"], row["primary_hazard"],
+                 row["organization"], row["project"], row["site"],
+                 org_id, proj_id, site_row_id, username, row["data_provenance"]),
+            )
         return
-
-    if LOG_SESSION_KEY not in st_module.session_state:
-        st_module.session_state[LOG_SESSION_KEY] = []
-    st_module.session_state[LOG_SESSION_KEY].append(row)
+    except Exception as exc:  # noqa: BLE001 - any backend failure -> handled centrally
+        _handle_db_failure(exc, "log_assessment")
+        raise PersistenceError(f"Assessment NOT saved: {CRITICAL_DB_ERROR_MESSAGE}") from exc
 
 
 def get_log_dataframe(st_module) -> pd.DataFrame:
     """This session's log as a DataFrame, oldest first, timestamp parsed.
-    Same contract as before the database-backend upgrade: empty right
-    after st.session_state.clear()."""
-    if _db_ok():
-        session_id = st_module.session_state.get(SESSION_ID_KEY)
-        if session_id is None:
-            return pd.DataFrame(columns=LOG_COLUMNS)
-        ctx = require_scope(st_module, "read")
-        try:
-            with _get_connection() as conn:
-                df = pd.read_sql_query(
-                    _adapt_sql(
-                        f"SELECT {', '.join(LOG_COLUMNS)} FROM assessment_log "
-                        "WHERE session_id = ? AND organization_id = ? ORDER BY timestamp",
-                        conn.dialect,
-                    ),
-                    conn.raw, params=(session_id, ctx.get("organization_id")),
-                )
-            if df.empty:
-                return pd.DataFrame(columns=LOG_COLUMNS)
-            df["timestamp"] = pd.to_datetime(df["timestamp"])
-            df["safety_override"] = df["safety_override"].astype(bool)
-            return df.reset_index(drop=True)
-        except Exception as exc:  # noqa: BLE001
-            _handle_db_failure(exc, "get_log_dataframe")
-
-    if is_db_fatal():
-        # FAIL-FAST: never serve a possibly-stale local session_state view
-        # while a configured production backend is down - an empty result
-        # next to the dashboard's CRITICAL DATABASE ERROR banner is the
-        # honest state here, not a quiet partial view.
+    Empty right after st.session_state.clear() (new session). Raises
+    PersistenceError if the database cannot be read - never an empty or
+    cached substitute (audit mandate C3)."""
+    _require_db("get_log_dataframe")
+    ctx = require_scope(st_module, "read")   # access is checked before anything else
+    session_id = st_module.session_state.get(SESSION_ID_KEY)
+    if session_id is None:
         return pd.DataFrame(columns=LOG_COLUMNS)
-
-    rows = st_module.session_state.get(LOG_SESSION_KEY, [])
-    if not rows:
+    try:
+        with _get_connection() as conn:
+            df = pd.read_sql_query(
+                _adapt_sql(
+                    f"SELECT {', '.join(LOG_COLUMNS)} FROM assessment_log "
+                    "WHERE session_id = ? AND organization_id = ? ORDER BY timestamp",
+                    conn.dialect,
+                ),
+                conn.raw, params=(session_id, ctx.get("organization_id")),
+            )
+    except Exception as exc:  # noqa: BLE001
+        _handle_db_failure(exc, "get_log_dataframe")
+        raise PersistenceError(CRITICAL_DB_ERROR_MESSAGE) from exc
+    if df.empty:
         return pd.DataFrame(columns=LOG_COLUMNS)
-    df = pd.DataFrame(rows)
     df["timestamp"] = pd.to_datetime(df["timestamp"])
-    return df.sort_values("timestamp").reset_index(drop=True)
+    df["safety_override"] = df["safety_override"].astype(bool)
+    return df.reset_index(drop=True)
 
 
 def get_all_time_log_dataframe(st_module, limit: int = ALL_TIME_DEFAULT_LIMIT) -> pd.DataFrame:
     """The durable, cross-session history of the session's validated
     organization (tenant check: 'read'), newest first, bounded by `limit`.
-    Returns an empty DataFrame if the database is unavailable."""
-    if not _db_ok():
-        return pd.DataFrame(columns=LOG_COLUMNS)
+    Raises PersistenceError if the database cannot be read."""
+    _require_db("get_all_time_log_dataframe")
     ctx = require_scope(st_module, "read")
     try:
         with _get_connection() as conn:
@@ -1154,14 +1229,14 @@ def get_all_time_log_dataframe(st_module, limit: int = ALL_TIME_DEFAULT_LIMIT) -
                 ),
                 conn.raw, params=(ctx.get("organization_id"), int(limit)),
             )
-        if df.empty:
-            return pd.DataFrame(columns=LOG_COLUMNS)
-        df["timestamp"] = pd.to_datetime(df["timestamp"])
-        df["safety_override"] = df["safety_override"].astype(bool)
-        return df.reset_index(drop=True)
     except Exception as exc:  # noqa: BLE001
         _handle_db_failure(exc, "get_all_time_log_dataframe")
+        raise PersistenceError(CRITICAL_DB_ERROR_MESSAGE) from exc
+    if df.empty:
         return pd.DataFrame(columns=LOG_COLUMNS)
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df["safety_override"] = df["safety_override"].astype(bool)
+    return df.reset_index(drop=True)
 
 
 def merge_uploaded_csv(st_module, uploaded_file) -> int:
@@ -1206,36 +1281,30 @@ def merge_uploaded_csv(st_module, uploaded_file) -> int:
         row["timestamp"] = ts.isoformat() if hasattr(ts, "isoformat") else str(ts)
         row["safety_override"] = bool(row["safety_override"])
 
-    if _db_ok():
-        session_id = _get_session_id(st_module)
-        try:
-            with _get_connection() as conn:
-                conn.execute("DELETE FROM assessment_log WHERE session_id = ? AND organization_id = ?",
-                             (session_id, ctx.get("organization_id")))
-                conn.executemany(
-                    """INSERT INTO assessment_log
-                       (session_id, timestamp, module, risk_band, safety_override, key_metric,
-                        primary_hazard, organization, project, site, organization_id, project_id,
-                        username, data_provenance)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    [(session_id, r["timestamp"], r["module"], r["risk_band"],
-                      int(r["safety_override"]), r["key_metric"], r["primary_hazard"],
-                      ctx["organization"], ctx["project"], r.get("site") or ctx["site"],
-                      ctx.get("organization_id"), ctx.get("project_id"),
-                      st_module.session_state.get("_auth_username") or None,
-                      r.get("data_provenance") or PROVENANCE_MANUAL) for r in records],
-                )
-            return added
-        except Exception as exc:  # noqa: BLE001
-            _handle_db_failure(exc, "merge_uploaded_csv")
-
-    if is_db_fatal():
-        # FAIL-FAST: do not write the merged set into ephemeral
-        # session_state while a configured production backend is down.
-        return 0
-
-    st_module.session_state[LOG_SESSION_KEY] = records
-    return added
+    session_id = _get_session_id(st_module)
+    try:
+        # One transaction: either the whole merged set is stored or nothing
+        # changes (the DELETE is rolled back with a failed INSERT).
+        with _get_connection() as conn:
+            conn.execute("DELETE FROM assessment_log WHERE session_id = ? AND organization_id = ?",
+                         (session_id, ctx.get("organization_id")))
+            conn.executemany(
+                """INSERT INTO assessment_log
+                   (session_id, timestamp, module, risk_band, safety_override, key_metric,
+                    primary_hazard, organization, project, site, organization_id, project_id,
+                    username, data_provenance)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                [(session_id, r["timestamp"], r["module"], r["risk_band"],
+                  int(r["safety_override"]), r["key_metric"], r["primary_hazard"],
+                  ctx["organization"], ctx["project"], r.get("site") or ctx["site"],
+                  ctx.get("organization_id"), ctx.get("project_id"),
+                  st_module.session_state.get("_auth_username") or None,
+                  r.get("data_provenance") or PROVENANCE_MANUAL) for r in records],
+            )
+        return added
+    except Exception as exc:  # noqa: BLE001
+        _handle_db_failure(exc, "merge_uploaded_csv")
+        raise PersistenceError(f"Import NOT saved: {CRITICAL_DB_ERROR_MESSAGE}") from exc
 
 
 # ---------------------------------------------------------------------------
@@ -1252,11 +1321,12 @@ def log_site_alert(worker_or_site_id: str, alert_type: str, severity: str, messa
                     organization: str = "", project: str = "", site: str = "",
                     organization_id: int | None = None, project_id: int | None = None,
                     site_id: int | None = None,
-                    role: str | None = None) -> None:
-    """Records one durable site alert row. Silently no-ops if the database
-    is unavailable (an alert that can't be written to disk still displayed
-    on screen at the moment it fired - this is a log for later review, not
-    the sole notification channel). organization/project/site are plain
+                    role: str | None = None) -> bool:
+    """Records one durable site alert row. Returns True when stored, False
+    when the database is unavailable - the failure is logged at CRITICAL and
+    the caller must tell the user the alert was NOT recorded (audit mandate
+    C3: a failed write is never reported as successful). The alert itself is
+    still shown on screen at the moment it fires. organization/project/site are plain
     strings here (not session-context-derived) since alerts can fire from
     a background thread with no Streamlit session attached.
 
@@ -1270,7 +1340,8 @@ def log_site_alert(worker_or_site_id: str, alert_type: str, severity: str, messa
     relational hierarchy stays populated even for this no-session call
     path."""
     if not _db_ok():
-        return
+        logger.critical("Site alert %s/%s NOT recorded: database unavailable", alert_type, severity)
+        return False
     # Tenant isolation (F2): callers pass the session's validated context
     # (**get_org_context(st)). A bare organization NAME is only looked up,
     # never created - so a stray name can't mint a new tenant. An alert with
@@ -1282,7 +1353,7 @@ def log_site_alert(worker_or_site_id: str, alert_type: str, severity: str, messa
                 organization_id = _find_id(conn, "organizations", {}, organization)
         except Exception as exc:  # noqa: BLE001
             _handle_db_failure(exc, "log_site_alert")
-            return
+            return False
     if organization_id is None:
         logger.warning("Site alert %s/%s recorded without an organization", alert_type, severity)
         project_id = site_id = None
@@ -1301,8 +1372,11 @@ def log_site_alert(worker_or_site_id: str, alert_type: str, severity: str, messa
                  worker_or_site_id, alert_type, severity, message, module,
                  organization, project, site, organization_id, project_id, site_id),
             )
+        return True
     except Exception as exc:  # noqa: BLE001
         _handle_db_failure(exc, "log_site_alert")
+        logger.critical("Site alert %s/%s NOT recorded", alert_type, severity)
+        return False
 
 
 def get_site_alert_log_dataframe(st_module, limit: int = ALERT_LOG_DEFAULT_LIMIT,
@@ -1316,8 +1390,7 @@ def get_site_alert_log_dataframe(st_module, limit: int = ALERT_LOG_DEFAULT_LIMIT
     tenancy.TenantAccessDenied."""
     import tenancy
 
-    if not _db_ok():
-        return pd.DataFrame(columns=ALERT_LOG_COLUMNS)
+    _require_db("get_site_alert_log_dataframe")
     if all_organizations:
         principal = tenancy.principal_from_session(st_module)
         if not principal.platform_admin:
@@ -1336,7 +1409,7 @@ def get_site_alert_log_dataframe(st_module, limit: int = ALERT_LOG_DEFAULT_LIMIT
         return df
     except Exception as exc:  # noqa: BLE001
         _handle_db_failure(exc, "get_site_alert_log_dataframe")
-        return pd.DataFrame(columns=ALERT_LOG_COLUMNS)
+        raise PersistenceError(CRITICAL_DB_ERROR_MESSAGE) from exc
 
 
 # ---------------------------------------------------------------------------
@@ -1469,8 +1542,7 @@ def log_audit_event(event_type: str, actor: str = "anonymous", detail: str = "",
 
 def get_audit_log_dataframe(limit: int = AUDIT_LOG_DEFAULT_LIMIT) -> pd.DataFrame:
     """Durable audit trail, newest first, bounded by `limit`. Never raises."""
-    if not _db_ok():
-        return pd.DataFrame(columns=AUDIT_LOG_COLUMNS)
+    _require_db("get_audit_log_dataframe")
     try:
         with _get_connection() as conn:
             df = pd.read_sql_query(
@@ -1486,7 +1558,7 @@ def get_audit_log_dataframe(limit: int = AUDIT_LOG_DEFAULT_LIMIT) -> pd.DataFram
         return df
     except Exception as exc:  # noqa: BLE001
         _handle_db_failure(exc, "get_audit_log_dataframe")
-        return pd.DataFrame(columns=AUDIT_LOG_COLUMNS)
+        raise PersistenceError(CRITICAL_DB_ERROR_MESSAGE) from exc
 
 
 def verify_audit_log_integrity() -> dict:
@@ -1498,9 +1570,10 @@ def verify_audit_log_integrity() -> dict:
     were inserted out of order) - see the module docstring for what this
     can and can't guarantee. Never raises; reports ok=True, rows_checked=0
     if the database is unavailable or the table is empty (nothing to
-    contradict)."""
+    contradict). If the ledger cannot be read the result is ok=False with
+    an "error" key - an unverifiable ledger is never reported as intact."""
     if not _db_ok():
-        return {"ok": True, "rows_checked": 0, "first_broken_id": None}
+        return {"ok": False, "rows_checked": 0, "first_broken_id": None, "error": "database unavailable"}
     try:
         with _get_connection() as conn:
             cur = conn.execute(
@@ -1510,7 +1583,7 @@ def verify_audit_log_integrity() -> dict:
             rows = cur.fetchall()
     except Exception as exc:  # noqa: BLE001
         _handle_db_failure(exc, "verify_audit_log_integrity")
-        return {"ok": True, "rows_checked": 0, "first_broken_id": None}
+        return {"ok": False, "rows_checked": 0, "first_broken_id": None, "error": "database unavailable"}
 
     expected_prev = _GENESIS_HASH
     for row in rows:

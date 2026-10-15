@@ -1091,7 +1091,14 @@ def save_assessment(result: dict) -> bool:
     role allows writing (tenant check repeated inside log_assessment)."""
     if not can_save_assessments():
         return False
-    log_assessment(st, result)
+    try:
+        log_assessment(st, result)
+    except analytics.PersistenceError:
+        # Never reported as saved (audit mandate C3).
+        st.error("🛑 " + ("Évaluation NON enregistrée - base de données indisponible."
+                         if st.session_state.get("lang", "fr") == "fr" else
+                         "Assessment NOT saved - the database is unavailable."))
+        return False
     return True
 
 
@@ -1100,7 +1107,7 @@ def can_save_assessments() -> bool:
     and display results, but never call log_assessment()."""
     import tenancy
     if not analytics._db_ok():
-        return True  # development degrade keeps the session log
+        return False  # nothing can be saved: never pretend otherwise (audit C3)
     return tenancy.can(tenancy.principal_from_session(st), get_org_context(st).get("organization_id"), "write")
 
 
@@ -1548,7 +1555,8 @@ def on_assessment_logged(result: dict, controls: list) -> None:
                              key_metric_value=result.get(metric_field) if metric_field else None)
     if result.get("safety_override") and can_save_assessments():
         ctx = get_org_context(st)
-        push.notify_stop_work(result, ctx.get("organization_id"), ctx.get("site") or result.get("module", ""))
+        push.notify_stop_work(result, ctx.get("organization_id"), ctx.get("site") or result.get("module", ""),
+                              principal=analytics.current_principal())
 
 def _render_field_position_result(lang: str, lat: float, lon: float,
                                    accuracy: float | None = None, key_suffix: str = "gps") -> None:
@@ -1792,11 +1800,14 @@ def render_worker_physiology_section(lang: str) -> list[dict]:
                     # filter it out of every other tenant's view - this
                     # call previously logged with no org context at all,
                     # the exact cross-tenant exposure gap the audit named.
-                    log_site_alert(
+                    if not log_site_alert(
                         pseudonym, "physiological_strain", "CRITICAL",
                         strain["primary_hazard"], module="Worker Physiology",
                         **get_org_context(st),
-                    )
+                    ):
+                        st.warning("Alerte affichée mais NON enregistrée dans le journal."
+                                   if lang == "fr" else
+                                   "Alert shown but NOT recorded in the alert log.")
             elif strain["status"] == "WARNING":
                 st.warning(f"{pseudonym}: {status_label}")
 
@@ -1935,8 +1946,11 @@ def render_dashboard():
     # sharing this deployment would see every other organization's site
     # alerts (physiological CRITICAL strain events, safety-override
     # triggers), the exact cross-tenant exposure the audit named.
-    alert_log = get_site_alert_log_dataframe(st)   # filtered server-side to the validated organization
-    if not alert_log.empty:
+    try:
+        alert_log = get_site_alert_log_dataframe(st)   # filtered server-side to the validated organization
+    except PermissionError:   # no accessible organization: nothing to show
+        alert_log = None
+    if alert_log is not None and not alert_log.empty:
         st.markdown("---")
         st.markdown("### 🚨 " + ("Journal des Alertes de Site" if lang == "fr" else "Site Alert Log"))
         st.caption(
@@ -3183,4 +3197,14 @@ if demo_mode_enabled():
     st.sidebar.error("DEMO MODE - simulated data enabled", icon="🧪")
 
 pg = st.navigation(_pages)
-pg.run()
+try:
+    pg.run()
+except analytics.PersistenceError:
+    # Audit mandate C3: a database failure in the middle of a page stops it
+    # with an explicit error. Nothing was saved anywhere else, and no empty
+    # or cached data is shown in place of the real records.
+    st.error("🛑 " + analytics.CRITICAL_DB_ERROR_MESSAGE)
+    st.markdown("**Rien n'a été enregistré. Réessayez dans quelques minutes.**"
+                if st.session_state.get("lang", "fr") == "fr" else
+                "**Nothing was saved. Please try again in a few minutes.**")
+    st.stop()

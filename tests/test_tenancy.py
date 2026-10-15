@@ -230,10 +230,14 @@ class TestRoles:
 
 class TestPushIsolation:
     def test_alerts_only_reach_current_members_of_that_organization(self, two_tenants):
+        sign_in("alice")   # devices are registered from the user's own session
         push.register_device("alice", "tok-alice", "android", two_tenants["acme"])
+        sign_in("bob")
         push.register_device("bob", "tok-bob", "ios", two_tenants["beta"])
-        assert push._tokens_for_organization(two_tenants["acme"]) == ["tok-alice"]
-        assert push._tokens_for_organization(two_tenants["beta"]) == ["tok-bob"]
+        with analytics.acting_as(tenancy.Principal("alice")):   # push worker thread of alice's alert
+            assert push._tokens_for_organization(two_tenants["acme"]) == ["tok-alice"]
+        with analytics.acting_as(tenancy.Principal("bob")):
+            assert push._tokens_for_organization(two_tenants["beta"]) == ["tok-bob"]
         with pytest.raises(tenancy.TenantAccessDenied):
             push.register_device("bob", "tok-bob-2", "ios", two_tenants["acme"])
 

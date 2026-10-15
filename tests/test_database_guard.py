@@ -13,7 +13,10 @@ import db
 from risk_engine import calculate_solar_albedo_heat_risk
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-PG_URL = os.environ.get("MAKU_TEST_PG_URL", "")  # e.g. postgresql://maku:pw@127.0.0.1:5432/maku_test
+PG_URL = os.environ.get("MAKU_TEST_PG_URL", "")  # application role, e.g. postgresql://maku_app:pw@127.0.0.1/maku_test
+PG_OWNER_URL = os.environ.get("MAKU_TEST_PG_OWNER_URL", "")   # table owner (migrations)
+USE_PG = os.environ.get("MAKU_TEST_BACKEND") == "postgres" and bool(PG_URL)
+sqlite_only = pytest.mark.skipif(USE_PG, reason="exercises the no-DATABASE_URL path; not applicable to the PostgreSQL run")
 
 
 def _run_init_db(env_overrides: dict) -> subprocess.CompletedProcess:
@@ -58,16 +61,19 @@ class TestEnvironment:
 
 # ------------------------------------------------------------ runtime guard
 class TestStrictRuntime:
+    @sqlite_only
     def test_production_without_database_url_is_fatal_and_writes_nothing(self, fresh_db, monkeypatch, caplog):
         _sign_in_admin()
         monkeypatch.setenv("MAKU_ENV", "production")
         with caplog.at_level(logging.CRITICAL, logger="maku.analytics"):
-            analytics.log_assessment(st, calculate_solar_albedo_heat_risk(950, 9, 42, "silicon_pv_panels"))
+            with pytest.raises(analytics.PersistenceError):   # never reported as saved
+                analytics.log_assessment(st, calculate_solar_albedo_heat_risk(950, 9, 42, "silicon_pv_panels"))
         assert analytics.is_db_fatal()
         assert analytics.LOG_SESSION_KEY not in st.session_state          # no in-memory substitute
         assert not (fresh_db / "test.db").exists()                          # no SQLite file created
         assert any("requires DATABASE_URL" in r.getMessage() for r in caplog.records)
 
+    @sqlite_only
     def test_critical_log_is_written_once_per_reason(self, fresh_db, monkeypatch, caplog):
         monkeypatch.setenv("MAKU_ENV", "production")
         with caplog.at_level(logging.CRITICAL, logger="maku.analytics"):
@@ -128,6 +134,7 @@ def _sqlite_conn(tmp_path):
 
 # ------------------------------------------------------------ page gate
 class TestPageGate:
+    @sqlite_only
     def test_every_page_stops_with_an_explicit_error(self, fresh_db, monkeypatch):
         from streamlit.testing.v1 import AppTest
         monkeypatch.setenv("MAKU_ENV", "production")
@@ -190,12 +197,27 @@ class TestInitDb:
         assert ScriptDirectory.from_config(cfg).get_current_head() == analytics.SCHEMA_REVISION
 
 
-@pytest.mark.skipif(not PG_URL, reason="set MAKU_TEST_PG_URL to run against a real PostgreSQL")
+@pytest.mark.skipif(not (PG_URL and PG_OWNER_URL),
+                    reason="set MAKU_TEST_PG_URL (application role) and MAKU_TEST_PG_OWNER_URL (owner)")
 class TestPostgresProduction:
+    def test_production_refuses_to_connect_as_the_table_owner(self):
+        """RLS does not apply to the owner: production must not start that way."""
+        out = _run_init_db({"MAKU_ENV": "production", "DATABASE_URL": PG_OWNER_URL})
+        assert out.returncode == 2
+        assert "row-level security" in out.stderr
+
+    def test_runtime_refuses_the_owner_role_too(self, monkeypatch):
+        monkeypatch.setenv("MAKU_ENV", "production")
+        conn = analytics._Connection(db.raw_connection(PG_OWNER_URL), "postgres")
+        with pytest.raises(analytics.RowLevelSecurityBypassed):
+            analytics.verify_rls_enforced(conn)
+        conn._conn.close()
+
     def test_production_start_migrate_and_write(self, monkeypatch):
-        out = _run_init_db({"MAKU_ENV": "production", "DATABASE_URL": PG_URL})
+        env = {"MAKU_ENV": "production", "DATABASE_URL": PG_URL, "MIGRATION_DATABASE_URL": PG_OWNER_URL}
+        out = _run_init_db(env)
         assert out.returncode == 0, out.stderr
-        out = _run_init_db({"MAKU_ENV": "production", "DATABASE_URL": PG_URL})   # idempotent
+        out = _run_init_db(env)   # idempotent
         assert out.returncode == 0, out.stderr
 
         monkeypatch.setenv("MAKU_ENV", "production")

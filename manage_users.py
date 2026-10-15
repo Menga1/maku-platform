@@ -121,4 +121,10 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    import analytics as _analytics_ctx
+
+    # Operator tool run on the server: platform-administrator identity for
+    # PostgreSQL row-level security (analytics.system_context).
+    with _analytics_ctx.system_context():
+        _code = main()
+    raise SystemExit(_code)

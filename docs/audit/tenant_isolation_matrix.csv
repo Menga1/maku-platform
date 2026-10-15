@@ -1,0 +1,55 @@
+Test,Required result,Layer,Backend,Test identity,Test case,Actual
+Read own record,Allowed according to role,application,sqlite,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_read_own_record,PASS
+Read own record,Allowed according to role,application,postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_read_own_record,PASS
+Read own record,Allowed according to role,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_read_own_record[organizations],PASS
+Read own record,Allowed according to role,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_read_own_record[organization_members],PASS
+Read own record,Allowed according to role,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_read_own_record[projects],PASS
+Read own record,Allowed according to role,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_read_own_record[sites],PASS
+Read own record,Allowed according to role,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_read_own_record[assessment_log],PASS
+Read own record,Allowed according to role,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_read_own_record[site_alert_log],PASS
+Read own record,Allowed according to role,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_read_own_record[device_tokens],PASS
+Cross-tenant read,No data disclosure,application,sqlite,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_cross_tenant_read_by_id,PASS
+Cross-tenant read,No data disclosure,application,sqlite,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_cross_tenant_read_with_tampered_session_context,PASS
+Cross-tenant read,No data disclosure,application,postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_cross_tenant_read_by_id,PASS
+Cross-tenant read,No data disclosure,application,postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_cross_tenant_read_with_tampered_session_context,PASS
+Cross-tenant read,No data disclosure,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_cross_tenant_read[organizations],PASS
+Cross-tenant read,No data disclosure,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_cross_tenant_read[organization_members],PASS
+Cross-tenant read,No data disclosure,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_cross_tenant_read[projects],PASS
+Cross-tenant read,No data disclosure,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_cross_tenant_read[sites],PASS
+Cross-tenant read,No data disclosure,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_cross_tenant_read[assessment_log],PASS
+Cross-tenant read,No data disclosure,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_cross_tenant_read[site_alert_log],PASS
+Cross-tenant read,No data disclosure,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_cross_tenant_read[device_tokens],PASS
+Spoof tenant ID,Rejected or safely constrained,application,sqlite,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_spoof_tenant_id_on_create,PASS
+Spoof tenant ID,Rejected or safely constrained,application,sqlite,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_spoof_tenant_id_on_device_registration,PASS
+Spoof tenant ID,Rejected or safely constrained,application,postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_spoof_tenant_id_on_create,PASS
+Spoof tenant ID,Rejected or safely constrained,application,postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_spoof_tenant_id_on_device_registration,PASS
+Spoof tenant ID,Rejected or safely constrained,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_spoof_tenant_id_on_insert,PASS
+Spoof author,Rejected,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_spoof_author_on_insert,PASS
+Ownership update,Ownership cannot be transferred,application,sqlite,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_ownership_update_is_impossible,PASS
+Ownership update,Ownership cannot be transferred,application,postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_ownership_update_is_impossible,PASS
+Ownership update,Ownership cannot be transferred,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_ownership_update,PASS
+Cross-tenant delete,No unauthorized side effect,application,sqlite,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_cross_tenant_delete,PASS
+Cross-tenant delete,No unauthorized side effect,application,postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_cross_tenant_delete,PASS
+Cross-tenant delete,No unauthorized side effect,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_cross_tenant_delete,PASS
+Export/download,No unauthorized disclosure,application,sqlite,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_export_across_tenants,PASS
+Export/download,No unauthorized disclosure,application,postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_export_across_tenants,PASS
+Membership revoked,Denied according to session design,application,sqlite,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_membership_revoked,PASS
+Membership revoked,Denied according to session design,application,postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_membership_revoked,PASS
+Membership revoked,Denied according to session design,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_membership_revoked,PASS
+Insufficient role,Denied,application,sqlite,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_insufficient_role_cannot_write,PASS
+Insufficient role,Denied,application,postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_insufficient_role_cannot_write,PASS
+Insufficient role,Denied,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_insufficient_role,PASS
+Unauthenticated / no identity,No access,application,sqlite,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_unauthenticated_has_no_access,PASS
+Unauthenticated / no identity,No access,application,postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_unauthenticated_has_no_access,PASS
+Unauthenticated / no identity,No access,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_no_identity_sees_nothing[organizations],PASS
+Unauthenticated / no identity,No access,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_no_identity_sees_nothing[organization_members],PASS
+Unauthenticated / no identity,No access,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_no_identity_sees_nothing[projects],PASS
+Unauthenticated / no identity,No access,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_no_identity_sees_nothing[sites],PASS
+Unauthenticated / no identity,No access,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_no_identity_sees_nothing[assessment_log],PASS
+Unauthenticated / no identity,No access,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_no_identity_sees_nothing[site_alert_log],PASS
+Unauthenticated / no identity,No access,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_no_identity_sees_nothing[device_tokens],PASS
+Privilege escalation,Denied,application,sqlite,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_org_admin_cannot_escalate,PASS
+Privilege escalation,Denied,application,postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_org_admin_cannot_escalate,PASS
+Privilege escalation,Denied,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_application_role_cannot_bypass,PASS
+Audit ledger tampering,Denied,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_audit_log_is_append_only_for_the_application,PASS
+Device token takeover,Denied,"database (RLS, raw SQL as app role)",postgresql,alice (Org A supervisor) unless named in test,tests/test_tenant_isolation_matrix.py::test_release_token_requires_identity,PASS

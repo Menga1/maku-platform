@@ -87,7 +87,7 @@ def register_device(username: str, token: str, platform: str, organization_id: i
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     with _analytics._get_connection() as conn:
         row = conn.execute("SELECT name FROM organizations WHERE id = ?", (int(organization_id),)).fetchone()
-        conn.execute("DELETE FROM device_tokens WHERE token = ?", (token,))
+        _release_token(conn, token)
         conn.execute(
             "INSERT INTO device_tokens (username, token, platform, organization, organization_id, "
             "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -109,9 +109,20 @@ def _tokens_for_organization(organization_id: int | None) -> list[str]:
         return [row[0] for row in cur.fetchall()]
 
 
+def _release_token(conn, token: str) -> None:
+    """Drops whichever account previously held this phone's token. On
+    PostgreSQL row-level security hides other users' rows, so this goes
+    through the SECURITY DEFINER function maku_release_device_token
+    (migration 0003), which requires a signed-in caller."""
+    if conn.dialect == "postgres":
+        conn.execute("SELECT maku_release_device_token(?)", (token,))
+    else:
+        conn.execute("DELETE FROM device_tokens WHERE token = ?", (token,))
+
+
 def _forget_token(token: str) -> None:
     with _analytics._get_connection() as conn:
-        conn.execute("DELETE FROM device_tokens WHERE token = ?", (token,))
+        _release_token(conn, token)
 
 
 # ---------------------------------------------------------------------------
@@ -143,7 +154,13 @@ def _send_one(token: str, title: str, body: str, data: dict) -> bool:
     return False
 
 
-def _send_to_organization(organization_id: int | None, title: str, body: str, data: dict) -> int:
+def _send_to_organization(organization_id: int | None, title: str, body: str, data: dict,
+                          principal=None) -> int:
+    """Runs on a worker thread, which has no Streamlit session: the database
+    work is done as the user who raised the alert (row-level security)."""
+    if principal is not None:
+        with _analytics.acting_as(principal):
+            return _send_to_organization(organization_id, title, body, data)
     sent = 0
     for token in _tokens_for_organization(organization_id):
         try:
@@ -154,7 +171,7 @@ def _send_to_organization(organization_id: int | None, title: str, body: str, da
     return sent
 
 
-def notify_stop_work(result: dict, organization_id: int | None, site: str = "") -> bool:
+def notify_stop_work(result: dict, organization_id: int | None, site: str = "", principal=None) -> bool:
     """Queue a stop-work alert for the organisation. Never raises and never
     blocks the page. Simulated assessments are never pushed."""
     if not push_enabled() or not result.get("safety_override"):
@@ -168,7 +185,8 @@ def notify_stop_work(result: dict, organization_id: int | None, site: str = "") 
     data = {"module": module, "risk_band": result.get("risk_band", ""), "site": site,
             "kind": "stop_work"}
     try:
-        _EXECUTOR.submit(_send_to_organization, organization_id, title, body, data)
+        _EXECUTOR.submit(_send_to_organization, organization_id, title, body, data,
+                         principal or _analytics.current_principal())
         return True
     except Exception as exc:  # noqa: BLE001
         logger.warning("Could not queue push: %s", exc)

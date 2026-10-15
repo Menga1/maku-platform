@@ -163,3 +163,92 @@ class TestCredentialAudit:
         out = subprocess.run([sys.executable, "scripts/audit_credentials.py", "--secrets", str(secrets),
                               "--no-database"], cwd=ROOT, capture_output=True, text=True)
         assert out.returncode == 0, out.stdout
+
+
+class TestSessionRevocation:
+    """Audit mandate B4/B5: access after a password change, account deletion
+    or role change ends on the next request of every other live session."""
+
+    def _sign_in(self, monkeypatch, username, password):
+        monkeypatch.setattr(auth.st, "secrets", {})
+        st.session_state.clear()
+        assert auth._verify_credentials(username, password)
+        now = time.time()
+        st.session_state.update({"authenticated": True, "_auth_username": username,
+                                 "_auth_login_at": now, "_auth_last_seen": now})
+
+    def test_live_session_is_valid(self, fresh_db, monkeypatch):
+        accounts.create_user("sam.site", STRONG)
+        self._sign_in(monkeypatch, "sam.site", STRONG)
+        assert auth._session_revoked() is None
+        auth.require_login()                         # returns: still signed in
+        assert st.session_state["authenticated"] is True
+
+    def test_password_changed_elsewhere_ends_this_session(self, fresh_db, monkeypatch):
+        accounts.create_user("sam.site", STRONG)
+        self._sign_in(monkeypatch, "sam.site", STRONG)
+        accounts.change_password("sam.site", STRONG, STRONG + "-New")
+        assert auth._session_revoked() == "password changed"
+
+    def test_deleted_account_ends_this_session(self, fresh_db, monkeypatch):
+        accounts.create_user("sam.site", STRONG)
+        self._sign_in(monkeypatch, "sam.site", STRONG)
+        accounts.erase_account_data("sam.site", requested_via="test")
+        assert auth._session_revoked() == "account deleted or deactivated"
+
+    def test_role_change_ends_this_session(self, fresh_db, monkeypatch):
+        accounts.create_user("sam.site", STRONG)
+        self._sign_in(monkeypatch, "sam.site", STRONG)
+        with accounts._conn() as conn:
+            conn.execute("UPDATE users SET role = 'admin' WHERE username = 'sam.site'")
+        assert auth._session_revoked() == "role changed"
+
+    def test_revoked_session_is_signed_out_and_audited(self, fresh_db, monkeypatch):
+        accounts.create_user("sam.site", STRONG)
+        self._sign_in(monkeypatch, "sam.site", STRONG)
+        accounts.change_password("sam.site", STRONG, STRONG + "-New")
+
+        class Stopped(Exception):
+            pass
+
+        def stop():
+            raise Stopped
+
+        monkeypatch.setattr(auth.st, "stop", stop)
+        with pytest.raises(Stopped):
+            auth.require_login()
+        assert st.session_state["authenticated"] is False
+        import analytics
+        with analytics.system_context():
+            events = analytics.get_audit_log_dataframe()
+        assert "SESSION_REVOKED" in set(events["event_type"])
+
+    def test_deployment_credential_rotation_ends_sessions(self, fresh_db, monkeypatch):
+        monkeypatch.setattr(auth.st, "secrets", {"auth": {"users": {"ops": accounts.hash_password(STRONG)}}})
+        st.session_state.clear()
+        assert auth._verify_credentials("ops", STRONG)
+        st.session_state.update({"authenticated": True, "_auth_username": "ops"})
+        assert auth._session_revoked() is None
+        monkeypatch.setattr(auth.st, "secrets", {"auth": {"users": {"ops": accounts.hash_password(STRONG + "2")}}})
+        assert auth._session_revoked() == "deployment credential changed"
+
+
+class TestNoFastHashes:
+    """Mandate B4: no plaintext, reversible or fast-hash password storage in
+    any code path - verified through the verification function itself."""
+
+    @pytest.mark.parametrize("stored", [
+        "Correct-Horse-Battery-9",                                   # plaintext
+        "sha256:" + __import__("hashlib").sha256(b"Correct-Horse-Battery-9").hexdigest(),
+        __import__("hashlib").sha256(b"Correct-Horse-Battery-9").hexdigest(),
+        "md5:" + __import__("hashlib").md5(b"Correct-Horse-Battery-9").hexdigest(),
+        "base64:" + __import__("base64").b64encode(b"Correct-Horse-Battery-9").decode(),
+    ])
+    def test_weak_formats_never_verify(self, stored):
+        assert accounts.verify_password(stored, STRONG) is False
+
+    def test_every_write_path_stores_argon2id(self, fresh_db):
+        accounts.create_user("writer.one", STRONG)
+        assert accounts.get_user("writer.one")["password_hash"].startswith("argon2:$argon2id$")
+        accounts.change_password("writer.one", STRONG, STRONG + "-2")
+        assert accounts.get_user("writer.one")["password_hash"].startswith("argon2:$argon2id$")

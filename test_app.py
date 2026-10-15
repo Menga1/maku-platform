@@ -1668,13 +1668,15 @@ class TestDatabaseFailSafe:
         assert _analytics.is_db_fatal() is True
 
         result = calculate_solar_albedo_heat_risk(950, 9, 42, "silicon_pv_panels")
-        log_assessment(st, result)
-        # The whole point of FAIL-FAST: this must NOT have silently
-        # written into the ephemeral session_state fallback list.
+        # Audit mandate C3: the failed write raises - it is never reported
+        # as saved and never redirected into session_state.
+        with pytest.raises(_analytics.PersistenceError):
+            log_assessment(st, result)
         assert _analytics.LOG_SESSION_KEY not in st.session_state
 
-        df = get_log_dataframe(st)
-        assert df.empty
+        # ...and a failed read is not shown as an empty history either.
+        with pytest.raises(_analytics.PersistenceError):
+            get_log_dataframe(st)
 
     def test_default_sqlite_deployment_is_unaffected_by_failsafe_change(self):
         """No DATABASE_URL configured at all -> SQLite remains the
@@ -1975,11 +1977,13 @@ class TestRiskMatrixEngine:
     """risk_matrix.py: the shared Likelihood x Severity scoring engine
     every module's risk_matrix key is built from."""
 
-    def test_matrix_score_clamps_out_of_range_inputs(self):
+    def test_matrix_score_rejects_out_of_range_inputs(self):
+        """Audit A4 regression: invalid axis values were silently clamped."""
         assert matrix_score(5, 5) == 25
         assert matrix_score(1, 1) == 1
-        assert matrix_score(0, 10) == 1 * 5  # both clamped into [1, 5]
-        assert matrix_score(-3, 99) == 5
+        for bad in ((0, 10), (-3, 99), (2.9, 3), (3, None), (True, 3)):
+            with pytest.raises(ValueError):
+                matrix_score(*bad)
 
     @pytest.mark.parametrize("score,expected_band", [
         (1, "Low"), (4, "Low"),
@@ -1998,9 +2002,10 @@ class TestRiskMatrixEngine:
         assert severity_from_band("HIGH") == severity_from_band("High") == 4
         assert severity_from_band("CRITICAL") == severity_from_band("Extreme") == severity_from_band("EXTREME") == 5
 
-    def test_severity_from_band_unrecognized_label_falls_back_to_default(self):
-        assert severity_from_band("not_a_real_band") == 3
-        assert severity_from_band("not_a_real_band", default=2) == 2
+    def test_severity_from_band_unrecognized_label_is_an_error(self):
+        """Audit A5 regression: an unknown band no longer becomes severity 3."""
+        with pytest.raises(ValueError):
+            severity_from_band("not_a_real_band")
 
     def test_likelihood_from_margin_boundary_behavior(self):
         # Already at/past the threshold -> almost certain (5)
@@ -2031,9 +2036,10 @@ class TestRiskMatrixEngine:
         assert result["governing_hazard"] == "Worst hazard"
         assert result["hazards"] == hazards
 
-    def test_aggregate_risk_matrix_empty_list(self):
-        result = aggregate_risk_matrix([])
-        assert result == {"hazards": [], "overall_score": 0, "overall_band": "Low", "governing_hazard": None}
+    def test_aggregate_risk_matrix_empty_list_is_an_error(self):
+        """Audit A5 regression: no scored hazard used to report 'Low'."""
+        with pytest.raises(ValueError):
+            aggregate_risk_matrix([])
 
 
 class TestApplyControlsResidualRisk:

@@ -1,0 +1,187 @@
+Run started:2026-10-14 15:42:23.765956+00:00
+
+Test results:
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./accounts.py:440:33
+439	                      "organization_members", "users"):
+440	            cur = conn.execute(f"DELETE FROM {table} WHERE username = ?", (username,))
+441	            counts[table] = max(cur.rowcount, 0)
+
+--------------------------------------------------
+>> Issue: [B113:request_without_timeout] Call to requests without timeout
+   Severity: Medium   Confidence: Low
+   CWE: CWE-400 (https://cwe.mitre.org/data/definitions/400.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b113_request_without_timeout.html
+   Location: ./ai_advisor.py:505:15
+504	    try:
+505	        resp = requests.post(
+506	            ANTHROPIC_URL,
+507	            headers={
+508	                "x-api-key": api_key,
+509	                "anthropic-version": "2023-06-01",
+510	                "content-type": "application/json",
+511	            },
+512	            json=request_body,
+513	            timeout=40 if enable_web_search else 20,
+514	        )
+515	        resp.raise_for_status()
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./analytics.py:836:25
+835	    where_clause = " AND ".join(f"{c} = ?" for c in where_cols)
+836	    cur = conn.execute(f"SELECT id FROM {table} WHERE {where_clause}", tuple(where_vals))
+837	    row = cur.fetchone()
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./analytics.py:842:19
+841	    placeholders = ", ".join("?" for _ in insert_cols)
+842	    insert_sql = f"INSERT INTO {table} ({', '.join(insert_cols)}) VALUES ({placeholders})"
+843	    if conn.dialect == "postgres":
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./analytics.py:865:25
+864	        failure = exc
+865	    cur = conn.execute(f"SELECT id FROM {table} WHERE {where_clause}", tuple(where_vals))
+866	    row = cur.fetchone()
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./analytics.py:1035:25
+1034	    where = " AND ".join([f"{k} = ?" for k in scope] + ["name = ?"])
+1035	    row = conn.execute(f"SELECT id FROM {table} WHERE {where}", tuple(scope.values()) + (name,)).fetchone()
+1036	    return row[0] if row else None
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./analytics.py:1200:22
+1199	                _adapt_sql(
+1200	                    f"SELECT {', '.join(LOG_COLUMNS)} FROM assessment_log "
+1201	                    "WHERE session_id = ? AND organization_id = ? ORDER BY timestamp",
+1202	                    conn.dialect,
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./analytics.py:1226:22
+1225	                _adapt_sql(
+1226	                    f"SELECT {', '.join(LOG_COLUMNS)} FROM assessment_log "
+1227	                    "WHERE organization_id = ? ORDER BY timestamp DESC LIMIT ?",
+1228	                    conn.dialect,
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./analytics.py:1404:21
+1403	        with _get_connection() as conn:
+1404	            sql = (f"SELECT {', '.join(ALERT_LOG_COLUMNS)} FROM site_alert_log "
+1405	                   f"{where}ORDER BY timestamp DESC LIMIT ?")
+1406	            df = pd.read_sql_query(_adapt_sql(sql, conn.dialect), conn.raw, params=params)
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./analytics.py:1550:22
+1549	                _adapt_sql(
+1550	                    f"SELECT {', '.join(AUDIT_LOG_COLUMNS)} FROM audit_log "
+1551	                    "ORDER BY id DESC LIMIT ?",
+1552	                    conn.dialect,
+
+--------------------------------------------------
+>> Issue: [B314:blacklist] Using xml.etree.ElementTree.parse to parse untrusted XML data is known to be vulnerable to XML attacks. Replace xml.etree.ElementTree.parse with its defusedxml equivalent function or make sure defusedxml.defuse_stdlib() is called
+   Severity: Medium   Confidence: High
+   CWE: CWE-20 (https://cwe.mitre.org/data/definitions/20.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b313-b320-xml-bad-elementtree
+   Location: ./scripts/audit_evidence.py:146:18
+145	        backend = "postgresql" if "postgres" in os.path.basename(path) else "sqlite"
+146	        for tc in ET.parse(path).getroot().iter("testcase"):
+147	            if "test_tenant_isolation_matrix" not in tc.get("classname", ""):
+
+--------------------------------------------------
+>> Issue: [B310:blacklist] Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.
+   Severity: Medium   Confidence: High
+   CWE: CWE-22 (https://cwe.mitre.org/data/definitions/22.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b310-urllib-urlopen
+   Location: ./scripts/healthcheck.py:24:13
+23	    try:
+24	        with urllib.request.urlopen(f"http://127.0.0.1:{port}/_stcore/health", timeout=4) as resp:
+25	            if resp.status != 200:
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./scripts/migrate_sqlite_to_postgres.py:93:52
+92	        with dst_engine.connect() as dconn:
+93	            non_empty = {t: dconn.execute(sa.text(f"SELECT COUNT(*) FROM {t}")).scalar_one()
+94	                         for t in source_tables}
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./scripts/migrate_sqlite_to_postgres.py:124:22
+123	                dconn.execute(sa.text(
+124	                    f"SELECT setval(pg_get_serial_sequence('{name}', 'id'), "
+125	                    f"COALESCE((SELECT MAX(id) FROM {name}), 1), "
+126	                    f"(SELECT MAX(id) FROM {name}) IS NOT NULL)"
+127	                ))
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./scripts/migrate_sqlite_to_postgres.py:141:48
+140	        for name, total, _ in summary:
+141	            dst_total = dconn.execute(sa.text(f"SELECT COUNT(*) FROM {name}")).scalar_one()
+142	            if dst_total < total:
+
+--------------------------------------------------
+
+Code scanned:
+	Total lines of code: 14731
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 17
+		Medium: 15
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 9
+		Medium: 7
+		High: 16
+Files skipped (0):
+exit code: 1

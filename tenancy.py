@@ -163,6 +163,11 @@ def _require_platform_admin(actor: Principal) -> None:
 
 def create_organization(actor: Principal, name: str) -> int:
     _require_platform_admin(actor)
+    with _analytics().acting_as(actor):   # the database sees the same identity (RLS)
+        return _create_organization(actor, name)
+
+
+def _create_organization(actor: Principal, name: str) -> int:
     name = (name or "").strip()
     if not name or len(name) > 120:
         raise TenancyError("Organization name must be 1-120 characters.")
@@ -182,6 +187,11 @@ def organization_id_by_name(name: str) -> int | None:
 
 
 def set_membership(actor: Principal, username: str, organization_id: int, role: str = DEFAULT_ORG_ROLE) -> None:
+    with _analytics().acting_as(actor):   # the database sees the same identity (RLS)
+        _set_membership(actor, username, organization_id, role)
+
+
+def _set_membership(actor: Principal, username: str, organization_id: int, role: str) -> None:
     """Adds or changes a membership. Platform admins can manage any
     organization; an org_admin can manage their own organization but cannot
     create another org_admin."""
@@ -210,6 +220,11 @@ def set_membership(actor: Principal, username: str, organization_id: int, role: 
 
 
 def remove_membership(actor: Principal, username: str, organization_id: int) -> bool:
+    with _analytics().acting_as(actor):   # the database sees the same identity (RLS)
+        return _remove_membership(actor, username, organization_id)
+
+
+def _remove_membership(actor: Principal, username: str, organization_id: int) -> bool:
     if not actor.platform_admin:
         require_access(actor, organization_id, "manage")
     a = _analytics()

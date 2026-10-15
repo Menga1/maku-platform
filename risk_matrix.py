@@ -72,31 +72,40 @@ _SEVERITY_FROM_BAND = {
 }
 
 
+def _axis_value(name: str, value) -> int:
+    """1-5 integer, or ValueError. Audit mandate A4: an invalid likelihood or
+    severity is rejected, never clamped or truncated into a plausible score
+    (the 1.x code turned 0 into 1 and 2.9 into 2 silently)."""
+    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 5:
+        raise ValueError(f"{name} must be an integer from 1 to 5, got {value!r}")
+    return value
+
+
 def matrix_score(likelihood: int, severity: int) -> int:
-    """Score = Likelihood x Severity, each clamped to the valid 1-5 range
-    so a caller passing an out-of-range value degrades safely rather than
-    producing a score outside the documented 1-25 scale."""
-    likelihood = min(max(int(likelihood), 1), 5)
-    severity = min(max(int(severity), 1), 5)
-    return likelihood * severity
+    """Score = Likelihood x Severity on the 5x5 matrix (1-25)."""
+    return _axis_value("likelihood", likelihood) * _axis_value("severity", severity)
 
 
 def matrix_band(score: int) -> str:
-    """Maps a 1-25 matrix score onto Low/Moderate/High/Extreme using the
-    exact hardcoded thresholds this refactor requires: Low 1-4,
-    Moderate 5-9, High 10-15, Extreme 16-25."""
+    """Maps a 1-25 matrix score onto Low/Moderate/High/Extreme: Low 1-4,
+    Moderate 5-9, High 10-15, Extreme 16-25 (inclusive upper bounds, no gaps,
+    no overlaps). Any other value is rejected."""
+    if isinstance(score, bool) or not isinstance(score, int) or not 1 <= score <= 25:
+        raise ValueError(f"matrix score must be an integer from 1 to 25, got {score!r}")
     for threshold, label in RISK_MATRIX_BAND_THRESHOLDS:
         if score <= threshold:
             return label
     return RISK_MATRIX_BAND_THRESHOLDS[-1][1]
 
 
-def severity_from_band(band_label: str, default: int = 3) -> int:
+def severity_from_band(band_label: str) -> int:
     """Converts an existing risk_engine.py band label into the matrix's
-    1-5 severity axis. An unrecognized label falls back to 3 (the middle
-    of the scale) rather than silently understating or overstating
-    severity for a band this function doesn't recognize."""
-    return _SEVERITY_FROM_BAND.get(band_label, default)
+    1-5 severity axis. An unrecognized label is an error: guessing a
+    mid-scale severity could understate a critical hazard (audit A4/A5)."""
+    try:
+        return _SEVERITY_FROM_BAND[band_label]
+    except KeyError:
+        raise ValueError(f"unknown band label {band_label!r}") from None
 
 
 def likelihood_from_margin(current_value: float, threshold: float, comfortable_margin: float) -> int:
@@ -113,6 +122,13 @@ def likelihood_from_margin(current_value: float, threshold: float, comfortable_m
     This is a deterministic, reproducible rule - not a fitted/calibrated
     probability - consistent with this module's LIKELIHOOD CONVENTION
     note above."""
+    import math
+    for name, value in (("current_value", current_value), ("threshold", threshold),
+                        ("comfortable_margin", comfortable_margin)):
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+            raise ValueError(f"{name} must be a finite number, got {value!r}")   # NaN would read as 'rare'
+    if comfortable_margin <= 0:
+        raise ValueError("comfortable_margin must be positive")
     margin = threshold - current_value
     if margin <= 0:
         return 5  # already at/past the threshold - almost certain
@@ -148,8 +164,9 @@ def aggregate_risk_matrix(hazards: list[dict]) -> dict:
     risk_engine.py's existing risk_band()-based modules already apply,
     just expressed numerically here."""
     if not hazards:
-        return {"hazards": [], "overall_score": 0, "overall_band": "Low", "governing_hazard": None}
-    worst = max(hazards, key=lambda h: h["score"])
+        # Audit A5: no scored hazard is missing data, not "Low" risk.
+        raise ValueError("no hazards were scored - cannot produce a risk level")
+    worst = max(hazards, key=lambda h: h["score"])   # ties: the first listed hazard governs
     return {
         "hazards": hazards,
         "overall_score": worst["score"],

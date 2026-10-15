@@ -60,6 +60,7 @@ SESSION_TIMEOUT_MINUTES = int(os.environ.get("MAKU_SESSION_TIMEOUT_MINUTES", "48
 SESSION_IDLE_MINUTES = int(os.environ.get("MAKU_SESSION_IDLE_MINUTES", "30"))
 AUDIT_EVENT_WEAK_DEPLOYMENT_PASSWORD = "WEAK_DEPLOYMENT_PASSWORD"
 AUDIT_EVENT_SESSION_IDLE_TIMEOUT = "SESSION_IDLE_TIMEOUT"
+AUDIT_EVENT_SESSION_REVOKED = "SESSION_REVOKED"
 BOOTSTRAP_ROLE = "admin"
 
 
@@ -159,8 +160,10 @@ def _verify_credentials(username: str, password: str) -> bool:
         if ok:
             st.session_state["_auth_role"] = user["role"]
             st.session_state["_auth_source"] = "database"
-            if accounts.needs_rehash(user["password_hash"]):
-                accounts.upgrade_stored_hash(username, password)
+            stored = user["password_hash"]
+            if accounts.needs_rehash(stored) and accounts.upgrade_stored_hash(username, password):
+                stored = (accounts.get_user(username) or {}).get("password_hash", stored)
+            st.session_state["_auth_credential_fp"] = _credential_fingerprint(stored)
         return ok
 
     # 2. Deployment-managed bootstrap account
@@ -195,7 +198,41 @@ def _verify_credentials(username: str, password: str) -> bool:
                     "(Argon2id)", username, _credential_format(configured))
     st.session_state["_auth_role"] = BOOTSTRAP_ROLE
     st.session_state["_auth_source"] = "deployment"
+    st.session_state["_auth_credential_fp"] = _credential_fingerprint(configured)
     return True
+
+
+def _credential_fingerprint(stored_hash: str) -> str:
+    """Short digest of the STORED hash (never of the password): changes when
+    the password is changed or reset, so other live sessions can be ended."""
+    import hashlib
+    return hashlib.sha256((stored_hash or "").encode("utf-8")).hexdigest()[:24]
+
+
+def _session_revoked() -> str | None:
+    """Re-checked on every request (audit mandate B4/B5): returns why the
+    signed-in identity is no longer valid - account deleted or deactivated,
+    password changed or reset elsewhere, role changed, deployment account
+    removed - or None. Raises accounts.AccountStoreUnavailable if the account
+    store cannot be read (the caller stops the page; it never assumes valid)."""
+    username = st.session_state.get("_auth_username") or ""
+    source = st.session_state.get("_auth_source")
+    fingerprint = st.session_state.get("_auth_credential_fp")
+    if source == "database":
+        user = accounts.get_user(username)
+        if user is None:
+            return "account deleted or deactivated"
+        if fingerprint and _credential_fingerprint(user["password_hash"]) != fingerprint:
+            return "password changed"
+        if user["role"] != st.session_state.get("_auth_role"):
+            return "role changed"
+    elif source == "deployment":
+        configured = _configured_users().get(username)
+        if configured is None:
+            return "deployment account removed"
+        if fingerprint and _credential_fingerprint(configured) != fingerprint:
+            return "deployment credential changed"
+    return None
 
 
 def get_client_ip() -> str | None:
@@ -238,7 +275,7 @@ def is_admin() -> bool:
 
 def _clear_session_identity() -> None:
     for key in ("authenticated", "_auth_username", "_auth_role", "_auth_source", "_auth_login_at",
-                "_auth_last_seen", "_auth_consents", "_auth_weak_password_warning"):
+                "_auth_last_seen", "_auth_consents", "_auth_weak_password_warning", "_auth_credential_fp"):
         st.session_state.pop(key, None)
     st.session_state["authenticated"] = False
 
@@ -264,8 +301,19 @@ def require_login() -> None:
             _clear_session_identity()
             st.session_state["_auth_idle_notice"] = True
         else:
-            st.session_state["_auth_last_seen"] = time.time()
-            return
+            try:
+                reason = _session_revoked()
+            except accounts.AccountStoreUnavailable:
+                st.error("🛑 Base de données indisponible. / Database unavailable.")
+                st.stop()
+                return
+            if reason:
+                _audit(AUDIT_EVENT_SESSION_REVOKED, actor=current_username() or "unknown", detail=reason)
+                _clear_session_identity()
+                st.session_state["_auth_revoked_notice"] = True
+            else:
+                st.session_state["_auth_last_seen"] = time.time()
+                return
 
     st.set_page_config(page_title="MAKU - Connexion", page_icon="🔒", layout="centered")
     st.markdown("<div style='height: 6vh'></div>", unsafe_allow_html=True)
@@ -279,6 +327,9 @@ def require_login() -> None:
 
         if st.session_state.pop("_account_deleted_notice", False):
             st.success("Votre compte a été supprimé. / Your account has been deleted.")
+        if st.session_state.pop("_auth_revoked_notice", False):
+            st.info("Session terminée : votre compte ou votre mot de passe a changé. / "
+                    "Session ended: your account or password changed.")
         if st.session_state.pop("_auth_idle_notice", False):
             st.info(f"Déconnecté après {SESSION_IDLE_MINUTES} min d'inactivité. / "
                     f"Signed out after {SESSION_IDLE_MINUTES} min without activity.")
