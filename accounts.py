@@ -65,7 +65,7 @@ ATTEMPT_RETENTION_SECONDS = 7 * 24 * 3600
 
 # Consent purposes. Keep keys stable - they are stored in the database.
 PRIVACY_POLICY_VERSION = os.environ.get("MAKU_PRIVACY_POLICY_VERSION", "2026-10")
-PRIVACY_POLICY_URL = os.environ.get("MAKU_PRIVACY_POLICY_URL", "https://maku.ae/privacy")
+PRIVACY_POLICY_URL = os.environ.get("MAKU_PRIVACY_POLICY_URL", "https://menga1.github.io/maku-platform/privacy.html")
 CONSENT_AI = "ai_processing"
 CONSENT_LOCATION = "location"
 CONSENT_PURPOSES = (CONSENT_AI, CONSENT_LOCATION)
