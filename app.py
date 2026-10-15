@@ -3197,6 +3197,14 @@ if demo_mode_enabled():
     st.sidebar.error("DEMO MODE - simulated data enabled", icon="🧪")
 
 pg = st.navigation(_pages)
+
+# Data-source credits required by the licences of the live feeds (shown on
+# every page): Open-Meteo data is CC BY 4.0, Nominatim results are ODbL.
+st.sidebar.caption(
+    "Weather data by [Open-Meteo.com](https://open-meteo.com/) "
+    "([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)) · "
+    "Location names © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright) (ODbL)"
+)
 try:
     pg.run()
 except analytics.PersistenceError:
