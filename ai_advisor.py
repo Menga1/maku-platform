@@ -79,6 +79,88 @@ _AI_UNAVAILABLE_NOTES = {
 }
 
 
+# The remaining interface languages (same five failure kinds).
+_AI_UNAVAILABLE_NOTES.update({
+    'es': {
+        'rate_limit': 'El informe de IA está ocupado en este momento (límite de solicitudes). El informe basado en reglas de arriba es completo y válido.',
+        'timeout': 'El informe de IA superó el tiempo de espera en una conexión lenta. El informe basado en reglas de arriba es completo y válido.',
+        'network': 'Informe de IA no disponible - sin conexión de red. El informe basado en reglas de arriba es completo y válido.',
+        'auth': 'Informe de IA no disponible - se rechazó la clave del servicio de IA. Contacte con su administrador de MAKU.',
+        'other': 'Informe de IA no disponible temporalmente. El informe basado en reglas de arriba es completo y válido.',
+    },
+    'de': {
+        'rate_limit': 'Das KI-Briefing ist gerade ausgelastet (Ratenlimit). Das regelbasierte Briefing oben ist vollständig und gültig.',
+        'timeout': 'Das KI-Briefing hat bei einer langsamen Verbindung das Zeitlimit überschritten. Das regelbasierte Briefing oben ist vollständig und gültig.',
+        'network': 'KI-Briefing nicht verfügbar - keine Netzwerkverbindung. Das regelbasierte Briefing oben ist vollständig und gültig.',
+        'auth': 'KI-Briefing nicht verfügbar - der Schlüssel des KI-Dienstes wurde abgelehnt. Wenden Sie sich an Ihren MAKU-Administrator.',
+        'other': 'KI-Briefing vorübergehend nicht verfügbar. Das regelbasierte Briefing oben ist vollständig und gültig.',
+    },
+    'nl': {
+        'rate_limit': 'De AI-briefing is momenteel druk bezet (limiet bereikt). De op regels gebaseerde briefing hierboven is volledig en geldig.',
+        'timeout': 'De AI-briefing is verlopen door een trage verbinding. De op regels gebaseerde briefing hierboven is volledig en geldig.',
+        'network': 'AI-briefing niet beschikbaar - geen netwerkverbinding. De op regels gebaseerde briefing hierboven is volledig en geldig.',
+        'auth': 'AI-briefing niet beschikbaar - de sleutel van de AI-dienst is geweigerd. Neem contact op met uw MAKU-beheerder.',
+        'other': 'AI-briefing tijdelijk niet beschikbaar. De op regels gebaseerde briefing hierboven is volledig en geldig.',
+    },
+    'pt': {
+        'rate_limit': 'O briefing de IA está ocupado neste momento (limite de pedidos). O briefing baseado em regras acima está completo e é válido.',
+        'timeout': 'O briefing de IA excedeu o tempo limite numa ligação lenta. O briefing baseado em regras acima está completo e é válido.',
+        'network': 'Briefing de IA indisponível - sem ligação à rede. O briefing baseado em regras acima está completo e é válido.',
+        'auth': 'Briefing de IA indisponível - a chave do serviço de IA foi rejeitada. Contacte o administrador do MAKU.',
+        'other': 'Briefing de IA temporariamente indisponível. O briefing baseado em regras acima está completo e é válido.',
+    },
+    'sv': {
+        'rate_limit': 'AI-genomgången är upptagen just nu (begränsning av antal anrop). Den regelbaserade genomgången ovan är fullständig och giltig.',
+        'timeout': 'AI-genomgången tog för lång tid på en långsam anslutning. Den regelbaserade genomgången ovan är fullständig och giltig.',
+        'network': 'AI-genomgången är inte tillgänglig - ingen nätverksanslutning. Den regelbaserade genomgången ovan är fullständig och giltig.',
+        'auth': 'AI-genomgången är inte tillgänglig - AI-tjänstens nyckel avvisades. Kontakta din MAKU-administratör.',
+        'other': 'AI-genomgången är tillfälligt otillgänglig. Den regelbaserade genomgången ovan är fullständig och giltig.',
+    },
+    'no': {
+        'rate_limit': 'AI-briefingen er opptatt akkurat nå (grense for forespørsler). Den regelbaserte briefingen ovenfor er fullstendig og gyldig.',
+        'timeout': 'AI-briefingen fikk tidsavbrudd på en treg tilkobling. Den regelbaserte briefingen ovenfor er fullstendig og gyldig.',
+        'network': 'AI-briefing er ikke tilgjengelig - ingen nettverkstilkobling. Den regelbaserte briefingen ovenfor er fullstendig og gyldig.',
+        'auth': 'AI-briefing er ikke tilgjengelig - nøkkelen til AI-tjenesten ble avvist. Kontakt MAKU-administratoren din.',
+        'other': 'AI-briefing er midlertidig utilgjengelig. Den regelbaserte briefingen ovenfor er fullstendig og gyldig.',
+    },
+    'da': {
+        'rate_limit': 'AI-briefingen er optaget lige nu (grænse for forespørgsler). Den regelbaserede briefing ovenfor er komplet og gyldig.',
+        'timeout': 'AI-briefingen fik timeout på en langsom forbindelse. Den regelbaserede briefing ovenfor er komplet og gyldig.',
+        'network': 'AI-briefing er ikke tilgængelig - ingen netværksforbindelse. Den regelbaserede briefing ovenfor er komplet og gyldig.',
+        'auth': 'AI-briefing er ikke tilgængelig - AI-tjenestens nøgle blev afvist. Kontakt din MAKU-administrator.',
+        'other': 'AI-briefing er midlertidigt utilgængelig. Den regelbaserede briefing ovenfor er komplet og gyldig.',
+    },
+    'zh': {
+        'rate_limit': 'AI 简报当前繁忙（请求频率受限）。上方基于规则的简报完整且有效。',
+        'timeout': 'AI 简报因网络缓慢而超时。上方基于规则的简报完整且有效。',
+        'network': 'AI 简报不可用 - 无网络连接。上方基于规则的简报完整且有效。',
+        'auth': 'AI 简报不可用 - AI 服务密钥被拒绝。请联系您的 MAKU 管理员。',
+        'other': 'AI 简报暂时不可用。上方基于规则的简报完整且有效。',
+    },
+    'ja': {
+        'rate_limit': 'AI ブリーフィングは現在混み合っています (リクエスト制限)。上のルールに基づくブリーフィングは完全かつ有効です。',
+        'timeout': '接続が遅いため AI ブリーフィングがタイムアウトしました。上のルールに基づくブリーフィングは完全かつ有効です。',
+        'network': 'AI ブリーフィングを利用できません - ネットワークに接続されていません。上のルールに基づくブリーフィングは完全かつ有効です。',
+        'auth': 'AI ブリーフィングを利用できません - AI サービスのキーが拒否されました。MAKU の管理者に連絡してください。',
+        'other': 'AI ブリーフィングは一時的に利用できません。上のルールに基づくブリーフィングは完全かつ有効です。',
+    },
+    'hi': {
+        'rate_limit': 'AI ब्रीफ़िंग अभी व्यस्त है (अनुरोध सीमा)। ऊपर दी गई नियम-आधारित ब्रीफ़िंग पूर्ण और मान्य है।',
+        'timeout': 'धीमे कनेक्शन के कारण AI ब्रीफ़िंग का समय समाप्त हो गया। ऊपर दी गई नियम-आधारित ब्रीफ़िंग पूर्ण और मान्य है।',
+        'network': 'AI ब्रीफ़िंग उपलब्ध नहीं - कोई नेटवर्क कनेक्शन नहीं। ऊपर दी गई नियम-आधारित ब्रीफ़िंग पूर्ण और मान्य है।',
+        'auth': 'AI ब्रीफ़िंग उपलब्ध नहीं - AI सेवा की कुंजी अस्वीकार कर दी गई। अपने MAKU व्यवस्थापक से संपर्क करें।',
+        'other': 'AI ब्रीफ़िंग अस्थायी रूप से उपलब्ध नहीं है। ऊपर दी गई नियम-आधारित ब्रीफ़िंग पूर्ण और मान्य है।',
+    },
+    'ur': {
+        'rate_limit': 'AI بریفنگ اس وقت مصروف ہے (درخواستوں کی حد)۔ اوپر دی گئی اصول پر مبنی بریفنگ مکمل اور درست ہے۔',
+        'timeout': 'سست کنکشن کی وجہ سے AI بریفنگ کا وقت ختم ہو گیا۔ اوپر دی گئی اصول پر مبنی بریفنگ مکمل اور درست ہے۔',
+        'network': 'AI بریفنگ دستیاب نہیں - نیٹ ورک کنکشن نہیں۔ اوپر دی گئی اصول پر مبنی بریفنگ مکمل اور درست ہے۔',
+        'auth': 'AI بریفنگ دستیاب نہیں - AI سروس کی کلید مسترد کر دی گئی۔ اپنے MAKU منتظم سے رابطہ کریں۔',
+        'other': 'AI بریفنگ عارضی طور پر دستیاب نہیں۔ اوپر دی گئی اصول پر مبنی بریفنگ مکمل اور درست ہے۔',
+    },
+})
+
+
 def ai_unavailable_note(lang: str, kind: str) -> str:
     """Short, user-safe, localized notice for an AI failure kind."""
     notes = _AI_UNAVAILABLE_NOTES.get(lang, _AI_UNAVAILABLE_NOTES["en"])

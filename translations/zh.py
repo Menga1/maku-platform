@@ -530,3 +530,303 @@ ENGINE_TEMPLATES = {
     "arc_flash_ppe": "带电作业电弧防护装备：{0} (来源：{1})",
     "work_rest": "执行 {0} 工作/休息循环，以使该工作负荷和服装保持在 ACGIH TLV 行动限值以内",
 }
+
+INLINE = {'Measuring equipment / Sensor model (optional)': '测量设备 / 传感器型号（可选）',
+ 'e.g. Kestrel 5400 Heat Stress Tracker, black-globe thermometer, Class 2 sound level meter...': '例如 Kestrel '
+                                                                                                 '5400 Heat '
+                                                                                                 'Stress '
+                                                                                                 'Tracker、黑球温度计、2 '
+                                                                                                 '级声级计……',
+ '+ New organization...': '+ 新建组织……',
+ 'Open sea / coast - ASCE D (α 0.11)': '开阔海面 / 海岸 - ASCE D (α 0.11)',
+ 'Open country - ASCE C (α 0.15)': '开阔地带 - ASCE C (α 0.15)',
+ 'Urban / suburban - ASCE B (α 0.25)': '城市 / 郊区 - ASCE B (α 0.25)',
+ 'Dense city centre (α 0.33)': '密集城市中心 (α 0.33)',
+ 'Terrain roughness': '地面粗糙度',
+ 'Floor-to-floor height (m)': '层高 (m)',
+ 'Wind measured at working height': '作业高度实测风速',
+ "Best source first: (1) the equipment's arc-flash label, (2) a Lee screening calculation from fault data, (3) unknown - MAKU never invents a value.": '优先使用最佳来源：(1) '
+                                                                                                                                                       '设备的电弧闪光标签，(2) '
+                                                                                                                                                       '根据故障数据进行的 '
+                                                                                                                                                       'Lee '
+                                                                                                                                                       '法筛查计算，(3) '
+                                                                                                                                                       '未知 '
+                                                                                                                                                       '- '
+                                                                                                                                                       'MAKU '
+                                                                                                                                                       '绝不臆造数值。',
+ 'Source': '来源',
+ 'Cold-aisle setpoint (°C)': '冷通道设定值 (°C)',
+ 'Energized work planned': '计划进行带电作业',
+ "🔒 AI briefings are off (your privacy choices). Turn them on under 'My account'.": '🔒 AI '
+                                                                                    '简报已关闭（您的隐私选择）。请在"我的账户"中开启。',
+ 'Your account is not a member of any organization yet. Ask your MAKU administrator to add you to your organization. The My account page is still available.': '您的账户尚未加入任何组织。请联系 '
+                                                                                                                                                               'MAKU '
+                                                                                                                                                               '管理员将您添加到所属组织。"我的账户"页面仍可使用。',
+ 'Read-only: assessments are not saved.': '只读：评估结果不会被保存。',
+ 'One vectorized NumPy/Pandas batch calculation across every site, instead of one function call per site - a performance optimization.': '对所有站点进行一次 '
+                                                                                                                                         'NumPy/Pandas '
+                                                                                                                                         '向量化批量计算，而不是每个站点调用一次函数 '
+                                                                                                                                         '- '
+                                                                                                                                         '这是一项性能优化。',
+ "📍 Location is off (your privacy choices). Turn it on under 'My account' to use GPS and automatic country detection.": '📍 '
+                                                                                                                        '位置功能已关闭（您的隐私选择）。请在"我的账户"中开启，以使用 '
+                                                                                                                        'GPS '
+                                                                                                                        '和自动国家识别。',
+ 'Photos attached to the PDF report': '附加到 PDF 报告的照片',
+ 'Remove photos': '移除照片',
+ 'Get a notification when an assessment in your organisation triggers a safety override.': '当您所在组织的评估触发安全停工时接收通知。',
+ 'Turn on for this phone': '在此手机上开启',
+ 'Durable (SQLite) history of critical/warning alerts fired by every module, including worker physiological strain.': '所有模块发出的危急/警告警报的持久化 '
+                                                                                                                      '(SQLite) '
+                                                                                                                      '历史记录，包括工人生理负荷。',
+ 'Measured hook / floor wind (kn)': '吊钩 / 楼层实测风速（节）',
+ 'Arc-flash incident energy': '电弧闪光入射能量',
+ 'Incident energy on the label (cal/cm²)': '标签标注的入射能量 (cal/cm²)',
+ 'Server-configured API key in use (no entry required).': '正在使用服务器配置的 API 密钥（无需输入）。',
+ 'AI advisory layer temporarily unavailable - showing the offline summary below.': 'AI 咨询层暂时不可用 - 下方显示离线摘要。',
+ 'Multi-Site Overview (vectorized batch)': '多站点总览（向量化批处理）',
+ 'Use phone GPS': '使用手机 GPS',
+ 'Take site photo': '拍摄现场照片',
+ 'Alerts turned on.': '警报已开启。',
+ "Notifications are off - turn them on in the phone's Settings.": '通知已关闭 - 请在手机设置中开启。',
+ 'Site Alert Log': '现场警报日志',
+ '7-Day Meteorology Forecast': '7 天气象预报',
+ 'e.g. 6.4': '例如 6.4',
+ 'Voltage (kV)': '电压 (kV)',
+ 'Bolted fault current (kA)': '金属性短路电流 (kA)',
+ 'Clearing time (s)': '切除时间 (s)',
+ 'Working distance (mm)': '作业距离 (mm)',
+ 'Unknown': '未知',
+ '⚡ Incident energy unknown: no energized work until the equipment label or an arc-flash study (IEEE 1584) confirms the incident energy and the required arc rating.': '⚡ '
+                                                                                                                                                                       '入射能量未知：在设备标签或电弧闪光研究 '
+                                                                                                                                                                       '(IEEE '
+                                                                                                                                                                       '1584) '
+                                                                                                                                                                       '确认入射能量和所需电弧防护等级之前，不得进行带电作业。',
+ 'Access to this organization is denied.': '已拒绝访问此组织。',
+ 'Your role: ': '您的角色： ',
+ 'Camera open…': '相机已打开……',
+ 'Stop-work alerts': '停工警报',
+ 'Stop-work alerts go to members of the organization only.': '停工警报仅发送给组织成员。',
+ 'Could not register this device.': '无法注册此设备。',
+ 'Live weather unavailable - verify conditions on site.': '实时天气不可用 - 请在现场核实条件。',
+ ' (context only)': ' （仅供参考）',
+ 'Recorded for the report only - load is not used in the arc-flash calculation.': '仅为报告而记录 - 负载不参与电弧闪光计算。',
+ 'Platform administrator': '平台管理员',
+ 'Organization admin': '组织管理员',
+ 'Supervisor': '主管',
+ 'Viewer (read-only)': '查看者（只读）',
+ 'Camera unavailable.': '相机不可用。',
+ 'Equipment arc-flash label': '设备电弧闪光标签',
+ 'Lee calculation (voltage, fault current, clearing time)': 'Lee 法计算（电压、故障电流、切除时间）',
+ 'Unknown / not yet studied': '未知 / 尚未研究',
+ 'Alert shown but NOT recorded in the alert log.': '警报已显示，但未记录到警报日志中。',
+ 'New organization name': '新组织名称',
+ "MAKU processes your data under the GDPR and the UAE PDPL. Make your choices below; you can change them at any time under 'My account'.": 'MAKU '
+                                                                                                                                           '依据 '
+                                                                                                                                           'GDPR '
+                                                                                                                                           '和阿联酋 '
+                                                                                                                                           'PDPL '
+                                                                                                                                           '处理您的数据。请在下方做出选择；您可以随时在"我的账户"中更改。',
+ 'A JSON copy of all personal data linked to your account (GDPR Art. 15/20).': '与您账户关联的全部个人数据的 JSON 副本（GDPR '
+                                                                               '第 15/20 条）。',
+ 'Prepare export': '准备导出',
+ 'Permanently deletes your account, your consent records and every assessment you ran. Time-stamped security log entries are retained as described in the privacy policy. This cannot be undone.': '永久删除您的账户、您的同意记录以及您执行过的所有评估。带时间戳的安全日志条目将按隐私政策所述保留。此操作无法撤销。',
+ 'A user only sees and changes data of the organizations they are a member of.': '用户只能查看和修改其所属组织的数据。',
+ 'viewer - read only': 'viewer - 只读',
+ 'supervisor - runs assessments': 'supervisor - 执行评估',
+ 'org_admin - manages the organization': 'org_admin - 管理组织',
+ 'Your privacy choices': '您的隐私选择',
+ 'Save and continue': '保存并继续',
+ 'My account': '我的账户',
+ 'Privacy and consent': '隐私与同意',
+ 'Export my data': '导出我的数据',
+ 'This account is managed by the deployment configuration. Contact your MAKU administrator to change or delete it.': '此账户由部署配置管理。如需修改或删除，请联系 '
+                                                                                                                     'MAKU '
+                                                                                                                     '管理员。',
+ 'Change password': '修改密码',
+ 'Current password': '当前密码',
+ 'New password': '新密码',
+ 'Confirm new password': '确认新密码',
+ 'Update password': '更新密码',
+ 'Delete my account': '删除我的账户',
+ 'Type your username to confirm': '输入您的用户名以确认',
+ 'Password': '密码',
+ 'Delete permanently': '永久删除',
+ 'Users': '用户',
+ 'Administrators only.': '仅限管理员。',
+ 'No database accounts yet.': '尚无数据库账户。',
+ 'Create account': '创建账户',
+ 'Username': '用户名',
+ 'Email (optional)': '电子邮件（可选）',
+ 'Role': '角色',
+ 'Initial password': '初始密码',
+ 'Create': '创建',
+ 'Organizations and members': '组织与成员',
+ 'New organization': '新建组织',
+ 'Organization': '组织',
+ 'Add / change role': '添加 / 更改角色',
+ 'Remove from organization': '从组织中移除',
+ 'Privacy policy': '隐私政策',
+ 'Signed in as': '登录身份',
+ 'role': '角色',
+ 'Read the privacy policy': '阅读隐私政策',
+ 'Download (JSON)': '下载 (JSON)',
+ 'Database unavailable.': '数据库不可用。',
+ 'Create organization': '创建组织',
+ 'Export unavailable right now.': '暂时无法导出。',
+ 'Passwords do not match.': '两次输入的密码不一致。',
+ 'Username does not match.': '用户名不匹配。',
+ 'Could not save your choices right now. Please try again.': '暂时无法保存您的选择，请重试。',
+ 'Preference saved': '偏好已保存',
+ 'Could not save. Please retry.': '无法保存，请重试。',
+ 'Password updated.': '密码已更新。',
+ 'Account created: ': '账户已创建： ',
+ 'Organization created: ': '组织已创建： ',
+ 'Service unavailable.': '服务不可用。',
+ 'Service unavailable - nothing was deleted.': '服务不可用 - 未删除任何内容。',
+ 'Membership saved: ': '成员资格已保存： ',
+ 'No such membership.': '不存在该成员资格。',
+ 'Removed: ': '已移除： ',
+ 'Regulatory threshold legend': '法规阈值图例',
+ 'Risk Matrix (calculation transparency)': '风险矩阵（计算透明度）',
+ 'Formula: Score = Likelihood (1-5) x Severity (1-5)': '公式：得分 = 可能性 (1-5) x 严重性 (1-5)',
+ 'Controls applied on site': '现场已采取的控制措施',
+ 'Select which of the controls above have actually been implemented, to calculate residual risk.': '选择上述控制措施中实际已实施的项，以计算剩余风险。',
+ 'Initial Risk -> Applied Controls -> Residual Risk': '初始风险 -> 已采取的控制措施 -> 剩余风险',
+ 'Stop-Work Trigger Registry': '停工触发条件登记表',
+ 'Regulatory Algorithm Validation': '法规算法验证',
+ 'These values come from a simulator or demonstration dataset - they are NOT real measurements. Measure on site before making any decision.': '这些数值来自模拟器或演示数据集 '
+                                                                                                                                              '- '
+                                                                                                                                              '并非真实测量值。在做出任何决定前请在现场测量。',
+ '<tr><th>Hazard</th><th>Likelihood</th><th>Severity</th><th>Score</th><th>Band</th><th>Note</th></tr>': '<tr><th>危害</th><th>可能性</th><th>严重性</th><th>得分</th><th>等级</th><th>备注</th></tr>',
+ 'Overall score (worst hazard governs)': '总分（以最严重的危害为准）',
+ '<tr><th>Module</th><th>Trigger condition</th><th>Threshold</th><th>Source constant</th></tr>': '<tr><th>模块</th><th>触发条件</th><th>阈值</th><th>来源常量</th></tr>',
+ '<tr><th>Formula</th><th>Cited standard(s)</th><th>Status</th><th>Caveat</th></tr>': '<tr><th>公式</th><th>引用标准</th><th>状态</th><th>注意事项</th></tr>',
+ 'The live data feed is unavailable - enter measured values manually below before running the assessment.': '实时数据源不可用 '
+                                                                                                            '- '
+                                                                                                            '运行评估前请在下方手动输入实测值。',
+ 'The configured production database (Postgres/Supabase) is unreachable. All writes are frozen - no data is being silently redirected to ephemeral local storage. Contact an administrator.': '无法访问已配置的生产数据库 '
+                                                                                                                                                                                              '(Postgres/Supabase)。所有写入已冻结 '
+                                                                                                                                                                                              '- '
+                                                                                                                                                                                              '不会有任何数据被悄悄重定向到临时本地存储。请联系管理员。',
+ 'Free, legally accessible resources. MAKU reproduces no copyrighted content - these links go to the official sources.': '免费且合法获取的资源。MAKU '
+                                                                                                                         '不复制任何受版权保护的内容 '
+                                                                                                                         '- '
+                                                                                                                         '这些链接指向官方来源。',
+ "For copyrighted texts (e.g. Brauer's *Safety and Health for Engineers*), purchase them or check your institutional library - see the Further Reading section of the official report.": '对于受版权保护的文本（例如 '
+                                                                                                                                                                                         'Brauer '
+                                                                                                                                                                                         '的 '
+                                                                                                                                                                                         '*Safety '
+                                                                                                                                                                                         'and '
+                                                                                                                                                                                         'Health '
+                                                                                                                                                                                         'for '
+                                                                                                                                                                                         'Engineers*），请购买或查询您所在机构的图书馆 '
+                                                                                                                                                                                         '- '
+                                                                                                                                                                                         '参见正式报告中的"延伸阅读"部分。',
+ '🔎 Live legislation search (extra API cost)': '🔎 实时法规检索（额外 API 费用）',
+ 'Upload a previous log (CSV) to merge': '上传以前的日志 (CSV) 进行合并',
+ '📄 Download PDF': '📄 下载 PDF',
+ '🌐 Download HTML': '🌐 下载 HTML',
+ 'Band': '等级',
+ 'Governing hazard': '主导危害',
+ 'Initial risk': '初始风险',
+ 'Residual risk': '剩余风险',
+ 'No controls selected yet - residual risk equals initial risk.': '尚未选择任何控制措施 - 剩余风险等于初始风险。',
+ 'The exact numeric thresholds that force a mandatory stop-work condition (safety_override), with the named source constant in code each threshold comes from.': '强制停工 '
+                                                                                                                                                                 '(safety_override) '
+                                                                                                                                                                 '的确切数值阈值，以及每个阈值在代码中对应的具名来源常量。',
+ 'Every scoring formula mapped against its claimed standard, with an honest status: direct implementation, adapted/approximated, or illustrative (not standards-derived).': '每个评分公式与其所依据标准的对照，并如实标注状态：直接实现、改编/近似，或示意性（非源自标准）。',
+ '**MAKU is temporarily unavailable.** The production database is not answering or is not configured correctly. No assessment can be saved, and nothing is being saved anywhere else. The administrator has been alerted through the server log. Please try again in a few minutes.': '**MAKU '
+                                                                                                                                                                                                                                                                                      '暂时不可用。** '
+                                                                                                                                                                                                                                                                                      '生产数据库无响应或配置不正确。无法保存任何评估，也不会在其他地方保存任何内容。已通过服务器日志通知管理员。请几分钟后重试。',
+ 'Demo - data is not kept.': '演示 - 数据不会被保留。',
+ 'HSE Virtual Library': 'HSE 虚拟图书馆',
+ 'Lets Claude search the web live to check applicable legislation, on top of the verified references below. Uses your existing API key.': '允许 '
+                                                                                                                                          'Claude '
+                                                                                                                                          '实时搜索网络以核查适用的法规，作为下方已核实参考资料的补充。使用您现有的 '
+                                                                                                                                          'API '
+                                                                                                                                          '密钥。',
+ 'Trend Analysis & Monthly Report': '趋势分析与月度报告',
+ "This session's assessment log only (Streamlit Cloud has no persistent database). Download the CSV periodically and re-upload it in a future session to build a multi-month history.": '仅包含本次会话的评估日志（Streamlit '
+                                                                                                                                                                                        'Cloud '
+                                                                                                                                                                                        '没有持久化数据库）。请定期下载 '
+                                                                                                                                                                                        'CSV，并在以后的会话中重新上传，以建立多月历史记录。',
+ 'No assessments logged yet this session - run an assessment on any module to start building the log.': '本次会话尚未记录任何评估 '
+                                                                                                        '- '
+                                                                                                        '在任一模块中运行评估即可开始记录。',
+ 'assessment(s) logged this session': '项评估已在本次会话中记录',
+ '⬇️ Download log (CSV)': '⬇️ 下载日志 (CSV)',
+ '📊 Monthly Excel Report': '📊 月度 Excel 报告',
+ 'Monthly summary': '月度汇总',
+ "The selected controls don't address any assessed hazard, so no reduction is credited.": '所选控制措施未涉及任何已评估的危害，因此不计入任何风险降低。',
+ 'No accessible organization - the log is not available.': '没有可访问的组织 - 日志不可用。',
+ "Method {version}: a control only reduces the hazards it addresses. Elimination (stop work, de-energize, evacuate) → likelihood 'rare'; engineering, administrative, PPE → −1 each. Severity is never reduced.": '方法 '
+                                                                                                                                                                                                                  '{version}：控制措施只降低其针对的危害。消除（停工、断电、撤离）→ '
+                                                                                                                                                                                                                  '可能性"罕见"；工程措施、管理措施、个人防护装备 '
+                                                                                                                                                                                                                  '→ '
+                                                                                                                                                                                                                  '各 '
+                                                                                                                                                                                                                  '−1。严重性永不降低。',
+ 'No effect on the assessed hazards: ': '对已评估的危害无影响： ',
+ 'Search books on this topic (Google Books)': '搜索有关此主题的书籍 (Google Books)',
+ 'Import NOT saved - the database is unavailable.': '导入未保存 - 数据库不可用。',
+ 'Your role in this organization is read-only: import is not allowed.': '您在此组织中的角色为只读：不允许导入。',
+ 'Merge failed: the file could not be read.': '合并失败：无法读取该文件。',
+ 'Share PDF': '分享 PDF',
+ 'Freshness': '时效性',
+ 'refreshed at least every {seconds}s while this page is open': '页面打开期间至少每 {seconds} 秒刷新一次',
+ '{count} new row(s) merged.': '已合并 {count} 行新数据。',
+ 'Merge failed': '合并失败',
+ "MAKU HSE Decision-Support System — Results are intended for risk screening and decision support and do not replace a competent person's assessment, engineering analysis, statutory requirement, manufacturer instruction or formal specialist study.": 'MAKU '
+                                                                                                                                                                                                                                                          'HSE '
+                                                                                                                                                                                                                                                          '决策支持系统 '
+                                                                                                                                                                                                                                                          '— '
+                                                                                                                                                                                                                                                          '结果仅用于风险筛查和决策支持，不能替代合格人员的评估、工程分析、法定要求、制造商说明或正式的专业研究。',
+ 'AI briefings (optional)': 'AI 简报（可选）',
+ 'Send the assessment results for this session (risk scores, module, site name, and anonymised worker-strain summaries) to Anthropic, PBC to generate a written AI briefing. No name, email or GPS coordinates are sent. Without consent you still get the full rule-based briefing.': '将本次会话的评估结果（风险得分、模块、站点名称以及匿名化的工人负荷摘要）发送至 '
+                                                                                                                                                                                                                                                                                       'Anthropic, '
+                                                                                                                                                                                                                                                                                       'PBC，以生成书面 '
+                                                                                                                                                                                                                                                                                       'AI '
+                                                                                                                                                                                                                                                                                       '简报。不会发送任何姓名、电子邮件或 '
+                                                                                                                                                                                                                                                                                       'GPS '
+                                                                                                                                                                                                                                                                                       '坐标。即使不同意，您仍可获得完整的基于规则的简报。',
+ 'Location (optional)': '位置（可选）',
+ "Use this device's GPS position (or, if GPS is denied, an approximate location from your IP address) to pick the nearest site, local weather and the applicable country regulations. Location is used for the current session only and is not stored.": '使用此设备的 '
+                                                                                                                                                                                                                                                         'GPS '
+                                                                                                                                                                                                                                                         '位置（如拒绝 '
+                                                                                                                                                                                                                                                         'GPS，则根据您的 '
+                                                                                                                                                                                                                                                         'IP '
+                                                                                                                                                                                                                                                         '地址估算大致位置）来选择最近的站点、当地天气和适用的国家法规。位置仅用于当前会话，不会被存储。',
+ 'Work clothes (baseline)': '工作服（基准）',
+ 'SMS polypropylene coveralls': 'SMS 聚丙烯连体服',
+ 'Polyolefin coveralls': '聚烯烃连体服',
+ 'Double-layer woven coveralls': '双层机织连体服',
+ 'Vapor-barrier coveralls (limited use)': '防蒸汽连体服（限次使用）',
+ '**Nothing was saved. Please try again in a few minutes.**': '**未保存任何内容。请几分钟后重试。**',
+ 'Assessment NOT saved - the database is unavailable.': '评估未保存 - 数据库不可用。',
+ 'Commonly-cited approximation of the ACGIH TLV very_heavy/acclimatized figures - verify against the current ACGIH TLV booklet before relying on this for a real compliance decision.': 'ACGIH '
+                                                                                                                                                                                        'TLV '
+                                                                                                                                                                                        '极重劳动/已热适应数值的常用近似值 '
+                                                                                                                                                                                        '- '
+                                                                                                                                                                                        '在据此做出实际合规决定前，请对照最新版 '
+                                                                                                                                                                                        'ACGIH '
+                                                                                                                                                                                        'TLV '
+                                                                                                                                                                                        '手册核实。',
+ 'Invalid input values:': '输入值无效：',
+ 'Recommended ratio': '推荐比例',
+ 'STOP WORK': '停止作业',
+ "Supplements (never replaces) this module's own risk assessment above.": '补充（绝不替代）本模块上方的风险评估。',
+ 'WBGT effective': '有效 WBGT',
+ 'streamlit-js-eval is not installed - geolocation is unavailable. Add it to requirements.txt to enable this section.': '未安装 '
+                                                                                                                        'streamlit-js-eval '
+                                                                                                                        '- '
+                                                                                                                        '地理定位不可用。将其添加到 '
+                                                                                                                        'requirements.txt '
+                                                                                                                        '以启用此部分。',
+ '⚠️ STOP WORK: no compliant work/rest ratio exists for this workload/clothing/acclimatization combination, even at 25/75.': '⚠️ '
+                                                                                                                             '停止作业：对于此工作负荷/服装/热适应组合，即使在 '
+                                                                                                                             '25/75 '
+                                                                                                                             '也不存在合规的工作/休息比。',
+ '⚠️ STOP WORK: vapor-barrier PPE requires direct physiological monitoring, not a WBGT table lookup alone.': '⚠️ '
+                                                                                                             '停止作业：防蒸汽防护装备需要直接生理监测，不能仅凭查阅 '
+                                                                                                             'WBGT '
+                                                                                                             '表。'}

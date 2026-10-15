@@ -530,3 +530,948 @@ ENGINE_TEMPLATES = {
     "arc_flash_ppe": "Vlamboog-PBM voor werk onder spanning: {0} (bron: {1})",
     "work_rest": "Hanteer een {0} werk/rustcyclus om binnen de ACGIH TLV-actiegrens voor deze werkbelasting en kleding te blijven",
 }
+
+INLINE = {'Measuring equipment / Sensor model (optional)': 'Meetapparatuur / Sensormodel (optioneel)',
+ 'e.g. Kestrel 5400 Heat Stress Tracker, black-globe thermometer, Class 2 sound level meter...': 'bijv. '
+                                                                                                 'Kestrel '
+                                                                                                 '5400 Heat '
+                                                                                                 'Stress '
+                                                                                                 'Tracker, '
+                                                                                                 'zwarte-bolthermometer, '
+                                                                                                 'geluidsniveaumeter '
+                                                                                                 'klasse '
+                                                                                                 '2...',
+ '+ New organization...': '+ Nieuwe organisatie...',
+ 'Open sea / coast - ASCE D (α 0.11)': 'Open zee / kust - ASCE D (α 0.11)',
+ 'Open country - ASCE C (α 0.15)': 'Open terrein - ASCE C (α 0.15)',
+ 'Urban / suburban - ASCE B (α 0.25)': 'Stedelijk / voorstedelijk - ASCE B (α 0.25)',
+ 'Dense city centre (α 0.33)': 'Dichtbebouwd stadscentrum (α 0.33)',
+ 'Terrain roughness': 'Terreinruwheid',
+ 'Floor-to-floor height (m)': 'Verdiepingshoogte (m)',
+ 'Wind measured at working height': 'Wind gemeten op werkhoogte',
+ "Best source first: (1) the equipment's arc-flash label, (2) a Lee screening calculation from fault data, (3) unknown - MAKU never invents a value.": 'Beste '
+                                                                                                                                                       'bron '
+                                                                                                                                                       'eerst: '
+                                                                                                                                                       '(1) '
+                                                                                                                                                       'het '
+                                                                                                                                                       'vlamboogetiket '
+                                                                                                                                                       'van '
+                                                                                                                                                       'de '
+                                                                                                                                                       'installatie, '
+                                                                                                                                                       '(2) '
+                                                                                                                                                       'een '
+                                                                                                                                                       'Lee-screeningsberekening '
+                                                                                                                                                       'op '
+                                                                                                                                                       'basis '
+                                                                                                                                                       'van '
+                                                                                                                                                       'foutgegevens, '
+                                                                                                                                                       '(3) '
+                                                                                                                                                       'onbekend '
+                                                                                                                                                       '- '
+                                                                                                                                                       'MAKU '
+                                                                                                                                                       'verzint '
+                                                                                                                                                       'nooit '
+                                                                                                                                                       'een '
+                                                                                                                                                       'waarde.',
+ 'Source': 'Bron',
+ 'Cold-aisle setpoint (°C)': 'Instelpunt koude gang (°C)',
+ 'Energized work planned': 'Werken onder spanning gepland',
+ "🔒 AI briefings are off (your privacy choices). Turn them on under 'My account'.": '🔒 AI-briefings staan '
+                                                                                    'uit (uw privacykeuzes). '
+                                                                                    "Zet ze aan onder 'Mijn "
+                                                                                    "account'.",
+ 'Your account is not a member of any organization yet. Ask your MAKU administrator to add you to your organization. The My account page is still available.': 'Uw '
+                                                                                                                                                               'account '
+                                                                                                                                                               'is '
+                                                                                                                                                               'nog '
+                                                                                                                                                               'geen '
+                                                                                                                                                               'lid '
+                                                                                                                                                               'van '
+                                                                                                                                                               'een '
+                                                                                                                                                               'organisatie. '
+                                                                                                                                                               'Vraag '
+                                                                                                                                                               'uw '
+                                                                                                                                                               'MAKU-beheerder '
+                                                                                                                                                               'om '
+                                                                                                                                                               'u '
+                                                                                                                                                               'aan '
+                                                                                                                                                               'uw '
+                                                                                                                                                               'organisatie '
+                                                                                                                                                               'toe '
+                                                                                                                                                               'te '
+                                                                                                                                                               'voegen. '
+                                                                                                                                                               'De '
+                                                                                                                                                               'pagina '
+                                                                                                                                                               'Mijn '
+                                                                                                                                                               'account '
+                                                                                                                                                               'blijft '
+                                                                                                                                                               'beschikbaar.',
+ 'Read-only: assessments are not saved.': 'Alleen lezen: beoordelingen worden niet opgeslagen.',
+ 'One vectorized NumPy/Pandas batch calculation across every site, instead of one function call per site - a performance optimization.': 'Eén '
+                                                                                                                                         'gevectoriseerde '
+                                                                                                                                         'NumPy/Pandas-batchberekening '
+                                                                                                                                         'over '
+                                                                                                                                         'alle '
+                                                                                                                                         'locaties '
+                                                                                                                                         'in '
+                                                                                                                                         'plaats '
+                                                                                                                                         'van '
+                                                                                                                                         'één '
+                                                                                                                                         'functieaanroep '
+                                                                                                                                         'per '
+                                                                                                                                         'locatie '
+                                                                                                                                         '- '
+                                                                                                                                         'een '
+                                                                                                                                         'prestatieoptimalisatie.',
+ "📍 Location is off (your privacy choices). Turn it on under 'My account' to use GPS and automatic country detection.": '📍 '
+                                                                                                                        'Locatie '
+                                                                                                                        'staat '
+                                                                                                                        'uit '
+                                                                                                                        '(uw '
+                                                                                                                        'privacykeuzes). '
+                                                                                                                        'Zet '
+                                                                                                                        'deze '
+                                                                                                                        'aan '
+                                                                                                                        'onder '
+                                                                                                                        "'Mijn "
+                                                                                                                        "account' "
+                                                                                                                        'om '
+                                                                                                                        'gps '
+                                                                                                                        'en '
+                                                                                                                        'automatische '
+                                                                                                                        'landherkenning '
+                                                                                                                        'te '
+                                                                                                                        'gebruiken.',
+ 'Photos attached to the PDF report': "Foto's bij het PDF-rapport",
+ 'Remove photos': "Foto's verwijderen",
+ 'Get a notification when an assessment in your organisation triggers a safety override.': 'Ontvang een '
+                                                                                           'melding wanneer '
+                                                                                           'een beoordeling '
+                                                                                           'in uw '
+                                                                                           'organisatie een '
+                                                                                           'veiligheidsstop '
+                                                                                           'activeert.',
+ 'Turn on for this phone': 'Inschakelen op deze telefoon',
+ 'Durable (SQLite) history of critical/warning alerts fired by every module, including worker physiological strain.': 'Duurzame '
+                                                                                                                      '(SQLite-)geschiedenis '
+                                                                                                                      'van '
+                                                                                                                      'kritieke/waarschuwingsmeldingen '
+                                                                                                                      'van '
+                                                                                                                      'alle '
+                                                                                                                      'modules, '
+                                                                                                                      'inclusief '
+                                                                                                                      'fysiologische '
+                                                                                                                      'belasting '
+                                                                                                                      'van '
+                                                                                                                      'werknemers.',
+ 'Measured hook / floor wind (kn)': 'Gemeten wind bij haak / verdieping (kn)',
+ 'Arc-flash incident energy': 'Invallende vlamboogenergie',
+ 'Incident energy on the label (cal/cm²)': 'Invallende energie volgens etiket (cal/cm²)',
+ 'Server-configured API key in use (no entry required).': 'Op de server geconfigureerde API-sleutel in '
+                                                          'gebruik (geen invoer nodig).',
+ 'AI advisory layer temporarily unavailable - showing the offline summary below.': 'AI-adviseslaag tijdelijk '
+                                                                                   'niet beschikbaar - '
+                                                                                   'hieronder wordt de '
+                                                                                   'offline samenvatting '
+                                                                                   'getoond.',
+ 'Multi-Site Overview (vectorized batch)': 'Overzicht meerdere locaties (gevectoriseerde batch)',
+ 'Use phone GPS': 'Gps van telefoon gebruiken',
+ 'Take site photo': 'Foto van locatie maken',
+ 'Alerts turned on.': 'Meldingen ingeschakeld.',
+ "Notifications are off - turn them on in the phone's Settings.": 'Meldingen staan uit - zet ze aan in de '
+                                                                  'instellingen van de telefoon.',
+ 'Site Alert Log': 'Meldingenlogboek van de locatie',
+ '7-Day Meteorology Forecast': 'Weersverwachting voor 7 dagen',
+ 'e.g. 6.4': 'bijv. 6.4',
+ 'Voltage (kV)': 'Spanning (kV)',
+ 'Bolted fault current (kA)': 'Vaste kortsluitstroom (kA)',
+ 'Clearing time (s)': 'Uitschakeltijd (s)',
+ 'Working distance (mm)': 'Werkafstand (mm)',
+ 'Unknown': 'Onbekend',
+ '⚡ Incident energy unknown: no energized work until the equipment label or an arc-flash study (IEEE 1584) confirms the incident energy and the required arc rating.': '⚡ '
+                                                                                                                                                                       'Invallende '
+                                                                                                                                                                       'energie '
+                                                                                                                                                                       'onbekend: '
+                                                                                                                                                                       'geen '
+                                                                                                                                                                       'werk '
+                                                                                                                                                                       'onder '
+                                                                                                                                                                       'spanning '
+                                                                                                                                                                       'totdat '
+                                                                                                                                                                       'het '
+                                                                                                                                                                       'etiket '
+                                                                                                                                                                       'van '
+                                                                                                                                                                       'de '
+                                                                                                                                                                       'installatie '
+                                                                                                                                                                       'of '
+                                                                                                                                                                       'een '
+                                                                                                                                                                       'vlamboogstudie '
+                                                                                                                                                                       '(IEEE '
+                                                                                                                                                                       '1584) '
+                                                                                                                                                                       'de '
+                                                                                                                                                                       'invallende '
+                                                                                                                                                                       'energie '
+                                                                                                                                                                       'en '
+                                                                                                                                                                       'de '
+                                                                                                                                                                       'vereiste '
+                                                                                                                                                                       'boogklasse '
+                                                                                                                                                                       'bevestigt.',
+ 'Access to this organization is denied.': 'Toegang tot deze organisatie geweigerd.',
+ 'Your role: ': 'Uw rol: ',
+ 'Camera open…': 'Camera open…',
+ 'Stop-work alerts': 'Werkstopmeldingen',
+ 'Stop-work alerts go to members of the organization only.': 'Werkstopmeldingen gaan alleen naar leden van '
+                                                             'de organisatie.',
+ 'Could not register this device.': 'Dit apparaat kon niet worden geregistreerd.',
+ 'Live weather unavailable - verify conditions on site.': 'Live weer niet beschikbaar - controleer de '
+                                                          'omstandigheden ter plaatse.',
+ ' (context only)': ' (alleen context)',
+ 'Recorded for the report only - load is not used in the arc-flash calculation.': 'Alleen vastgelegd voor '
+                                                                                  'het rapport - de '
+                                                                                  'belasting wordt niet '
+                                                                                  'gebruikt in de '
+                                                                                  'vlamboogberekening.',
+ 'Platform administrator': 'Platformbeheerder',
+ 'Organization admin': 'Organisatiebeheerder',
+ 'Supervisor': 'Leidinggevende',
+ 'Viewer (read-only)': 'Kijker (alleen lezen)',
+ 'Camera unavailable.': 'Camera niet beschikbaar.',
+ 'Equipment arc-flash label': 'Vlamboogetiket van de installatie',
+ 'Lee calculation (voltage, fault current, clearing time)': 'Lee-berekening (spanning, foutstroom, '
+                                                            'uitschakeltijd)',
+ 'Unknown / not yet studied': 'Onbekend / nog niet onderzocht',
+ 'Alert shown but NOT recorded in the alert log.': 'Melding getoond maar NIET vastgelegd in het '
+                                                   'meldingenlogboek.',
+ 'New organization name': 'Naam van de nieuwe organisatie',
+ "MAKU processes your data under the GDPR and the UAE PDPL. Make your choices below; you can change them at any time under 'My account'.": 'MAKU '
+                                                                                                                                           'verwerkt '
+                                                                                                                                           'uw '
+                                                                                                                                           'gegevens '
+                                                                                                                                           'volgens '
+                                                                                                                                           'de '
+                                                                                                                                           'AVG '
+                                                                                                                                           'en '
+                                                                                                                                           'de '
+                                                                                                                                           'PDPL '
+                                                                                                                                           'van '
+                                                                                                                                           'de '
+                                                                                                                                           'VAE. '
+                                                                                                                                           'Maak '
+                                                                                                                                           'hieronder '
+                                                                                                                                           'uw '
+                                                                                                                                           'keuzes; '
+                                                                                                                                           'u '
+                                                                                                                                           'kunt '
+                                                                                                                                           'ze '
+                                                                                                                                           'op '
+                                                                                                                                           'elk '
+                                                                                                                                           'moment '
+                                                                                                                                           'wijzigen '
+                                                                                                                                           'onder '
+                                                                                                                                           "'Mijn "
+                                                                                                                                           "account'.",
+ 'A JSON copy of all personal data linked to your account (GDPR Art. 15/20).': 'Een JSON-kopie van alle '
+                                                                               'persoonsgegevens die aan uw '
+                                                                               'account zijn gekoppeld (AVG '
+                                                                               'art. 15/20).',
+ 'Prepare export': 'Export voorbereiden',
+ 'Permanently deletes your account, your consent records and every assessment you ran. Time-stamped security log entries are retained as described in the privacy policy. This cannot be undone.': 'Verwijdert '
+                                                                                                                                                                                                   'uw '
+                                                                                                                                                                                                   'account, '
+                                                                                                                                                                                                   'uw '
+                                                                                                                                                                                                   'toestemmingsregistraties '
+                                                                                                                                                                                                   'en '
+                                                                                                                                                                                                   'elke '
+                                                                                                                                                                                                   'beoordeling '
+                                                                                                                                                                                                   'die '
+                                                                                                                                                                                                   'u '
+                                                                                                                                                                                                   'hebt '
+                                                                                                                                                                                                   'uitgevoerd '
+                                                                                                                                                                                                   'definitief. '
+                                                                                                                                                                                                   'Beveiligingslogboekvermeldingen '
+                                                                                                                                                                                                   'met '
+                                                                                                                                                                                                   'tijdstempel '
+                                                                                                                                                                                                   'worden '
+                                                                                                                                                                                                   'bewaard '
+                                                                                                                                                                                                   'zoals '
+                                                                                                                                                                                                   'beschreven '
+                                                                                                                                                                                                   'in '
+                                                                                                                                                                                                   'het '
+                                                                                                                                                                                                   'privacybeleid. '
+                                                                                                                                                                                                   'Dit '
+                                                                                                                                                                                                   'kan '
+                                                                                                                                                                                                   'niet '
+                                                                                                                                                                                                   'ongedaan '
+                                                                                                                                                                                                   'worden '
+                                                                                                                                                                                                   'gemaakt.',
+ 'A user only sees and changes data of the organizations they are a member of.': 'Een gebruiker ziet en '
+                                                                                 'wijzigt alleen gegevens '
+                                                                                 'van de organisaties '
+                                                                                 'waarvan hij lid is.',
+ 'viewer - read only': 'viewer - alleen lezen',
+ 'supervisor - runs assessments': 'supervisor - voert beoordelingen uit',
+ 'org_admin - manages the organization': 'org_admin - beheert de organisatie',
+ 'Your privacy choices': 'Uw privacykeuzes',
+ 'Save and continue': 'Opslaan en doorgaan',
+ 'My account': 'Mijn account',
+ 'Privacy and consent': 'Privacy en toestemming',
+ 'Export my data': 'Mijn gegevens exporteren',
+ 'This account is managed by the deployment configuration. Contact your MAKU administrator to change or delete it.': 'Dit '
+                                                                                                                     'account '
+                                                                                                                     'wordt '
+                                                                                                                     'beheerd '
+                                                                                                                     'via '
+                                                                                                                     'de '
+                                                                                                                     'implementatieconfiguratie. '
+                                                                                                                     'Neem '
+                                                                                                                     'contact '
+                                                                                                                     'op '
+                                                                                                                     'met '
+                                                                                                                     'uw '
+                                                                                                                     'MAKU-beheerder '
+                                                                                                                     'om '
+                                                                                                                     'het '
+                                                                                                                     'te '
+                                                                                                                     'wijzigen '
+                                                                                                                     'of '
+                                                                                                                     'te '
+                                                                                                                     'verwijderen.',
+ 'Change password': 'Wachtwoord wijzigen',
+ 'Current password': 'Huidig wachtwoord',
+ 'New password': 'Nieuw wachtwoord',
+ 'Confirm new password': 'Nieuw wachtwoord bevestigen',
+ 'Update password': 'Wachtwoord bijwerken',
+ 'Delete my account': 'Mijn account verwijderen',
+ 'Type your username to confirm': 'Typ uw gebruikersnaam ter bevestiging',
+ 'Password': 'Wachtwoord',
+ 'Delete permanently': 'Definitief verwijderen',
+ 'Users': 'Gebruikers',
+ 'Administrators only.': 'Alleen voor beheerders.',
+ 'No database accounts yet.': 'Nog geen databaseaccounts.',
+ 'Create account': 'Account aanmaken',
+ 'Username': 'Gebruikersnaam',
+ 'Email (optional)': 'E-mail (optioneel)',
+ 'Role': 'Rol',
+ 'Initial password': 'Beginwachtwoord',
+ 'Create': 'Aanmaken',
+ 'Organizations and members': 'Organisaties en leden',
+ 'New organization': 'Nieuwe organisatie',
+ 'Organization': 'Organisatie',
+ 'Add / change role': 'Toevoegen / rol wijzigen',
+ 'Remove from organization': 'Uit de organisatie verwijderen',
+ 'Privacy policy': 'Privacybeleid',
+ 'Signed in as': 'Aangemeld als',
+ 'role': 'rol',
+ 'Read the privacy policy': 'Het privacybeleid lezen',
+ 'Download (JSON)': 'Downloaden (JSON)',
+ 'Database unavailable.': 'Database niet beschikbaar.',
+ 'Create organization': 'Organisatie aanmaken',
+ 'Export unavailable right now.': 'Export momenteel niet beschikbaar.',
+ 'Passwords do not match.': 'De wachtwoorden komen niet overeen.',
+ 'Username does not match.': 'De gebruikersnaam komt niet overeen.',
+ 'Could not save your choices right now. Please try again.': 'Uw keuzes konden nu niet worden opgeslagen. '
+                                                             'Probeer het opnieuw.',
+ 'Preference saved': 'Voorkeur opgeslagen',
+ 'Could not save. Please retry.': 'Opslaan mislukt. Probeer het opnieuw.',
+ 'Password updated.': 'Wachtwoord bijgewerkt.',
+ 'Account created: ': 'Account aangemaakt: ',
+ 'Organization created: ': 'Organisatie aangemaakt: ',
+ 'Service unavailable.': 'Dienst niet beschikbaar.',
+ 'Service unavailable - nothing was deleted.': 'Dienst niet beschikbaar - er is niets verwijderd.',
+ 'Membership saved: ': 'Lidmaatschap opgeslagen: ',
+ 'No such membership.': 'Dit lidmaatschap bestaat niet.',
+ 'Removed: ': 'Verwijderd: ',
+ 'Regulatory threshold legend': 'Legenda van wettelijke drempelwaarden',
+ 'Risk Matrix (calculation transparency)': 'Risicomatrix (transparantie van de berekening)',
+ 'Formula: Score = Likelihood (1-5) x Severity (1-5)': 'Formule: Score = Waarschijnlijkheid (1-5) x Ernst '
+                                                       '(1-5)',
+ 'Controls applied on site': 'Ter plaatse toegepaste maatregelen',
+ 'Select which of the controls above have actually been implemented, to calculate residual risk.': 'Selecteer '
+                                                                                                   'welke '
+                                                                                                   'van de '
+                                                                                                   'bovenstaande '
+                                                                                                   'maatregelen '
+                                                                                                   'daadwerkelijk '
+                                                                                                   'zijn '
+                                                                                                   'uitgevoerd, '
+                                                                                                   'om het '
+                                                                                                   'restrisico '
+                                                                                                   'te '
+                                                                                                   'berekenen.',
+ 'Initial Risk -> Applied Controls -> Residual Risk': 'Initieel risico -> Toegepaste maatregelen -> '
+                                                      'Restrisico',
+ 'Stop-Work Trigger Registry': 'Register van werkstopvoorwaarden',
+ 'Regulatory Algorithm Validation': 'Validatie van regelgevende algoritmen',
+ 'These values come from a simulator or demonstration dataset - they are NOT real measurements. Measure on site before making any decision.': 'Deze '
+                                                                                                                                              'waarden '
+                                                                                                                                              'komen '
+                                                                                                                                              'uit '
+                                                                                                                                              'een '
+                                                                                                                                              'simulator '
+                                                                                                                                              'of '
+                                                                                                                                              'demonstratiedataset '
+                                                                                                                                              '- '
+                                                                                                                                              'het '
+                                                                                                                                              'zijn '
+                                                                                                                                              'GEEN '
+                                                                                                                                              'echte '
+                                                                                                                                              'metingen. '
+                                                                                                                                              'Meet '
+                                                                                                                                              'ter '
+                                                                                                                                              'plaatse '
+                                                                                                                                              'voordat '
+                                                                                                                                              'u '
+                                                                                                                                              'een '
+                                                                                                                                              'beslissing '
+                                                                                                                                              'neemt.',
+ '<tr><th>Hazard</th><th>Likelihood</th><th>Severity</th><th>Score</th><th>Band</th><th>Note</th></tr>': '<tr><th>Gevaar</th><th>Waarschijnlijkheid</th><th>Ernst</th><th>Score</th><th>Niveau</th><th>Opmerking</th></tr>',
+ 'Overall score (worst hazard governs)': 'Totaalscore (het ernstigste gevaar is bepalend)',
+ '<tr><th>Module</th><th>Trigger condition</th><th>Threshold</th><th>Source constant</th></tr>': '<tr><th>Module</th><th>Activeringsvoorwaarde</th><th>Drempel</th><th>Bronconstante</th></tr>',
+ '<tr><th>Formula</th><th>Cited standard(s)</th><th>Status</th><th>Caveat</th></tr>': '<tr><th>Formule</th><th>Aangehaalde '
+                                                                                      'norm(en)</th><th>Status</th><th>Voorbehoud</th></tr>',
+ 'The live data feed is unavailable - enter measured values manually below before running the assessment.': 'De '
+                                                                                                            'live '
+                                                                                                            'gegevensstroom '
+                                                                                                            'is '
+                                                                                                            'niet '
+                                                                                                            'beschikbaar '
+                                                                                                            '- '
+                                                                                                            'voer '
+                                                                                                            'hieronder '
+                                                                                                            'handmatig '
+                                                                                                            'gemeten '
+                                                                                                            'waarden '
+                                                                                                            'in '
+                                                                                                            'voordat '
+                                                                                                            'u '
+                                                                                                            'de '
+                                                                                                            'beoordeling '
+                                                                                                            'uitvoert.',
+ 'The configured production database (Postgres/Supabase) is unreachable. All writes are frozen - no data is being silently redirected to ephemeral local storage. Contact an administrator.': 'De '
+                                                                                                                                                                                              'geconfigureerde '
+                                                                                                                                                                                              'productiedatabase '
+                                                                                                                                                                                              '(Postgres/Supabase) '
+                                                                                                                                                                                              'is '
+                                                                                                                                                                                              'onbereikbaar. '
+                                                                                                                                                                                              'Alle '
+                                                                                                                                                                                              'schrijfbewerkingen '
+                                                                                                                                                                                              'zijn '
+                                                                                                                                                                                              'bevroren '
+                                                                                                                                                                                              '- '
+                                                                                                                                                                                              'er '
+                                                                                                                                                                                              'worden '
+                                                                                                                                                                                              'geen '
+                                                                                                                                                                                              'gegevens '
+                                                                                                                                                                                              'stilletjes '
+                                                                                                                                                                                              'omgeleid '
+                                                                                                                                                                                              'naar '
+                                                                                                                                                                                              'tijdelijke '
+                                                                                                                                                                                              'lokale '
+                                                                                                                                                                                              'opslag. '
+                                                                                                                                                                                              'Neem '
+                                                                                                                                                                                              'contact '
+                                                                                                                                                                                              'op '
+                                                                                                                                                                                              'met '
+                                                                                                                                                                                              'een '
+                                                                                                                                                                                              'beheerder.',
+ 'Free, legally accessible resources. MAKU reproduces no copyrighted content - these links go to the official sources.': 'Gratis, '
+                                                                                                                         'legaal '
+                                                                                                                         'toegankelijke '
+                                                                                                                         'bronnen. '
+                                                                                                                         'MAKU '
+                                                                                                                         'reproduceert '
+                                                                                                                         'geen '
+                                                                                                                         'auteursrechtelijk '
+                                                                                                                         'beschermde '
+                                                                                                                         'inhoud '
+                                                                                                                         '- '
+                                                                                                                         'deze '
+                                                                                                                         'links '
+                                                                                                                         'leiden '
+                                                                                                                         'naar '
+                                                                                                                         'de '
+                                                                                                                         'officiële '
+                                                                                                                         'bronnen.',
+ "For copyrighted texts (e.g. Brauer's *Safety and Health for Engineers*), purchase them or check your institutional library - see the Further Reading section of the official report.": 'Voor '
+                                                                                                                                                                                         'auteursrechtelijk '
+                                                                                                                                                                                         'beschermde '
+                                                                                                                                                                                         'teksten '
+                                                                                                                                                                                         '(bijv. '
+                                                                                                                                                                                         '*Safety '
+                                                                                                                                                                                         'and '
+                                                                                                                                                                                         'Health '
+                                                                                                                                                                                         'for '
+                                                                                                                                                                                         'Engineers* '
+                                                                                                                                                                                         'van '
+                                                                                                                                                                                         'Brauer) '
+                                                                                                                                                                                         'koopt '
+                                                                                                                                                                                         'u '
+                                                                                                                                                                                         'ze '
+                                                                                                                                                                                         'of '
+                                                                                                                                                                                         'raadpleegt '
+                                                                                                                                                                                         'u '
+                                                                                                                                                                                         'uw '
+                                                                                                                                                                                         'instellingsbibliotheek '
+                                                                                                                                                                                         '- '
+                                                                                                                                                                                         'zie '
+                                                                                                                                                                                         'de '
+                                                                                                                                                                                         'sectie '
+                                                                                                                                                                                         'Verdere '
+                                                                                                                                                                                         'literatuur '
+                                                                                                                                                                                         'van '
+                                                                                                                                                                                         'het '
+                                                                                                                                                                                         'officiële '
+                                                                                                                                                                                         'rapport.',
+ '🔎 Live legislation search (extra API cost)': '🔎 Live zoeken in wetgeving (extra API-kosten)',
+ 'Upload a previous log (CSV) to merge': 'Eerder logboek (CSV) uploaden om samen te voegen',
+ '📄 Download PDF': '📄 PDF downloaden',
+ '🌐 Download HTML': '🌐 HTML downloaden',
+ 'Band': 'Niveau',
+ 'Governing hazard': 'Bepalend gevaar',
+ 'Initial risk': 'Initieel risico',
+ 'Residual risk': 'Restrisico',
+ 'No controls selected yet - residual risk equals initial risk.': 'Nog geen maatregelen geselecteerd - het '
+                                                                  'restrisico is gelijk aan het initiële '
+                                                                  'risico.',
+ 'The exact numeric thresholds that force a mandatory stop-work condition (safety_override), with the named source constant in code each threshold comes from.': 'De '
+                                                                                                                                                                 'exacte '
+                                                                                                                                                                 'numerieke '
+                                                                                                                                                                 'drempels '
+                                                                                                                                                                 'die '
+                                                                                                                                                                 'een '
+                                                                                                                                                                 'verplichte '
+                                                                                                                                                                 'werkstop '
+                                                                                                                                                                 'afdwingen '
+                                                                                                                                                                 '(safety_override), '
+                                                                                                                                                                 'met '
+                                                                                                                                                                 'de '
+                                                                                                                                                                 'benoemde '
+                                                                                                                                                                 'bronconstante '
+                                                                                                                                                                 'in '
+                                                                                                                                                                 'de '
+                                                                                                                                                                 'code '
+                                                                                                                                                                 'waar '
+                                                                                                                                                                 'elke '
+                                                                                                                                                                 'drempel '
+                                                                                                                                                                 'vandaan '
+                                                                                                                                                                 'komt.',
+ 'Every scoring formula mapped against its claimed standard, with an honest status: direct implementation, adapted/approximated, or illustrative (not standards-derived).': 'Elke '
+                                                                                                                                                                            'scoringsformule '
+                                                                                                                                                                            'vergeleken '
+                                                                                                                                                                            'met '
+                                                                                                                                                                            'de '
+                                                                                                                                                                            'norm '
+                                                                                                                                                                            'waarop '
+                                                                                                                                                                            'ze '
+                                                                                                                                                                            'zich '
+                                                                                                                                                                            'beroept, '
+                                                                                                                                                                            'met '
+                                                                                                                                                                            'een '
+                                                                                                                                                                            'eerlijke '
+                                                                                                                                                                            'status: '
+                                                                                                                                                                            'directe '
+                                                                                                                                                                            'implementatie, '
+                                                                                                                                                                            'aangepast/benaderd '
+                                                                                                                                                                            'of '
+                                                                                                                                                                            'illustratief '
+                                                                                                                                                                            '(niet '
+                                                                                                                                                                            'uit '
+                                                                                                                                                                            'normen '
+                                                                                                                                                                            'afgeleid).',
+ '**MAKU is temporarily unavailable.** The production database is not answering or is not configured correctly. No assessment can be saved, and nothing is being saved anywhere else. The administrator has been alerted through the server log. Please try again in a few minutes.': '**MAKU '
+                                                                                                                                                                                                                                                                                      'is '
+                                                                                                                                                                                                                                                                                      'tijdelijk '
+                                                                                                                                                                                                                                                                                      'niet '
+                                                                                                                                                                                                                                                                                      'beschikbaar.** '
+                                                                                                                                                                                                                                                                                      'De '
+                                                                                                                                                                                                                                                                                      'productiedatabase '
+                                                                                                                                                                                                                                                                                      'reageert '
+                                                                                                                                                                                                                                                                                      'niet '
+                                                                                                                                                                                                                                                                                      'of '
+                                                                                                                                                                                                                                                                                      'is '
+                                                                                                                                                                                                                                                                                      'niet '
+                                                                                                                                                                                                                                                                                      'correct '
+                                                                                                                                                                                                                                                                                      'geconfigureerd. '
+                                                                                                                                                                                                                                                                                      'Er '
+                                                                                                                                                                                                                                                                                      'kan '
+                                                                                                                                                                                                                                                                                      'geen '
+                                                                                                                                                                                                                                                                                      'beoordeling '
+                                                                                                                                                                                                                                                                                      'worden '
+                                                                                                                                                                                                                                                                                      'opgeslagen '
+                                                                                                                                                                                                                                                                                      'en '
+                                                                                                                                                                                                                                                                                      'er '
+                                                                                                                                                                                                                                                                                      'wordt '
+                                                                                                                                                                                                                                                                                      'nergens '
+                                                                                                                                                                                                                                                                                      'anders '
+                                                                                                                                                                                                                                                                                      'iets '
+                                                                                                                                                                                                                                                                                      'opgeslagen. '
+                                                                                                                                                                                                                                                                                      'De '
+                                                                                                                                                                                                                                                                                      'beheerder '
+                                                                                                                                                                                                                                                                                      'is '
+                                                                                                                                                                                                                                                                                      'via '
+                                                                                                                                                                                                                                                                                      'het '
+                                                                                                                                                                                                                                                                                      'serverlogboek '
+                                                                                                                                                                                                                                                                                      'gewaarschuwd. '
+                                                                                                                                                                                                                                                                                      'Probeer '
+                                                                                                                                                                                                                                                                                      'het '
+                                                                                                                                                                                                                                                                                      'over '
+                                                                                                                                                                                                                                                                                      'enkele '
+                                                                                                                                                                                                                                                                                      'minuten '
+                                                                                                                                                                                                                                                                                      'opnieuw.',
+ 'Demo - data is not kept.': 'Demo - gegevens worden niet bewaard.',
+ 'HSE Virtual Library': 'Virtuele HSE-bibliotheek',
+ 'Lets Claude search the web live to check applicable legislation, on top of the verified references below. Uses your existing API key.': 'Laat '
+                                                                                                                                          'Claude '
+                                                                                                                                          'live '
+                                                                                                                                          'op '
+                                                                                                                                          'het '
+                                                                                                                                          'web '
+                                                                                                                                          'zoeken '
+                                                                                                                                          'om '
+                                                                                                                                          'de '
+                                                                                                                                          'toepasselijke '
+                                                                                                                                          'wetgeving '
+                                                                                                                                          'te '
+                                                                                                                                          'controleren, '
+                                                                                                                                          'naast '
+                                                                                                                                          'de '
+                                                                                                                                          'geverifieerde '
+                                                                                                                                          'referenties '
+                                                                                                                                          'hieronder. '
+                                                                                                                                          'Gebruikt '
+                                                                                                                                          'uw '
+                                                                                                                                          'bestaande '
+                                                                                                                                          'API-sleutel.',
+ 'Trend Analysis & Monthly Report': 'Trendanalyse & maandrapport',
+ "This session's assessment log only (Streamlit Cloud has no persistent database). Download the CSV periodically and re-upload it in a future session to build a multi-month history.": 'Alleen '
+                                                                                                                                                                                        'het '
+                                                                                                                                                                                        'beoordelingslogboek '
+                                                                                                                                                                                        'van '
+                                                                                                                                                                                        'deze '
+                                                                                                                                                                                        'sessie '
+                                                                                                                                                                                        '(Streamlit '
+                                                                                                                                                                                        'Cloud '
+                                                                                                                                                                                        'heeft '
+                                                                                                                                                                                        'geen '
+                                                                                                                                                                                        'permanente '
+                                                                                                                                                                                        'database). '
+                                                                                                                                                                                        'Download '
+                                                                                                                                                                                        'de '
+                                                                                                                                                                                        'CSV '
+                                                                                                                                                                                        'regelmatig '
+                                                                                                                                                                                        'en '
+                                                                                                                                                                                        'upload '
+                                                                                                                                                                                        'deze '
+                                                                                                                                                                                        'opnieuw '
+                                                                                                                                                                                        'in '
+                                                                                                                                                                                        'een '
+                                                                                                                                                                                        'latere '
+                                                                                                                                                                                        'sessie '
+                                                                                                                                                                                        'om '
+                                                                                                                                                                                        'een '
+                                                                                                                                                                                        'geschiedenis '
+                                                                                                                                                                                        'van '
+                                                                                                                                                                                        'meerdere '
+                                                                                                                                                                                        'maanden '
+                                                                                                                                                                                        'op '
+                                                                                                                                                                                        'te '
+                                                                                                                                                                                        'bouwen.',
+ 'No assessments logged yet this session - run an assessment on any module to start building the log.': 'Nog '
+                                                                                                        'geen '
+                                                                                                        'beoordelingen '
+                                                                                                        'vastgelegd '
+                                                                                                        'in '
+                                                                                                        'deze '
+                                                                                                        'sessie '
+                                                                                                        '- '
+                                                                                                        'voer '
+                                                                                                        'in '
+                                                                                                        'een '
+                                                                                                        'willekeurige '
+                                                                                                        'module '
+                                                                                                        'een '
+                                                                                                        'beoordeling '
+                                                                                                        'uit '
+                                                                                                        'om '
+                                                                                                        'het '
+                                                                                                        'logboek '
+                                                                                                        'te '
+                                                                                                        'starten.',
+ 'assessment(s) logged this session': 'beoordeling(en) vastgelegd in deze sessie',
+ '⬇️ Download log (CSV)': '⬇️ Logboek downloaden (CSV)',
+ '📊 Monthly Excel Report': '📊 Maandelijks Excel-rapport',
+ 'Monthly summary': 'Maandoverzicht',
+ "The selected controls don't address any assessed hazard, so no reduction is credited.": 'De geselecteerde '
+                                                                                          'maatregelen '
+                                                                                          'pakken geen '
+                                                                                          'beoordeeld gevaar '
+                                                                                          'aan, dus er wordt '
+                                                                                          'geen vermindering '
+                                                                                          'toegekend.',
+ 'No accessible organization - the log is not available.': 'Geen toegankelijke organisatie - het logboek is '
+                                                           'niet beschikbaar.',
+ "Method {version}: a control only reduces the hazards it addresses. Elimination (stop work, de-energize, evacuate) → likelihood 'rare'; engineering, administrative, PPE → −1 each. Severity is never reduced.": 'Methode '
+                                                                                                                                                                                                                  '{version}: '
+                                                                                                                                                                                                                  'een '
+                                                                                                                                                                                                                  'maatregel '
+                                                                                                                                                                                                                  'vermindert '
+                                                                                                                                                                                                                  'alleen '
+                                                                                                                                                                                                                  'de '
+                                                                                                                                                                                                                  'gevaren '
+                                                                                                                                                                                                                  'waarop '
+                                                                                                                                                                                                                  'hij '
+                                                                                                                                                                                                                  'gericht '
+                                                                                                                                                                                                                  'is. '
+                                                                                                                                                                                                                  'Eliminatie '
+                                                                                                                                                                                                                  '(werkstop, '
+                                                                                                                                                                                                                  'spanningsvrij '
+                                                                                                                                                                                                                  'maken, '
+                                                                                                                                                                                                                  'evacuatie) '
+                                                                                                                                                                                                                  '→ '
+                                                                                                                                                                                                                  'waarschijnlijkheid '
+                                                                                                                                                                                                                  "'zeldzaam'; "
+                                                                                                                                                                                                                  'technische, '
+                                                                                                                                                                                                                  'organisatorische '
+                                                                                                                                                                                                                  'maatregelen, '
+                                                                                                                                                                                                                  'PBM '
+                                                                                                                                                                                                                  '→ '
+                                                                                                                                                                                                                  'elk '
+                                                                                                                                                                                                                  '−1. '
+                                                                                                                                                                                                                  'De '
+                                                                                                                                                                                                                  'ernst '
+                                                                                                                                                                                                                  'wordt '
+                                                                                                                                                                                                                  'nooit '
+                                                                                                                                                                                                                  'verminderd.',
+ 'No effect on the assessed hazards: ': 'Geen effect op de beoordeelde gevaren: ',
+ 'Search books on this topic (Google Books)': 'Boeken over dit onderwerp zoeken (Google Books)',
+ 'Import NOT saved - the database is unavailable.': 'Import NIET opgeslagen - de database is niet '
+                                                    'beschikbaar.',
+ 'Your role in this organization is read-only: import is not allowed.': 'Uw rol in deze organisatie is '
+                                                                        'alleen lezen: importeren is niet '
+                                                                        'toegestaan.',
+ 'Merge failed: the file could not be read.': 'Samenvoegen mislukt: het bestand kon niet worden gelezen.',
+ 'Share PDF': 'PDF delen',
+ 'Freshness': 'Actualiteit',
+ 'refreshed at least every {seconds}s while this page is open': 'minstens elke {seconds}s ververst zolang '
+                                                                'deze pagina open is',
+ '{count} new row(s) merged.': '{count} nieuwe rij(en) samengevoegd.',
+ 'Merge failed': 'Samenvoegen mislukt',
+ "MAKU HSE Decision-Support System — Results are intended for risk screening and decision support and do not replace a competent person's assessment, engineering analysis, statutory requirement, manufacturer instruction or formal specialist study.": 'MAKU '
+                                                                                                                                                                                                                                                          'HSE-beslissingsondersteunend '
+                                                                                                                                                                                                                                                          'systeem '
+                                                                                                                                                                                                                                                          '— '
+                                                                                                                                                                                                                                                          'De '
+                                                                                                                                                                                                                                                          'resultaten '
+                                                                                                                                                                                                                                                          'zijn '
+                                                                                                                                                                                                                                                          'bedoeld '
+                                                                                                                                                                                                                                                          'voor '
+                                                                                                                                                                                                                                                          'risicoscreening '
+                                                                                                                                                                                                                                                          'en '
+                                                                                                                                                                                                                                                          'beslissingsondersteuning '
+                                                                                                                                                                                                                                                          'en '
+                                                                                                                                                                                                                                                          'vervangen '
+                                                                                                                                                                                                                                                          'niet '
+                                                                                                                                                                                                                                                          'de '
+                                                                                                                                                                                                                                                          'beoordeling '
+                                                                                                                                                                                                                                                          'door '
+                                                                                                                                                                                                                                                          'een '
+                                                                                                                                                                                                                                                          'deskundige, '
+                                                                                                                                                                                                                                                          'technische '
+                                                                                                                                                                                                                                                          'analyse, '
+                                                                                                                                                                                                                                                          'wettelijke '
+                                                                                                                                                                                                                                                          'eisen, '
+                                                                                                                                                                                                                                                          'instructies '
+                                                                                                                                                                                                                                                          'van '
+                                                                                                                                                                                                                                                          'de '
+                                                                                                                                                                                                                                                          'fabrikant '
+                                                                                                                                                                                                                                                          'of '
+                                                                                                                                                                                                                                                          'een '
+                                                                                                                                                                                                                                                          'formeel '
+                                                                                                                                                                                                                                                          'specialistisch '
+                                                                                                                                                                                                                                                          'onderzoek.',
+ 'AI briefings (optional)': 'AI-briefings (optioneel)',
+ 'Send the assessment results for this session (risk scores, module, site name, and anonymised worker-strain summaries) to Anthropic, PBC to generate a written AI briefing. No name, email or GPS coordinates are sent. Without consent you still get the full rule-based briefing.': 'De '
+                                                                                                                                                                                                                                                                                       'beoordelingsresultaten '
+                                                                                                                                                                                                                                                                                       'van '
+                                                                                                                                                                                                                                                                                       'deze '
+                                                                                                                                                                                                                                                                                       'sessie '
+                                                                                                                                                                                                                                                                                       '(risicoscores, '
+                                                                                                                                                                                                                                                                                       'module, '
+                                                                                                                                                                                                                                                                                       'locatienaam '
+                                                                                                                                                                                                                                                                                       'en '
+                                                                                                                                                                                                                                                                                       'geanonimiseerde '
+                                                                                                                                                                                                                                                                                       'samenvattingen '
+                                                                                                                                                                                                                                                                                       'van '
+                                                                                                                                                                                                                                                                                       'werknemersbelasting) '
+                                                                                                                                                                                                                                                                                       'naar '
+                                                                                                                                                                                                                                                                                       'Anthropic, '
+                                                                                                                                                                                                                                                                                       'PBC '
+                                                                                                                                                                                                                                                                                       'sturen '
+                                                                                                                                                                                                                                                                                       'om '
+                                                                                                                                                                                                                                                                                       'een '
+                                                                                                                                                                                                                                                                                       'geschreven '
+                                                                                                                                                                                                                                                                                       'AI-briefing '
+                                                                                                                                                                                                                                                                                       'te '
+                                                                                                                                                                                                                                                                                       'genereren. '
+                                                                                                                                                                                                                                                                                       'Er '
+                                                                                                                                                                                                                                                                                       'worden '
+                                                                                                                                                                                                                                                                                       'geen '
+                                                                                                                                                                                                                                                                                       'naam, '
+                                                                                                                                                                                                                                                                                       'e-mail '
+                                                                                                                                                                                                                                                                                       'of '
+                                                                                                                                                                                                                                                                                       'gps-coördinaten '
+                                                                                                                                                                                                                                                                                       'verzonden. '
+                                                                                                                                                                                                                                                                                       'Zonder '
+                                                                                                                                                                                                                                                                                       'toestemming '
+                                                                                                                                                                                                                                                                                       'krijgt '
+                                                                                                                                                                                                                                                                                       'u '
+                                                                                                                                                                                                                                                                                       'nog '
+                                                                                                                                                                                                                                                                                       'steeds '
+                                                                                                                                                                                                                                                                                       'de '
+                                                                                                                                                                                                                                                                                       'volledige '
+                                                                                                                                                                                                                                                                                       'op '
+                                                                                                                                                                                                                                                                                       'regels '
+                                                                                                                                                                                                                                                                                       'gebaseerde '
+                                                                                                                                                                                                                                                                                       'briefing.',
+ 'Location (optional)': 'Locatie (optioneel)',
+ "Use this device's GPS position (or, if GPS is denied, an approximate location from your IP address) to pick the nearest site, local weather and the applicable country regulations. Location is used for the current session only and is not stored.": 'De '
+                                                                                                                                                                                                                                                         'gps-positie '
+                                                                                                                                                                                                                                                         'van '
+                                                                                                                                                                                                                                                         'dit '
+                                                                                                                                                                                                                                                         'apparaat '
+                                                                                                                                                                                                                                                         'gebruiken '
+                                                                                                                                                                                                                                                         '(of, '
+                                                                                                                                                                                                                                                         'als '
+                                                                                                                                                                                                                                                         'gps '
+                                                                                                                                                                                                                                                         'wordt '
+                                                                                                                                                                                                                                                         'geweigerd, '
+                                                                                                                                                                                                                                                         'een '
+                                                                                                                                                                                                                                                         'geschatte '
+                                                                                                                                                                                                                                                         'locatie '
+                                                                                                                                                                                                                                                         'op '
+                                                                                                                                                                                                                                                         'basis '
+                                                                                                                                                                                                                                                         'van '
+                                                                                                                                                                                                                                                         'uw '
+                                                                                                                                                                                                                                                         'IP-adres) '
+                                                                                                                                                                                                                                                         'om '
+                                                                                                                                                                                                                                                         'de '
+                                                                                                                                                                                                                                                         'dichtstbijzijnde '
+                                                                                                                                                                                                                                                         'locatie, '
+                                                                                                                                                                                                                                                         'het '
+                                                                                                                                                                                                                                                         'lokale '
+                                                                                                                                                                                                                                                         'weer '
+                                                                                                                                                                                                                                                         'en '
+                                                                                                                                                                                                                                                         'de '
+                                                                                                                                                                                                                                                         'toepasselijke '
+                                                                                                                                                                                                                                                         'nationale '
+                                                                                                                                                                                                                                                         'regelgeving '
+                                                                                                                                                                                                                                                         'te '
+                                                                                                                                                                                                                                                         'kiezen. '
+                                                                                                                                                                                                                                                         'De '
+                                                                                                                                                                                                                                                         'locatie '
+                                                                                                                                                                                                                                                         'wordt '
+                                                                                                                                                                                                                                                         'alleen '
+                                                                                                                                                                                                                                                         'voor '
+                                                                                                                                                                                                                                                         'de '
+                                                                                                                                                                                                                                                         'huidige '
+                                                                                                                                                                                                                                                         'sessie '
+                                                                                                                                                                                                                                                         'gebruikt '
+                                                                                                                                                                                                                                                         'en '
+                                                                                                                                                                                                                                                         'niet '
+                                                                                                                                                                                                                                                         'opgeslagen.',
+ 'Work clothes (baseline)': 'Werkkleding (referentie)',
+ 'SMS polypropylene coveralls': 'SMS-polypropyleen overall',
+ 'Polyolefin coveralls': 'Polyolefine overall',
+ 'Double-layer woven coveralls': 'Dubbellaags geweven overall',
+ 'Vapor-barrier coveralls (limited use)': 'Dampwerende overall (beperkt gebruik)',
+ '**Nothing was saved. Please try again in a few minutes.**': '**Er is niets opgeslagen. Probeer het over '
+                                                              'enkele minuten opnieuw.**',
+ 'Assessment NOT saved - the database is unavailable.': 'Beoordeling NIET opgeslagen - de database is niet '
+                                                        'beschikbaar.',
+ 'Commonly-cited approximation of the ACGIH TLV very_heavy/acclimatized figures - verify against the current ACGIH TLV booklet before relying on this for a real compliance decision.': 'Veelgeciteerde '
+                                                                                                                                                                                        'benadering '
+                                                                                                                                                                                        'van '
+                                                                                                                                                                                        'de '
+                                                                                                                                                                                        'ACGIH '
+                                                                                                                                                                                        'TLV-waarden '
+                                                                                                                                                                                        'voor '
+                                                                                                                                                                                        'zeer '
+                                                                                                                                                                                        'zwaar/geacclimatiseerd '
+                                                                                                                                                                                        '- '
+                                                                                                                                                                                        'controleer '
+                                                                                                                                                                                        'deze '
+                                                                                                                                                                                        'aan '
+                                                                                                                                                                                        'de '
+                                                                                                                                                                                        'hand '
+                                                                                                                                                                                        'van '
+                                                                                                                                                                                        'het '
+                                                                                                                                                                                        'actuele '
+                                                                                                                                                                                        'ACGIH '
+                                                                                                                                                                                        'TLV-boekje '
+                                                                                                                                                                                        'voordat '
+                                                                                                                                                                                        'u '
+                                                                                                                                                                                        'er '
+                                                                                                                                                                                        'een '
+                                                                                                                                                                                        'echte '
+                                                                                                                                                                                        'nalevingsbeslissing '
+                                                                                                                                                                                        'op '
+                                                                                                                                                                                        'baseert.',
+ 'Invalid input values:': 'Ongeldige invoerwaarden:',
+ 'Recommended ratio': 'Aanbevolen verhouding',
+ 'STOP WORK': 'WERK STOPPEN',
+ "Supplements (never replaces) this module's own risk assessment above.": 'Vult de eigen risicobeoordeling '
+                                                                          'van deze module hierboven aan '
+                                                                          '(vervangt deze nooit).',
+ 'WBGT effective': 'Effectieve WBGT',
+ 'streamlit-js-eval is not installed - geolocation is unavailable. Add it to requirements.txt to enable this section.': 'streamlit-js-eval '
+                                                                                                                        'is '
+                                                                                                                        'niet '
+                                                                                                                        'geïnstalleerd '
+                                                                                                                        '- '
+                                                                                                                        'geolocatie '
+                                                                                                                        'is '
+                                                                                                                        'niet '
+                                                                                                                        'beschikbaar. '
+                                                                                                                        'Voeg '
+                                                                                                                        'het '
+                                                                                                                        'toe '
+                                                                                                                        'aan '
+                                                                                                                        'requirements.txt '
+                                                                                                                        'om '
+                                                                                                                        'deze '
+                                                                                                                        'sectie '
+                                                                                                                        'in '
+                                                                                                                        'te '
+                                                                                                                        'schakelen.',
+ '⚠️ STOP WORK: no compliant work/rest ratio exists for this workload/clothing/acclimatization combination, even at 25/75.': '⚠️ '
+                                                                                                                             'WERK '
+                                                                                                                             'STOPPEN: '
+                                                                                                                             'er '
+                                                                                                                             'bestaat '
+                                                                                                                             'geen '
+                                                                                                                             'conforme '
+                                                                                                                             'werk/rustverhouding '
+                                                                                                                             'voor '
+                                                                                                                             'deze '
+                                                                                                                             'combinatie '
+                                                                                                                             'van '
+                                                                                                                             'werkbelasting/kleding/acclimatisatie, '
+                                                                                                                             'zelfs '
+                                                                                                                             'niet '
+                                                                                                                             'bij '
+                                                                                                                             '25/75.',
+ '⚠️ STOP WORK: vapor-barrier PPE requires direct physiological monitoring, not a WBGT table lookup alone.': '⚠️ '
+                                                                                                             'WERK '
+                                                                                                             'STOPPEN: '
+                                                                                                             'dampwerende '
+                                                                                                             'PBM '
+                                                                                                             'vereisen '
+                                                                                                             'directe '
+                                                                                                             'fysiologische '
+                                                                                                             'bewaking, '
+                                                                                                             'niet '
+                                                                                                             'alleen '
+                                                                                                             'het '
+                                                                                                             'raadplegen '
+                                                                                                             'van '
+                                                                                                             'een '
+                                                                                                             'WBGT-tabel.'}

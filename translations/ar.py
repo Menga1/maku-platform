@@ -404,3 +404,864 @@ ENGINE_TEMPLATES = {
     "arc_flash_ppe": "معدات الوقاية من القوس الكهربائي للعمل تحت الجهد: {0} (المصدر: {1})",
     "work_rest": "اعتمد دورة عمل/راحة {0} للبقاء ضمن حد العمل ACGIH TLV لهذه الفئة من عبء العمل ومجموعة الملابس",
 }
+
+INLINE = {'Measuring equipment / Sensor model (optional)': 'معدات القياس / طراز المستشعر (اختياري)',
+ 'e.g. Kestrel 5400 Heat Stress Tracker, black-globe thermometer, Class 2 sound level meter...': 'مثال: '
+                                                                                                 'Kestrel '
+                                                                                                 '5400 Heat '
+                                                                                                 'Stress '
+                                                                                                 'Tracker، '
+                                                                                                 'ميزان '
+                                                                                                 'حرارة '
+                                                                                                 'الكرة '
+                                                                                                 'السوداء، '
+                                                                                                 'مقياس '
+                                                                                                 'مستوى صوت '
+                                                                                                 'من الفئة '
+                                                                                                 '2...',
+ '+ New organization...': '+ مؤسسة جديدة...',
+ 'Open sea / coast - ASCE D (α 0.11)': 'بحر مفتوح / ساحل - ASCE D (α 0.11)',
+ 'Open country - ASCE C (α 0.15)': 'أرض مفتوحة - ASCE C (α 0.15)',
+ 'Urban / suburban - ASCE B (α 0.25)': 'حضري / ضواحي - ASCE B (α 0.25)',
+ 'Dense city centre (α 0.33)': 'وسط مدينة كثيف (α 0.33)',
+ 'Terrain roughness': 'خشونة التضاريس',
+ 'Floor-to-floor height (m)': 'الارتفاع بين الطوابق (m)',
+ 'Wind measured at working height': 'الرياح المقاسة على ارتفاع العمل',
+ "Best source first: (1) the equipment's arc-flash label, (2) a Lee screening calculation from fault data, (3) unknown - MAKU never invents a value.": 'أفضل '
+                                                                                                                                                       'مصدر '
+                                                                                                                                                       'أولاً: '
+                                                                                                                                                       '(1) '
+                                                                                                                                                       'ملصق '
+                                                                                                                                                       'القوس '
+                                                                                                                                                       'الكهربائي '
+                                                                                                                                                       'على '
+                                                                                                                                                       'المعدة، '
+                                                                                                                                                       '(2) '
+                                                                                                                                                       'حساب '
+                                                                                                                                                       'فرز '
+                                                                                                                                                       'بطريقة '
+                                                                                                                                                       'Lee '
+                                                                                                                                                       'من '
+                                                                                                                                                       'بيانات '
+                                                                                                                                                       'العطل، '
+                                                                                                                                                       '(3) '
+                                                                                                                                                       'غير '
+                                                                                                                                                       'معروف '
+                                                                                                                                                       '- '
+                                                                                                                                                       'لا '
+                                                                                                                                                       'يخترع '
+                                                                                                                                                       'MAKU '
+                                                                                                                                                       'أي '
+                                                                                                                                                       'قيمة '
+                                                                                                                                                       'أبداً.',
+ 'Source': 'المصدر',
+ 'Cold-aisle setpoint (°C)': 'نقطة ضبط الممر البارد (°C)',
+ 'Energized work planned': 'عمل مخطط تحت الجهد',
+ "🔒 AI briefings are off (your privacy choices). Turn them on under 'My account'.": '🔒 إحاطات الذكاء '
+                                                                                    'الاصطناعي متوقفة '
+                                                                                    '(خيارات الخصوصية لديك). '
+                                                                                    "فعّلها من 'حسابي'.",
+ 'Your account is not a member of any organization yet. Ask your MAKU administrator to add you to your organization. The My account page is still available.': 'حسابك '
+                                                                                                                                                               'ليس '
+                                                                                                                                                               'عضواً '
+                                                                                                                                                               'في '
+                                                                                                                                                               'أي '
+                                                                                                                                                               'مؤسسة '
+                                                                                                                                                               'بعد. '
+                                                                                                                                                               'اطلب '
+                                                                                                                                                               'من '
+                                                                                                                                                               'مسؤول '
+                                                                                                                                                               'MAKU '
+                                                                                                                                                               'إضافتك '
+                                                                                                                                                               'إلى '
+                                                                                                                                                               'مؤسستك. '
+                                                                                                                                                               'تبقى '
+                                                                                                                                                               'صفحة '
+                                                                                                                                                               'حسابي '
+                                                                                                                                                               'متاحة.',
+ 'Read-only: assessments are not saved.': 'للقراءة فقط: لا يتم حفظ التقييمات.',
+ 'One vectorized NumPy/Pandas batch calculation across every site, instead of one function call per site - a performance optimization.': 'عملية '
+                                                                                                                                         'حسابية '
+                                                                                                                                         'دفعية '
+                                                                                                                                         'واحدة '
+                                                                                                                                         'موجّهة '
+                                                                                                                                         'باستخدام '
+                                                                                                                                         'NumPy/Pandas '
+                                                                                                                                         'لجميع '
+                                                                                                                                         'المواقع، '
+                                                                                                                                         'بدلاً '
+                                                                                                                                         'من '
+                                                                                                                                         'استدعاء '
+                                                                                                                                         'دالة '
+                                                                                                                                         'لكل '
+                                                                                                                                         'موقع '
+                                                                                                                                         '- '
+                                                                                                                                         'تحسين '
+                                                                                                                                         'للأداء.',
+ "📍 Location is off (your privacy choices). Turn it on under 'My account' to use GPS and automatic country detection.": '📍 '
+                                                                                                                        'الموقع '
+                                                                                                                        'متوقف '
+                                                                                                                        '(خيارات '
+                                                                                                                        'الخصوصية '
+                                                                                                                        'لديك). '
+                                                                                                                        'فعّله '
+                                                                                                                        'من '
+                                                                                                                        "'حسابي' "
+                                                                                                                        'لاستخدام '
+                                                                                                                        'GPS '
+                                                                                                                        'والكشف '
+                                                                                                                        'التلقائي '
+                                                                                                                        'عن '
+                                                                                                                        'البلد.',
+ 'Photos attached to the PDF report': 'الصور المرفقة بتقرير PDF',
+ 'Remove photos': 'إزالة الصور',
+ 'Get a notification when an assessment in your organisation triggers a safety override.': 'تلقَّ إشعاراً '
+                                                                                           'عندما يؤدي تقييم '
+                                                                                           'في مؤسستك إلى '
+                                                                                           'إيقاف سلامة.',
+ 'Turn on for this phone': 'تفعيل على هذا الهاتف',
+ 'Durable (SQLite) history of critical/warning alerts fired by every module, including worker physiological strain.': 'سجل '
+                                                                                                                      'دائم '
+                                                                                                                      '(SQLite) '
+                                                                                                                      'للتنبيهات '
+                                                                                                                      'الحرجة/التحذيرية '
+                                                                                                                      'الصادرة '
+                                                                                                                      'عن '
+                                                                                                                      'جميع '
+                                                                                                                      'الوحدات، '
+                                                                                                                      'بما '
+                                                                                                                      'في '
+                                                                                                                      'ذلك '
+                                                                                                                      'الإجهاد '
+                                                                                                                      'الفسيولوجي '
+                                                                                                                      'للعمال.',
+ 'Measured hook / floor wind (kn)': 'الرياح المقاسة عند الخطاف / الطابق (عقدة)',
+ 'Arc-flash incident energy': 'الطاقة الواقعة للقوس الكهربائي',
+ 'Incident energy on the label (cal/cm²)': 'الطاقة الواقعة حسب الملصق (cal/cm²)',
+ 'Server-configured API key in use (no entry required).': 'مفتاح API مُعد على الخادم قيد الاستخدام (لا حاجة '
+                                                          'لإدخاله).',
+ 'AI advisory layer temporarily unavailable - showing the offline summary below.': 'طبقة الاستشارة بالذكاء '
+                                                                                   'الاصطناعي غير متاحة '
+                                                                                   'مؤقتاً - يُعرض الملخص '
+                                                                                   'دون اتصال أدناه.',
+ 'Multi-Site Overview (vectorized batch)': 'نظرة عامة متعددة المواقع (دفعة موجّهة)',
+ 'Use phone GPS': 'استخدام GPS الهاتف',
+ 'Take site photo': 'التقاط صورة للموقع',
+ 'Alerts turned on.': 'تم تفعيل التنبيهات.',
+ "Notifications are off - turn them on in the phone's Settings.": 'الإشعارات متوقفة - فعّلها من إعدادات '
+                                                                  'الهاتف.',
+ 'Site Alert Log': 'سجل تنبيهات الموقع',
+ '7-Day Meteorology Forecast': 'توقعات الطقس لمدة 7 أيام',
+ 'e.g. 6.4': 'مثال: 6.4',
+ 'Voltage (kV)': 'الجهد (kV)',
+ 'Bolted fault current (kA)': 'تيار العطل المباشر (kA)',
+ 'Clearing time (s)': 'زمن الفصل (s)',
+ 'Working distance (mm)': 'مسافة العمل (mm)',
+ 'Unknown': 'غير معروف',
+ '⚡ Incident energy unknown: no energized work until the equipment label or an arc-flash study (IEEE 1584) confirms the incident energy and the required arc rating.': '⚡ '
+                                                                                                                                                                       'الطاقة '
+                                                                                                                                                                       'الواقعة '
+                                                                                                                                                                       'غير '
+                                                                                                                                                                       'معروفة: '
+                                                                                                                                                                       'لا '
+                                                                                                                                                                       'عمل '
+                                                                                                                                                                       'تحت '
+                                                                                                                                                                       'الجهد '
+                                                                                                                                                                       'حتى '
+                                                                                                                                                                       'يؤكد '
+                                                                                                                                                                       'ملصق '
+                                                                                                                                                                       'المعدة '
+                                                                                                                                                                       'أو '
+                                                                                                                                                                       'دراسة '
+                                                                                                                                                                       'القوس '
+                                                                                                                                                                       'الكهربائي '
+                                                                                                                                                                       '(IEEE '
+                                                                                                                                                                       '1584) '
+                                                                                                                                                                       'الطاقة '
+                                                                                                                                                                       'الواقعة '
+                                                                                                                                                                       'وتصنيف '
+                                                                                                                                                                       'القوس '
+                                                                                                                                                                       'المطلوب.',
+ 'Access to this organization is denied.': 'تم رفض الوصول إلى هذه المؤسسة.',
+ 'Your role: ': 'دورك: ',
+ 'Camera open…': 'الكاميرا مفتوحة…',
+ 'Stop-work alerts': 'تنبيهات إيقاف العمل',
+ 'Stop-work alerts go to members of the organization only.': 'تُرسل تنبيهات إيقاف العمل إلى أعضاء المؤسسة '
+                                                             'فقط.',
+ 'Could not register this device.': 'تعذّر تسجيل هذا الجهاز.',
+ 'Live weather unavailable - verify conditions on site.': 'الطقس المباشر غير متاح - تحقق من الظروف في '
+                                                          'الموقع.',
+ ' (context only)': ' (للسياق فقط)',
+ 'Recorded for the report only - load is not used in the arc-flash calculation.': 'مُسجّل للتقرير فقط - لا '
+                                                                                  'يُستخدم الحمل في حساب '
+                                                                                  'القوس الكهربائي.',
+ 'Platform administrator': 'مسؤول المنصة',
+ 'Organization admin': 'مسؤول المؤسسة',
+ 'Supervisor': 'مشرف',
+ 'Viewer (read-only)': 'مُطّلع (للقراءة فقط)',
+ 'Camera unavailable.': 'الكاميرا غير متاحة.',
+ 'Equipment arc-flash label': 'ملصق القوس الكهربائي على المعدة',
+ 'Lee calculation (voltage, fault current, clearing time)': 'حساب Lee (الجهد، تيار العطل، زمن الفصل)',
+ 'Unknown / not yet studied': 'غير معروف / لم تتم دراسته بعد',
+ 'Alert shown but NOT recorded in the alert log.': 'تم عرض التنبيه لكنه لم يُسجَّل في سجل التنبيهات.',
+ 'New organization name': 'اسم المؤسسة الجديدة',
+ "MAKU processes your data under the GDPR and the UAE PDPL. Make your choices below; you can change them at any time under 'My account'.": 'يعالج '
+                                                                                                                                           'MAKU '
+                                                                                                                                           'بياناتك '
+                                                                                                                                           'وفقاً '
+                                                                                                                                           'للائحة '
+                                                                                                                                           'GDPR '
+                                                                                                                                           'وقانون '
+                                                                                                                                           'حماية '
+                                                                                                                                           'البيانات '
+                                                                                                                                           'الشخصية '
+                                                                                                                                           'الإماراتي '
+                                                                                                                                           'PDPL. '
+                                                                                                                                           'اختر '
+                                                                                                                                           'أدناه؛ '
+                                                                                                                                           'يمكنك '
+                                                                                                                                           'تغيير '
+                                                                                                                                           'رأيك '
+                                                                                                                                           'في '
+                                                                                                                                           'أي '
+                                                                                                                                           'وقت '
+                                                                                                                                           'من '
+                                                                                                                                           "'حسابي'.",
+ 'A JSON copy of all personal data linked to your account (GDPR Art. 15/20).': 'نسخة JSON من جميع البيانات '
+                                                                               'الشخصية المرتبطة بحسابك '
+                                                                               '(GDPR المادة 15/20).',
+ 'Prepare export': 'تحضير التصدير',
+ 'Permanently deletes your account, your consent records and every assessment you ran. Time-stamped security log entries are retained as described in the privacy policy. This cannot be undone.': 'يحذف '
+                                                                                                                                                                                                   'حسابك '
+                                                                                                                                                                                                   'نهائياً، '
+                                                                                                                                                                                                   'وسجلات '
+                                                                                                                                                                                                   'موافقتك، '
+                                                                                                                                                                                                   'وكل '
+                                                                                                                                                                                                   'تقييم '
+                                                                                                                                                                                                   'أجريته. '
+                                                                                                                                                                                                   'تُحفظ '
+                                                                                                                                                                                                   'إدخالات '
+                                                                                                                                                                                                   'سجل '
+                                                                                                                                                                                                   'الأمان '
+                                                                                                                                                                                                   'المؤرخة '
+                                                                                                                                                                                                   'كما '
+                                                                                                                                                                                                   'هو '
+                                                                                                                                                                                                   'موضح '
+                                                                                                                                                                                                   'في '
+                                                                                                                                                                                                   'سياسة '
+                                                                                                                                                                                                   'الخصوصية. '
+                                                                                                                                                                                                   'لا '
+                                                                                                                                                                                                   'يمكن '
+                                                                                                                                                                                                   'التراجع '
+                                                                                                                                                                                                   'عن '
+                                                                                                                                                                                                   'ذلك.',
+ 'A user only sees and changes data of the organizations they are a member of.': 'لا يرى المستخدم ولا يعدّل '
+                                                                                 'إلا بيانات المؤسسات التي '
+                                                                                 'هو عضو فيها.',
+ 'viewer - read only': 'viewer - للقراءة فقط',
+ 'supervisor - runs assessments': 'supervisor - يجري التقييمات',
+ 'org_admin - manages the organization': 'org_admin - يدير المؤسسة',
+ 'Your privacy choices': 'خيارات الخصوصية لديك',
+ 'Save and continue': 'حفظ ومتابعة',
+ 'My account': 'حسابي',
+ 'Privacy and consent': 'الخصوصية والموافقة',
+ 'Export my data': 'تصدير بياناتي',
+ 'This account is managed by the deployment configuration. Contact your MAKU administrator to change or delete it.': 'هذا '
+                                                                                                                     'الحساب '
+                                                                                                                     'مُدار '
+                                                                                                                     'من '
+                                                                                                                     'خلال '
+                                                                                                                     'إعدادات '
+                                                                                                                     'النشر. '
+                                                                                                                     'تواصل '
+                                                                                                                     'مع '
+                                                                                                                     'مسؤول '
+                                                                                                                     'MAKU '
+                                                                                                                     'لتعديله '
+                                                                                                                     'أو '
+                                                                                                                     'حذفه.',
+ 'Change password': 'تغيير كلمة المرور',
+ 'Current password': 'كلمة المرور الحالية',
+ 'New password': 'كلمة المرور الجديدة',
+ 'Confirm new password': 'تأكيد كلمة المرور الجديدة',
+ 'Update password': 'تحديث كلمة المرور',
+ 'Delete my account': 'حذف حسابي',
+ 'Type your username to confirm': 'اكتب اسم المستخدم للتأكيد',
+ 'Password': 'كلمة المرور',
+ 'Delete permanently': 'حذف نهائي',
+ 'Users': 'المستخدمون',
+ 'Administrators only.': 'للمسؤولين فقط.',
+ 'No database accounts yet.': 'لا توجد حسابات في قاعدة البيانات بعد.',
+ 'Create account': 'إنشاء حساب',
+ 'Username': 'اسم المستخدم',
+ 'Email (optional)': 'البريد الإلكتروني (اختياري)',
+ 'Role': 'الدور',
+ 'Initial password': 'كلمة المرور الأولية',
+ 'Create': 'إنشاء',
+ 'Organizations and members': 'المؤسسات والأعضاء',
+ 'New organization': 'مؤسسة جديدة',
+ 'Organization': 'المؤسسة',
+ 'Add / change role': 'إضافة / تغيير الدور',
+ 'Remove from organization': 'إزالة من المؤسسة',
+ 'Privacy policy': 'سياسة الخصوصية',
+ 'Signed in as': 'تم تسجيل الدخول باسم',
+ 'role': 'الدور',
+ 'Read the privacy policy': 'قراءة سياسة الخصوصية',
+ 'Download (JSON)': 'تنزيل (JSON)',
+ 'Database unavailable.': 'قاعدة البيانات غير متاحة.',
+ 'Create organization': 'إنشاء مؤسسة',
+ 'Export unavailable right now.': 'التصدير غير متاح حالياً.',
+ 'Passwords do not match.': 'كلمتا المرور غير متطابقتين.',
+ 'Username does not match.': 'اسم المستخدم غير مطابق.',
+ 'Could not save your choices right now. Please try again.': 'تعذّر حفظ خياراتك حالياً. يرجى المحاولة مرة '
+                                                             'أخرى.',
+ 'Preference saved': 'تم حفظ التفضيل',
+ 'Could not save. Please retry.': 'تعذّر الحفظ. يرجى المحاولة مرة أخرى.',
+ 'Password updated.': 'تم تحديث كلمة المرور.',
+ 'Account created: ': 'تم إنشاء الحساب: ',
+ 'Organization created: ': 'تم إنشاء المؤسسة: ',
+ 'Service unavailable.': 'الخدمة غير متاحة.',
+ 'Service unavailable - nothing was deleted.': 'الخدمة غير متاحة - لم يُحذف أي شيء.',
+ 'Membership saved: ': 'تم حفظ العضوية: ',
+ 'No such membership.': 'لا توجد هذه العضوية.',
+ 'Removed: ': 'تمت الإزالة: ',
+ 'Regulatory threshold legend': 'مفتاح العتبات التنظيمية',
+ 'Risk Matrix (calculation transparency)': 'مصفوفة المخاطر (شفافية الحساب)',
+ 'Formula: Score = Likelihood (1-5) x Severity (1-5)': 'المعادلة: الدرجة = الاحتمالية (1-5) x الشدة (1-5)',
+ 'Controls applied on site': 'الضوابط المطبقة في الموقع',
+ 'Select which of the controls above have actually been implemented, to calculate residual risk.': 'اختر '
+                                                                                                   'أيّاً من '
+                                                                                                   'الضوابط '
+                                                                                                   'أعلاه قد '
+                                                                                                   'طُبّق '
+                                                                                                   'فعلاً، '
+                                                                                                   'لحساب '
+                                                                                                   'المخاطر '
+                                                                                                   'المتبقية.',
+ 'Initial Risk -> Applied Controls -> Residual Risk': 'المخاطر الأولية -> الضوابط المطبقة -> المخاطر '
+                                                      'المتبقية',
+ 'Stop-Work Trigger Registry': 'سجل شروط إيقاف العمل',
+ 'Regulatory Algorithm Validation': 'التحقق من الخوارزميات التنظيمية',
+ 'These values come from a simulator or demonstration dataset - they are NOT real measurements. Measure on site before making any decision.': 'هذه '
+                                                                                                                                              'القيم '
+                                                                                                                                              'صادرة '
+                                                                                                                                              'عن '
+                                                                                                                                              'محاكٍ '
+                                                                                                                                              'أو '
+                                                                                                                                              'مجموعة '
+                                                                                                                                              'بيانات '
+                                                                                                                                              'تجريبية '
+                                                                                                                                              '- '
+                                                                                                                                              'وهي '
+                                                                                                                                              'ليست '
+                                                                                                                                              'قياسات '
+                                                                                                                                              'حقيقية. '
+                                                                                                                                              'قِس '
+                                                                                                                                              'في '
+                                                                                                                                              'الموقع '
+                                                                                                                                              'قبل '
+                                                                                                                                              'اتخاذ '
+                                                                                                                                              'أي '
+                                                                                                                                              'قرار.',
+ '<tr><th>Hazard</th><th>Likelihood</th><th>Severity</th><th>Score</th><th>Band</th><th>Note</th></tr>': '<tr><th>الخطر</th><th>الاحتمالية</th><th>الشدة</th><th>الدرجة</th><th>المستوى</th><th>ملاحظة</th></tr>',
+ 'Overall score (worst hazard governs)': 'الدرجة الإجمالية (يحكمها الخطر الأشد)',
+ '<tr><th>Module</th><th>Trigger condition</th><th>Threshold</th><th>Source constant</th></tr>': '<tr><th>الوحدة</th><th>شرط '
+                                                                                                 'التفعيل</th><th>العتبة</th><th>الثابت '
+                                                                                                 'المصدر</th></tr>',
+ '<tr><th>Formula</th><th>Cited standard(s)</th><th>Status</th><th>Caveat</th></tr>': '<tr><th>المعادلة</th><th>المعيار '
+                                                                                      '(المعايير) '
+                                                                                      'المذكورة</th><th>الحالة</th><th>تحفّظ</th></tr>',
+ 'The live data feed is unavailable - enter measured values manually below before running the assessment.': 'مصدر '
+                                                                                                            'البيانات '
+                                                                                                            'المباشرة '
+                                                                                                            'غير '
+                                                                                                            'متاح '
+                                                                                                            '- '
+                                                                                                            'أدخل '
+                                                                                                            'القيم '
+                                                                                                            'المقاسة '
+                                                                                                            'يدوياً '
+                                                                                                            'أدناه '
+                                                                                                            'قبل '
+                                                                                                            'إجراء '
+                                                                                                            'التقييم.',
+ 'The configured production database (Postgres/Supabase) is unreachable. All writes are frozen - no data is being silently redirected to ephemeral local storage. Contact an administrator.': 'قاعدة '
+                                                                                                                                                                                              'بيانات '
+                                                                                                                                                                                              'الإنتاج '
+                                                                                                                                                                                              'المُعدّة '
+                                                                                                                                                                                              '(Postgres/Supabase) '
+                                                                                                                                                                                              'غير '
+                                                                                                                                                                                              'قابلة '
+                                                                                                                                                                                              'للوصول. '
+                                                                                                                                                                                              'جميع '
+                                                                                                                                                                                              'عمليات '
+                                                                                                                                                                                              'الكتابة '
+                                                                                                                                                                                              'مجمدة '
+                                                                                                                                                                                              '- '
+                                                                                                                                                                                              'لا '
+                                                                                                                                                                                              'يتم '
+                                                                                                                                                                                              'تحويل '
+                                                                                                                                                                                              'أي '
+                                                                                                                                                                                              'بيانات '
+                                                                                                                                                                                              'بصمت '
+                                                                                                                                                                                              'إلى '
+                                                                                                                                                                                              'تخزين '
+                                                                                                                                                                                              'محلي '
+                                                                                                                                                                                              'مؤقت. '
+                                                                                                                                                                                              'تواصل '
+                                                                                                                                                                                              'مع '
+                                                                                                                                                                                              'مسؤول.',
+ 'Free, legally accessible resources. MAKU reproduces no copyrighted content - these links go to the official sources.': 'موارد '
+                                                                                                                         'مجانية '
+                                                                                                                         'ومتاحة '
+                                                                                                                         'قانونياً. '
+                                                                                                                         'لا '
+                                                                                                                         'يعيد '
+                                                                                                                         'MAKU '
+                                                                                                                         'إنتاج '
+                                                                                                                         'أي '
+                                                                                                                         'محتوى '
+                                                                                                                         'محمي '
+                                                                                                                         'بحقوق '
+                                                                                                                         'النشر '
+                                                                                                                         '- '
+                                                                                                                         'هذه '
+                                                                                                                         'الروابط '
+                                                                                                                         'تؤدي '
+                                                                                                                         'إلى '
+                                                                                                                         'المصادر '
+                                                                                                                         'الرسمية.',
+ "For copyrighted texts (e.g. Brauer's *Safety and Health for Engineers*), purchase them or check your institutional library - see the Further Reading section of the official report.": 'بالنسبة '
+                                                                                                                                                                                         'للنصوص '
+                                                                                                                                                                                         'المحمية '
+                                                                                                                                                                                         'بحقوق '
+                                                                                                                                                                                         'النشر '
+                                                                                                                                                                                         '(مثل '
+                                                                                                                                                                                         '*Safety '
+                                                                                                                                                                                         'and '
+                                                                                                                                                                                         'Health '
+                                                                                                                                                                                         'for '
+                                                                                                                                                                                         'Engineers* '
+                                                                                                                                                                                         'لـ '
+                                                                                                                                                                                         'Brauer)، '
+                                                                                                                                                                                         'اشترها '
+                                                                                                                                                                                         'أو '
+                                                                                                                                                                                         'راجع '
+                                                                                                                                                                                         'مكتبة '
+                                                                                                                                                                                         'مؤسستك '
+                                                                                                                                                                                         '- '
+                                                                                                                                                                                         'انظر '
+                                                                                                                                                                                         'قسم '
+                                                                                                                                                                                         'القراءات '
+                                                                                                                                                                                         'الإضافية '
+                                                                                                                                                                                         'في '
+                                                                                                                                                                                         'التقرير '
+                                                                                                                                                                                         'الرسمي.',
+ '🔎 Live legislation search (extra API cost)': '🔎 بحث مباشر في التشريعات (تكلفة API إضافية)',
+ 'Upload a previous log (CSV) to merge': 'رفع سجل سابق (CSV) لدمجه',
+ '📄 Download PDF': '📄 تنزيل PDF',
+ '🌐 Download HTML': '🌐 تنزيل HTML',
+ 'Band': 'المستوى',
+ 'Governing hazard': 'الخطر الحاكم',
+ 'Initial risk': 'المخاطر الأولية',
+ 'Residual risk': 'المخاطر المتبقية',
+ 'No controls selected yet - residual risk equals initial risk.': 'لم يتم اختيار أي ضابط بعد - المخاطر '
+                                                                  'المتبقية تساوي المخاطر الأولية.',
+ 'The exact numeric thresholds that force a mandatory stop-work condition (safety_override), with the named source constant in code each threshold comes from.': 'العتبات '
+                                                                                                                                                                 'الرقمية '
+                                                                                                                                                                 'الدقيقة '
+                                                                                                                                                                 'التي '
+                                                                                                                                                                 'تفرض '
+                                                                                                                                                                 'إيقاف '
+                                                                                                                                                                 'العمل '
+                                                                                                                                                                 'الإلزامي '
+                                                                                                                                                                 '(safety_override)، '
+                                                                                                                                                                 'مع '
+                                                                                                                                                                 'اسم '
+                                                                                                                                                                 'الثابت '
+                                                                                                                                                                 'المصدر '
+                                                                                                                                                                 'في '
+                                                                                                                                                                 'الكود '
+                                                                                                                                                                 'الذي '
+                                                                                                                                                                 'تأتي '
+                                                                                                                                                                 'منه '
+                                                                                                                                                                 'كل '
+                                                                                                                                                                 'عتبة.',
+ 'Every scoring formula mapped against its claimed standard, with an honest status: direct implementation, adapted/approximated, or illustrative (not standards-derived).': 'كل '
+                                                                                                                                                                            'معادلة '
+                                                                                                                                                                            'تقييم '
+                                                                                                                                                                            'مقارنة '
+                                                                                                                                                                            'بالمعيار '
+                                                                                                                                                                            'الذي '
+                                                                                                                                                                            'تستند '
+                                                                                                                                                                            'إليه، '
+                                                                                                                                                                            'مع '
+                                                                                                                                                                            'حالة '
+                                                                                                                                                                            'صريحة: '
+                                                                                                                                                                            'تطبيق '
+                                                                                                                                                                            'مباشر، '
+                                                                                                                                                                            'أو '
+                                                                                                                                                                            'مُكيّف/تقريبي، '
+                                                                                                                                                                            'أو '
+                                                                                                                                                                            'توضيحي '
+                                                                                                                                                                            '(غير '
+                                                                                                                                                                            'مستمد '
+                                                                                                                                                                            'من '
+                                                                                                                                                                            'المعايير).',
+ '**MAKU is temporarily unavailable.** The production database is not answering or is not configured correctly. No assessment can be saved, and nothing is being saved anywhere else. The administrator has been alerted through the server log. Please try again in a few minutes.': '**MAKU '
+                                                                                                                                                                                                                                                                                      'غير '
+                                                                                                                                                                                                                                                                                      'متاح '
+                                                                                                                                                                                                                                                                                      'مؤقتاً.** '
+                                                                                                                                                                                                                                                                                      'قاعدة '
+                                                                                                                                                                                                                                                                                      'بيانات '
+                                                                                                                                                                                                                                                                                      'الإنتاج '
+                                                                                                                                                                                                                                                                                      'لا '
+                                                                                                                                                                                                                                                                                      'تستجيب '
+                                                                                                                                                                                                                                                                                      'أو '
+                                                                                                                                                                                                                                                                                      'غير '
+                                                                                                                                                                                                                                                                                      'مُعدّة '
+                                                                                                                                                                                                                                                                                      'بشكل '
+                                                                                                                                                                                                                                                                                      'صحيح. '
+                                                                                                                                                                                                                                                                                      'لا '
+                                                                                                                                                                                                                                                                                      'يمكن '
+                                                                                                                                                                                                                                                                                      'حفظ '
+                                                                                                                                                                                                                                                                                      'أي '
+                                                                                                                                                                                                                                                                                      'تقييم، '
+                                                                                                                                                                                                                                                                                      'ولا '
+                                                                                                                                                                                                                                                                                      'يُحفظ '
+                                                                                                                                                                                                                                                                                      'أي '
+                                                                                                                                                                                                                                                                                      'شيء '
+                                                                                                                                                                                                                                                                                      'في '
+                                                                                                                                                                                                                                                                                      'مكان '
+                                                                                                                                                                                                                                                                                      'آخر. '
+                                                                                                                                                                                                                                                                                      'تم '
+                                                                                                                                                                                                                                                                                      'تنبيه '
+                                                                                                                                                                                                                                                                                      'المسؤول '
+                                                                                                                                                                                                                                                                                      'عبر '
+                                                                                                                                                                                                                                                                                      'سجل '
+                                                                                                                                                                                                                                                                                      'الخادم. '
+                                                                                                                                                                                                                                                                                      'يرجى '
+                                                                                                                                                                                                                                                                                      'المحاولة '
+                                                                                                                                                                                                                                                                                      'مرة '
+                                                                                                                                                                                                                                                                                      'أخرى '
+                                                                                                                                                                                                                                                                                      'بعد '
+                                                                                                                                                                                                                                                                                      'بضع '
+                                                                                                                                                                                                                                                                                      'دقائق.',
+ 'Demo - data is not kept.': 'عرض تجريبي - لا يتم الاحتفاظ بالبيانات.',
+ 'HSE Virtual Library': 'مكتبة HSE الافتراضية',
+ 'Lets Claude search the web live to check applicable legislation, on top of the verified references below. Uses your existing API key.': 'يتيح '
+                                                                                                                                          'لـ '
+                                                                                                                                          'Claude '
+                                                                                                                                          'البحث '
+                                                                                                                                          'المباشر '
+                                                                                                                                          'على '
+                                                                                                                                          'الويب '
+                                                                                                                                          'للتحقق '
+                                                                                                                                          'من '
+                                                                                                                                          'التشريعات '
+                                                                                                                                          'المعمول '
+                                                                                                                                          'بها، '
+                                                                                                                                          'إضافة '
+                                                                                                                                          'إلى '
+                                                                                                                                          'المراجع '
+                                                                                                                                          'الموثقة '
+                                                                                                                                          'أدناه. '
+                                                                                                                                          'يستخدم '
+                                                                                                                                          'مفتاح '
+                                                                                                                                          'API '
+                                                                                                                                          'الحالي '
+                                                                                                                                          'لديك.',
+ 'Trend Analysis & Monthly Report': 'تحليل الاتجاهات والتقرير الشهري',
+ "This session's assessment log only (Streamlit Cloud has no persistent database). Download the CSV periodically and re-upload it in a future session to build a multi-month history.": 'سجل '
+                                                                                                                                                                                        'تقييمات '
+                                                                                                                                                                                        'هذه '
+                                                                                                                                                                                        'الجلسة '
+                                                                                                                                                                                        'فقط '
+                                                                                                                                                                                        '(لا '
+                                                                                                                                                                                        'توجد '
+                                                                                                                                                                                        'في '
+                                                                                                                                                                                        'Streamlit '
+                                                                                                                                                                                        'Cloud '
+                                                                                                                                                                                        'قاعدة '
+                                                                                                                                                                                        'بيانات '
+                                                                                                                                                                                        'دائمة). '
+                                                                                                                                                                                        'نزّل '
+                                                                                                                                                                                        'ملف '
+                                                                                                                                                                                        'CSV '
+                                                                                                                                                                                        'دورياً '
+                                                                                                                                                                                        'وأعد '
+                                                                                                                                                                                        'رفعه '
+                                                                                                                                                                                        'في '
+                                                                                                                                                                                        'جلسة '
+                                                                                                                                                                                        'لاحقة '
+                                                                                                                                                                                        'لبناء '
+                                                                                                                                                                                        'سجل '
+                                                                                                                                                                                        'يمتد '
+                                                                                                                                                                                        'لعدة '
+                                                                                                                                                                                        'أشهر.',
+ 'No assessments logged yet this session - run an assessment on any module to start building the log.': 'لا '
+                                                                                                        'توجد '
+                                                                                                        'تقييمات '
+                                                                                                        'مسجلة '
+                                                                                                        'في '
+                                                                                                        'هذه '
+                                                                                                        'الجلسة '
+                                                                                                        'بعد '
+                                                                                                        '- '
+                                                                                                        'أجرِ '
+                                                                                                        'تقييماً '
+                                                                                                        'في '
+                                                                                                        'أي '
+                                                                                                        'وحدة '
+                                                                                                        'لبدء '
+                                                                                                        'السجل.',
+ 'assessment(s) logged this session': 'تقييم (تقييمات) مسجلة في هذه الجلسة',
+ '⬇️ Download log (CSV)': '⬇️ تنزيل السجل (CSV)',
+ '📊 Monthly Excel Report': '📊 تقرير Excel الشهري',
+ 'Monthly summary': 'الملخص الشهري',
+ "The selected controls don't address any assessed hazard, so no reduction is credited.": 'الضوابط المختارة '
+                                                                                          'لا تعالج أي خطر '
+                                                                                          'مُقيَّم، لذا لا '
+                                                                                          'يُحتسب أي تخفيض.',
+ 'No accessible organization - the log is not available.': 'لا توجد مؤسسة متاحة - السجل غير متاح.',
+ "Method {version}: a control only reduces the hazards it addresses. Elimination (stop work, de-energize, evacuate) → likelihood 'rare'; engineering, administrative, PPE → −1 each. Severity is never reduced.": 'الطريقة '
+                                                                                                                                                                                                                  '{version}: '
+                                                                                                                                                                                                                  'لا '
+                                                                                                                                                                                                                  'يخفّض '
+                                                                                                                                                                                                                  'الضابط '
+                                                                                                                                                                                                                  'إلا '
+                                                                                                                                                                                                                  'المخاطر '
+                                                                                                                                                                                                                  'التي '
+                                                                                                                                                                                                                  'يستهدفها. '
+                                                                                                                                                                                                                  'الإزالة '
+                                                                                                                                                                                                                  '(إيقاف '
+                                                                                                                                                                                                                  'العمل، '
+                                                                                                                                                                                                                  'فصل '
+                                                                                                                                                                                                                  'الطاقة، '
+                                                                                                                                                                                                                  'الإخلاء) '
+                                                                                                                                                                                                                  '→ '
+                                                                                                                                                                                                                  'احتمالية '
+                                                                                                                                                                                                                  '«نادرة»؛ '
+                                                                                                                                                                                                                  'الضوابط '
+                                                                                                                                                                                                                  'الهندسية '
+                                                                                                                                                                                                                  'والإدارية '
+                                                                                                                                                                                                                  'ومعدات '
+                                                                                                                                                                                                                  'الوقاية '
+                                                                                                                                                                                                                  '→ '
+                                                                                                                                                                                                                  '−1 '
+                                                                                                                                                                                                                  'لكل '
+                                                                                                                                                                                                                  'منها. '
+                                                                                                                                                                                                                  'لا '
+                                                                                                                                                                                                                  'تُخفَّض '
+                                                                                                                                                                                                                  'الشدة '
+                                                                                                                                                                                                                  'أبداً.',
+ 'No effect on the assessed hazards: ': 'بلا تأثير على المخاطر المُقيَّمة: ',
+ 'Search books on this topic (Google Books)': 'البحث عن كتب حول هذا الموضوع (Google Books)',
+ 'Import NOT saved - the database is unavailable.': 'لم يُحفظ الاستيراد - قاعدة البيانات غير متاحة.',
+ 'Your role in this organization is read-only: import is not allowed.': 'دورك في هذه المؤسسة للقراءة فقط: '
+                                                                        'الاستيراد غير مسموح.',
+ 'Merge failed: the file could not be read.': 'فشل الدمج: تعذّرت قراءة الملف.',
+ 'Share PDF': 'مشاركة PDF',
+ 'Freshness': 'الحداثة',
+ 'refreshed at least every {seconds}s while this page is open': 'يُحدَّث كل {seconds} ثانية على الأقل ما '
+                                                                'دامت هذه الصفحة مفتوحة',
+ '{count} new row(s) merged.': 'تم دمج {count} صف (صفوف) جديدة.',
+ 'Merge failed': 'فشل الدمج',
+ "MAKU HSE Decision-Support System — Results are intended for risk screening and decision support and do not replace a competent person's assessment, engineering analysis, statutory requirement, manufacturer instruction or formal specialist study.": 'نظام '
+                                                                                                                                                                                                                                                          'MAKU '
+                                                                                                                                                                                                                                                          'لدعم '
+                                                                                                                                                                                                                                                          'قرارات '
+                                                                                                                                                                                                                                                          'الصحة '
+                                                                                                                                                                                                                                                          'والسلامة '
+                                                                                                                                                                                                                                                          'والبيئة '
+                                                                                                                                                                                                                                                          '— '
+                                                                                                                                                                                                                                                          'النتائج '
+                                                                                                                                                                                                                                                          'مخصصة '
+                                                                                                                                                                                                                                                          'لفرز '
+                                                                                                                                                                                                                                                          'المخاطر '
+                                                                                                                                                                                                                                                          'ودعم '
+                                                                                                                                                                                                                                                          'القرار '
+                                                                                                                                                                                                                                                          'ولا '
+                                                                                                                                                                                                                                                          'تحل '
+                                                                                                                                                                                                                                                          'محل '
+                                                                                                                                                                                                                                                          'تقييم '
+                                                                                                                                                                                                                                                          'شخص '
+                                                                                                                                                                                                                                                          'كفء '
+                                                                                                                                                                                                                                                          'أو '
+                                                                                                                                                                                                                                                          'التحليل '
+                                                                                                                                                                                                                                                          'الهندسي '
+                                                                                                                                                                                                                                                          'أو '
+                                                                                                                                                                                                                                                          'المتطلبات '
+                                                                                                                                                                                                                                                          'القانونية '
+                                                                                                                                                                                                                                                          'أو '
+                                                                                                                                                                                                                                                          'تعليمات '
+                                                                                                                                                                                                                                                          'الشركة '
+                                                                                                                                                                                                                                                          'المصنعة '
+                                                                                                                                                                                                                                                          'أو '
+                                                                                                                                                                                                                                                          'دراسة '
+                                                                                                                                                                                                                                                          'متخصصة '
+                                                                                                                                                                                                                                                          'رسمية.',
+ 'AI briefings (optional)': 'إحاطات الذكاء الاصطناعي (اختياري)',
+ 'Send the assessment results for this session (risk scores, module, site name, and anonymised worker-strain summaries) to Anthropic, PBC to generate a written AI briefing. No name, email or GPS coordinates are sent. Without consent you still get the full rule-based briefing.': 'إرسال '
+                                                                                                                                                                                                                                                                                       'نتائج '
+                                                                                                                                                                                                                                                                                       'التقييم '
+                                                                                                                                                                                                                                                                                       'لهذه '
+                                                                                                                                                                                                                                                                                       'الجلسة '
+                                                                                                                                                                                                                                                                                       '(درجات '
+                                                                                                                                                                                                                                                                                       'المخاطر، '
+                                                                                                                                                                                                                                                                                       'الوحدة، '
+                                                                                                                                                                                                                                                                                       'اسم '
+                                                                                                                                                                                                                                                                                       'الموقع، '
+                                                                                                                                                                                                                                                                                       'وملخصات '
+                                                                                                                                                                                                                                                                                       'مجهولة '
+                                                                                                                                                                                                                                                                                       'الهوية '
+                                                                                                                                                                                                                                                                                       'لإجهاد '
+                                                                                                                                                                                                                                                                                       'العمال) '
+                                                                                                                                                                                                                                                                                       'إلى '
+                                                                                                                                                                                                                                                                                       'Anthropic, '
+                                                                                                                                                                                                                                                                                       'PBC '
+                                                                                                                                                                                                                                                                                       'لإنشاء '
+                                                                                                                                                                                                                                                                                       'إحاطة '
+                                                                                                                                                                                                                                                                                       'مكتوبة '
+                                                                                                                                                                                                                                                                                       'بالذكاء '
+                                                                                                                                                                                                                                                                                       'الاصطناعي. '
+                                                                                                                                                                                                                                                                                       'لا '
+                                                                                                                                                                                                                                                                                       'يُرسل '
+                                                                                                                                                                                                                                                                                       'أي '
+                                                                                                                                                                                                                                                                                       'اسم '
+                                                                                                                                                                                                                                                                                       'أو '
+                                                                                                                                                                                                                                                                                       'بريد '
+                                                                                                                                                                                                                                                                                       'إلكتروني '
+                                                                                                                                                                                                                                                                                       'أو '
+                                                                                                                                                                                                                                                                                       'إحداثيات '
+                                                                                                                                                                                                                                                                                       'GPS. '
+                                                                                                                                                                                                                                                                                       'دون '
+                                                                                                                                                                                                                                                                                       'موافقة، '
+                                                                                                                                                                                                                                                                                       'تحصل '
+                                                                                                                                                                                                                                                                                       'مع '
+                                                                                                                                                                                                                                                                                       'ذلك '
+                                                                                                                                                                                                                                                                                       'على '
+                                                                                                                                                                                                                                                                                       'الإحاطة '
+                                                                                                                                                                                                                                                                                       'الكاملة '
+                                                                                                                                                                                                                                                                                       'المبنية '
+                                                                                                                                                                                                                                                                                       'على '
+                                                                                                                                                                                                                                                                                       'القواعد.',
+ 'Location (optional)': 'الموقع (اختياري)',
+ "Use this device's GPS position (or, if GPS is denied, an approximate location from your IP address) to pick the nearest site, local weather and the applicable country regulations. Location is used for the current session only and is not stored.": 'استخدام '
+                                                                                                                                                                                                                                                         'موقع '
+                                                                                                                                                                                                                                                         'GPS '
+                                                                                                                                                                                                                                                         'لهذا '
+                                                                                                                                                                                                                                                         'الجهاز '
+                                                                                                                                                                                                                                                         '(أو، '
+                                                                                                                                                                                                                                                         'إذا '
+                                                                                                                                                                                                                                                         'رُفض '
+                                                                                                                                                                                                                                                         'GPS، '
+                                                                                                                                                                                                                                                         'موقع '
+                                                                                                                                                                                                                                                         'تقريبي '
+                                                                                                                                                                                                                                                         'من '
+                                                                                                                                                                                                                                                         'عنوان '
+                                                                                                                                                                                                                                                         'IP '
+                                                                                                                                                                                                                                                         'الخاص '
+                                                                                                                                                                                                                                                         'بك) '
+                                                                                                                                                                                                                                                         'لاختيار '
+                                                                                                                                                                                                                                                         'أقرب '
+                                                                                                                                                                                                                                                         'موقع '
+                                                                                                                                                                                                                                                         'والطقس '
+                                                                                                                                                                                                                                                         'المحلي '
+                                                                                                                                                                                                                                                         'ولوائح '
+                                                                                                                                                                                                                                                         'البلد '
+                                                                                                                                                                                                                                                         'المعمول '
+                                                                                                                                                                                                                                                         'بها. '
+                                                                                                                                                                                                                                                         'يُستخدم '
+                                                                                                                                                                                                                                                         'الموقع '
+                                                                                                                                                                                                                                                         'للجلسة '
+                                                                                                                                                                                                                                                         'الحالية '
+                                                                                                                                                                                                                                                         'فقط '
+                                                                                                                                                                                                                                                         'ولا '
+                                                                                                                                                                                                                                                         'يُخزَّن.',
+ 'Work clothes (baseline)': 'ملابس العمل (مرجعية)',
+ 'SMS polypropylene coveralls': 'بدلة SMS من البولي بروبيلين',
+ 'Polyolefin coveralls': 'بدلة من البولي أوليفين',
+ 'Double-layer woven coveralls': 'بدلة منسوجة مزدوجة الطبقة',
+ 'Vapor-barrier coveralls (limited use)': 'بدلة حاجزة للبخار (استخدام محدود)',
+ '**Nothing was saved. Please try again in a few minutes.**': '**لم يُحفظ أي شيء. يرجى المحاولة مرة أخرى بعد '
+                                                              'بضع دقائق.**',
+ 'Assessment NOT saved - the database is unavailable.': 'لم يُحفظ التقييم - قاعدة البيانات غير متاحة.',
+ 'Commonly-cited approximation of the ACGIH TLV very_heavy/acclimatized figures - verify against the current ACGIH TLV booklet before relying on this for a real compliance decision.': 'تقريب '
+                                                                                                                                                                                        'شائع '
+                                                                                                                                                                                        'الاستخدام '
+                                                                                                                                                                                        'لقيم '
+                                                                                                                                                                                        'ACGIH '
+                                                                                                                                                                                        'TLV '
+                                                                                                                                                                                        'للعمل '
+                                                                                                                                                                                        'الشاق '
+                                                                                                                                                                                        'جداً/المتأقلم '
+                                                                                                                                                                                        '- '
+                                                                                                                                                                                        'تحقق '
+                                                                                                                                                                                        'منه '
+                                                                                                                                                                                        'مقابل '
+                                                                                                                                                                                        'كتيّب '
+                                                                                                                                                                                        'ACGIH '
+                                                                                                                                                                                        'TLV '
+                                                                                                                                                                                        'الحالي '
+                                                                                                                                                                                        'قبل '
+                                                                                                                                                                                        'الاعتماد '
+                                                                                                                                                                                        'عليه '
+                                                                                                                                                                                        'في '
+                                                                                                                                                                                        'قرار '
+                                                                                                                                                                                        'امتثال '
+                                                                                                                                                                                        'فعلي.',
+ 'Invalid input values:': 'قيم إدخال غير صالحة:',
+ 'Recommended ratio': 'النسبة الموصى بها',
+ 'STOP WORK': 'أوقف العمل',
+ "Supplements (never replaces) this module's own risk assessment above.": 'يُكمّل (ولا يحل محل أبداً) تقييم '
+                                                                          'المخاطر الخاص بهذه الوحدة أعلاه.',
+ 'WBGT effective': 'WBGT الفعلي',
+ 'streamlit-js-eval is not installed - geolocation is unavailable. Add it to requirements.txt to enable this section.': 'streamlit-js-eval '
+                                                                                                                        'غير '
+                                                                                                                        'مثبت '
+                                                                                                                        '- '
+                                                                                                                        'تحديد '
+                                                                                                                        'الموقع '
+                                                                                                                        'الجغرافي '
+                                                                                                                        'غير '
+                                                                                                                        'متاح. '
+                                                                                                                        'أضفه '
+                                                                                                                        'إلى '
+                                                                                                                        'requirements.txt '
+                                                                                                                        'لتفعيل '
+                                                                                                                        'هذا '
+                                                                                                                        'القسم.',
+ '⚠️ STOP WORK: no compliant work/rest ratio exists for this workload/clothing/acclimatization combination, even at 25/75.': '⚠️ '
+                                                                                                                             'أوقف '
+                                                                                                                             'العمل: '
+                                                                                                                             'لا '
+                                                                                                                             'توجد '
+                                                                                                                             'نسبة '
+                                                                                                                             'عمل/راحة '
+                                                                                                                             'متوافقة '
+                                                                                                                             'لهذا '
+                                                                                                                             'المزيج '
+                                                                                                                             'من '
+                                                                                                                             'عبء '
+                                                                                                                             'العمل/الملابس/التأقلم، '
+                                                                                                                             'حتى '
+                                                                                                                             'عند '
+                                                                                                                             '25/75.',
+ '⚠️ STOP WORK: vapor-barrier PPE requires direct physiological monitoring, not a WBGT table lookup alone.': '⚠️ '
+                                                                                                             'أوقف '
+                                                                                                             'العمل: '
+                                                                                                             'معدات '
+                                                                                                             'الوقاية '
+                                                                                                             'الحاجزة '
+                                                                                                             'للبخار '
+                                                                                                             'تتطلب '
+                                                                                                             'مراقبة '
+                                                                                                             'فسيولوجية '
+                                                                                                             'مباشرة، '
+                                                                                                             'وليس '
+                                                                                                             'مجرد '
+                                                                                                             'الرجوع '
+                                                                                                             'إلى '
+                                                                                                             'جدول '
+                                                                                                             'WBGT.'}

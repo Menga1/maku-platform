@@ -530,3 +530,322 @@ ENGINE_TEMPLATES = {
     "arc_flash_ppe": "活線作業用アークフラッシュ保護具: {0} (出典: {1})",
     "work_rest": "{0} の作業/休憩サイクルを適用し、この作業負荷と服装で ACGIH TLV のアクションリミット内に収めること",
 }
+
+INLINE = {'Measuring equipment / Sensor model (optional)': '測定機器 / センサーの型番 (任意)',
+ 'e.g. Kestrel 5400 Heat Stress Tracker, black-globe thermometer, Class 2 sound level meter...': '例: Kestrel '
+                                                                                                 '5400 Heat '
+                                                                                                 'Stress '
+                                                                                                 'Tracker、黒球温度計、クラス '
+                                                                                                 '2 騒音計...',
+ '+ New organization...': '+ 新しい組織...',
+ 'Open sea / coast - ASCE D (α 0.11)': '外洋 / 海岸 - ASCE D (α 0.11)',
+ 'Open country - ASCE C (α 0.15)': '開けた土地 - ASCE C (α 0.15)',
+ 'Urban / suburban - ASCE B (α 0.25)': '市街地 / 郊外 - ASCE B (α 0.25)',
+ 'Dense city centre (α 0.33)': '密集した都心部 (α 0.33)',
+ 'Terrain roughness': '地表面粗度',
+ 'Floor-to-floor height (m)': '階高 (m)',
+ 'Wind measured at working height': '作業高さで測定した風速',
+ "Best source first: (1) the equipment's arc-flash label, (2) a Lee screening calculation from fault data, (3) unknown - MAKU never invents a value.": '最適なソースを優先: '
+                                                                                                                                                       '(1) '
+                                                                                                                                                       '機器のアークフラッシュラベル、(2) '
+                                                                                                                                                       '故障データに基づく '
+                                                                                                                                                       'Lee '
+                                                                                                                                                       '法のスクリーニング計算、(3) '
+                                                                                                                                                       '不明 '
+                                                                                                                                                       '- '
+                                                                                                                                                       'MAKU '
+                                                                                                                                                       'が値を作り出すことはありません。',
+ 'Source': 'ソース',
+ 'Cold-aisle setpoint (°C)': 'コールドアイル設定値 (°C)',
+ 'Energized work planned': '活線作業の予定あり',
+ "🔒 AI briefings are off (your privacy choices). Turn them on under 'My account'.": '🔒 AI ブリーフィングはオフです '
+                                                                                    '(プライバシー設定)。「マイアカウント」でオンにしてください。',
+ 'Your account is not a member of any organization yet. Ask your MAKU administrator to add you to your organization. The My account page is still available.': 'あなたのアカウントはまだどの組織にも所属していません。MAKU '
+                                                                                                                                                               'の管理者に組織への追加を依頼してください。「マイアカウント」ページは引き続き利用できます。',
+ 'Read-only: assessments are not saved.': '閲覧のみ: 評価は保存されません。',
+ 'One vectorized NumPy/Pandas batch calculation across every site, instead of one function call per site - a performance optimization.': 'サイトごとに関数を呼び出す代わりに、全サイトを '
+                                                                                                                                         'NumPy/Pandas '
+                                                                                                                                         'のベクトル化バッチで一度に計算します '
+                                                                                                                                         '- '
+                                                                                                                                         'パフォーマンス最適化のためです。',
+ "📍 Location is off (your privacy choices). Turn it on under 'My account' to use GPS and automatic country detection.": '📍 '
+                                                                                                                        '位置情報はオフです '
+                                                                                                                        '(プライバシー設定)。GPS '
+                                                                                                                        'と国の自動判定を使うには「マイアカウント」でオンにしてください。',
+ 'Photos attached to the PDF report': 'PDF レポートに添付された写真',
+ 'Remove photos': '写真を削除',
+ 'Get a notification when an assessment in your organisation triggers a safety override.': '組織内の評価が安全停止を発動したときに通知を受け取ります。',
+ 'Turn on for this phone': 'この電話でオンにする',
+ 'Durable (SQLite) history of critical/warning alerts fired by every module, including worker physiological strain.': '全モジュールが発した危険/警告アラートの永続的な '
+                                                                                                                      '(SQLite) '
+                                                                                                                      '履歴。作業者の生理的負担を含みます。',
+ 'Measured hook / floor wind (kn)': 'フック / 階での実測風速 (ノット)',
+ 'Arc-flash incident energy': 'アークフラッシュ入射エネルギー',
+ 'Incident energy on the label (cal/cm²)': 'ラベル記載の入射エネルギー (cal/cm²)',
+ 'Server-configured API key in use (no entry required).': 'サーバー設定の API キーを使用中 (入力不要)。',
+ 'AI advisory layer temporarily unavailable - showing the offline summary below.': 'AI アドバイザリー機能が一時的に利用できません '
+                                                                                   '- 下にオフラインの要約を表示しています。',
+ 'Multi-Site Overview (vectorized batch)': '複数サイトの概要 (ベクトル化バッチ)',
+ 'Use phone GPS': 'スマートフォンの GPS を使用',
+ 'Take site photo': '現場の写真を撮影',
+ 'Alerts turned on.': 'アラートをオンにしました。',
+ "Notifications are off - turn them on in the phone's Settings.": '通知はオフです - スマートフォンの設定でオンにしてください。',
+ 'Site Alert Log': '現場アラートログ',
+ '7-Day Meteorology Forecast': '7 日間の気象予報',
+ 'e.g. 6.4': '例: 6.4',
+ 'Voltage (kV)': '電圧 (kV)',
+ 'Bolted fault current (kA)': '三相短絡電流 (kA)',
+ 'Clearing time (s)': '遮断時間 (s)',
+ 'Working distance (mm)': '作業距離 (mm)',
+ 'Unknown': '不明',
+ '⚡ Incident energy unknown: no energized work until the equipment label or an arc-flash study (IEEE 1584) confirms the incident energy and the required arc rating.': '⚡ '
+                                                                                                                                                                       '入射エネルギー不明: '
+                                                                                                                                                                       '機器のラベルまたはアークフラッシュ評価 '
+                                                                                                                                                                       '(IEEE '
+                                                                                                                                                                       '1584) '
+                                                                                                                                                                       'で入射エネルギーと必要なアーク定格が確認されるまで、活線作業は行わないこと。',
+ 'Access to this organization is denied.': 'この組織へのアクセスは拒否されました。',
+ 'Your role: ': 'あなたのロール: ',
+ 'Camera open…': 'カメラ起動中…',
+ 'Stop-work alerts': '作業停止アラート',
+ 'Stop-work alerts go to members of the organization only.': '作業停止アラートは組織のメンバーにのみ送信されます。',
+ 'Could not register this device.': 'このデバイスを登録できませんでした。',
+ 'Live weather unavailable - verify conditions on site.': 'ライブ気象データを利用できません - 現場で状況を確認してください。',
+ ' (context only)': ' (参考のみ)',
+ 'Recorded for the report only - load is not used in the arc-flash calculation.': 'レポート用にのみ記録 - '
+                                                                                  '負荷はアークフラッシュ計算には使用されません。',
+ 'Platform administrator': 'プラットフォーム管理者',
+ 'Organization admin': '組織管理者',
+ 'Supervisor': '監督者',
+ 'Viewer (read-only)': '閲覧者 (閲覧のみ)',
+ 'Camera unavailable.': 'カメラを利用できません。',
+ 'Equipment arc-flash label': '機器のアークフラッシュラベル',
+ 'Lee calculation (voltage, fault current, clearing time)': 'Lee 法による計算 (電圧、故障電流、遮断時間)',
+ 'Unknown / not yet studied': '不明 / 未評価',
+ 'Alert shown but NOT recorded in the alert log.': 'アラートは表示されましたが、アラートログには記録されていません。',
+ 'New organization name': '新しい組織の名前',
+ "MAKU processes your data under the GDPR and the UAE PDPL. Make your choices below; you can change them at any time under 'My account'.": 'MAKU '
+                                                                                                                                           'は '
+                                                                                                                                           'GDPR '
+                                                                                                                                           'および '
+                                                                                                                                           'UAE '
+                                                                                                                                           'の '
+                                                                                                                                           'PDPL '
+                                                                                                                                           'に従ってお客様のデータを取り扱います。以下で選択してください。選択内容は「マイアカウント」でいつでも変更できます。',
+ 'A JSON copy of all personal data linked to your account (GDPR Art. 15/20).': 'アカウントに関連付けられたすべての個人データの JSON '
+                                                                               'コピー (GDPR 第 15/20 条)。',
+ 'Prepare export': 'エクスポートを準備',
+ 'Permanently deletes your account, your consent records and every assessment you ran. Time-stamped security log entries are retained as described in the privacy policy. This cannot be undone.': 'アカウント、同意の記録、実行したすべての評価を完全に削除します。タイムスタンプ付きのセキュリティログはプライバシーポリシーの記載どおり保持されます。この操作は元に戻せません。',
+ 'A user only sees and changes data of the organizations they are a member of.': 'ユーザーは自分が所属する組織のデータのみ閲覧・変更できます。',
+ 'viewer - read only': 'viewer - 閲覧のみ',
+ 'supervisor - runs assessments': 'supervisor - 評価を実行',
+ 'org_admin - manages the organization': 'org_admin - 組織を管理',
+ 'Your privacy choices': 'プライバシー設定',
+ 'Save and continue': '保存して続行',
+ 'My account': 'マイアカウント',
+ 'Privacy and consent': 'プライバシーと同意',
+ 'Export my data': 'データをエクスポート',
+ 'This account is managed by the deployment configuration. Contact your MAKU administrator to change or delete it.': 'このアカウントはデプロイ設定で管理されています。変更または削除するには '
+                                                                                                                     'MAKU '
+                                                                                                                     'の管理者に連絡してください。',
+ 'Change password': 'パスワードを変更',
+ 'Current password': '現在のパスワード',
+ 'New password': '新しいパスワード',
+ 'Confirm new password': '新しいパスワード (確認)',
+ 'Update password': 'パスワードを更新',
+ 'Delete my account': 'アカウントを削除',
+ 'Type your username to confirm': '確認のためユーザー名を入力',
+ 'Password': 'パスワード',
+ 'Delete permanently': '完全に削除',
+ 'Users': 'ユーザー',
+ 'Administrators only.': '管理者専用です。',
+ 'No database accounts yet.': 'データベースのアカウントはまだありません。',
+ 'Create account': 'アカウントを作成',
+ 'Username': 'ユーザー名',
+ 'Email (optional)': 'メールアドレス (任意)',
+ 'Role': 'ロール',
+ 'Initial password': '初期パスワード',
+ 'Create': '作成',
+ 'Organizations and members': '組織とメンバー',
+ 'New organization': '新しい組織',
+ 'Organization': '組織',
+ 'Add / change role': '追加 / ロールを変更',
+ 'Remove from organization': '組織から削除',
+ 'Privacy policy': 'プライバシーポリシー',
+ 'Signed in as': 'ログイン中のユーザー',
+ 'role': 'ロール',
+ 'Read the privacy policy': 'プライバシーポリシーを読む',
+ 'Download (JSON)': 'ダウンロード (JSON)',
+ 'Database unavailable.': 'データベースを利用できません。',
+ 'Create organization': '組織を作成',
+ 'Export unavailable right now.': '現在エクスポートを利用できません。',
+ 'Passwords do not match.': 'パスワードが一致しません。',
+ 'Username does not match.': 'ユーザー名が一致しません。',
+ 'Could not save your choices right now. Please try again.': '現在、選択内容を保存できません。もう一度お試しください。',
+ 'Preference saved': '設定を保存しました',
+ 'Could not save. Please retry.': '保存できませんでした。もう一度お試しください。',
+ 'Password updated.': 'パスワードを更新しました。',
+ 'Account created: ': 'アカウントを作成しました: ',
+ 'Organization created: ': '組織を作成しました: ',
+ 'Service unavailable.': 'サービスを利用できません。',
+ 'Service unavailable - nothing was deleted.': 'サービスを利用できません - 何も削除されていません。',
+ 'Membership saved: ': 'メンバーシップを保存しました: ',
+ 'No such membership.': '該当するメンバーシップはありません。',
+ 'Removed: ': '削除しました: ',
+ 'Regulatory threshold legend': '規制しきい値の凡例',
+ 'Risk Matrix (calculation transparency)': 'リスクマトリクス (計算の透明性)',
+ 'Formula: Score = Likelihood (1-5) x Severity (1-5)': '計算式: スコア = 発生可能性 (1-5) x 重大性 (1-5)',
+ 'Controls applied on site': '現場で実施した対策',
+ 'Select which of the controls above have actually been implemented, to calculate residual risk.': '残留リスクを計算するため、上記の対策のうち実際に実施したものを選択してください。',
+ 'Initial Risk -> Applied Controls -> Residual Risk': '初期リスク -> 実施した対策 -> 残留リスク',
+ 'Stop-Work Trigger Registry': '作業停止条件の一覧',
+ 'Regulatory Algorithm Validation': '規制アルゴリズムの検証',
+ 'These values come from a simulator or demonstration dataset - they are NOT real measurements. Measure on site before making any decision.': 'これらの値はシミュレーターまたはデモ用データセットによるもので、実測値ではありません。判断を下す前に現場で測定してください。',
+ '<tr><th>Hazard</th><th>Likelihood</th><th>Severity</th><th>Score</th><th>Band</th><th>Note</th></tr>': '<tr><th>ハザード</th><th>発生可能性</th><th>重大性</th><th>スコア</th><th>区分</th><th>備考</th></tr>',
+ 'Overall score (worst hazard governs)': '総合スコア (最も重大なハザードで決定)',
+ '<tr><th>Module</th><th>Trigger condition</th><th>Threshold</th><th>Source constant</th></tr>': '<tr><th>モジュール</th><th>発動条件</th><th>しきい値</th><th>出典定数</th></tr>',
+ '<tr><th>Formula</th><th>Cited standard(s)</th><th>Status</th><th>Caveat</th></tr>': '<tr><th>計算式</th><th>引用規格</th><th>ステータス</th><th>注意事項</th></tr>',
+ 'The live data feed is unavailable - enter measured values manually below before running the assessment.': 'ライブデータが利用できません '
+                                                                                                            '- '
+                                                                                                            '評価を実行する前に、下に実測値を手動で入力してください。',
+ 'The configured production database (Postgres/Supabase) is unreachable. All writes are frozen - no data is being silently redirected to ephemeral local storage. Contact an administrator.': '設定された本番データベース '
+                                                                                                                                                                                              '(Postgres/Supabase) '
+                                                                                                                                                                                              'に接続できません。すべての書き込みは停止しています '
+                                                                                                                                                                                              '- '
+                                                                                                                                                                                              'データが一時的なローカルストレージに黙って転送されることはありません。管理者に連絡してください。',
+ 'Free, legally accessible resources. MAKU reproduces no copyrighted content - these links go to the official sources.': '無料で合法的に利用できる資料です。MAKU '
+                                                                                                                         'は著作権で保護されたコンテンツを複製しません '
+                                                                                                                         '- '
+                                                                                                                         'これらのリンクは公式の情報源につながります。',
+ "For copyrighted texts (e.g. Brauer's *Safety and Health for Engineers*), purchase them or check your institutional library - see the Further Reading section of the official report.": '著作権で保護された文献 '
+                                                                                                                                                                                         '(例: '
+                                                                                                                                                                                         'Brauer '
+                                                                                                                                                                                         'の '
+                                                                                                                                                                                         '*Safety '
+                                                                                                                                                                                         'and '
+                                                                                                                                                                                         'Health '
+                                                                                                                                                                                         'for '
+                                                                                                                                                                                         'Engineers*) '
+                                                                                                                                                                                         'は購入するか、所属機関の図書館で確認してください '
+                                                                                                                                                                                         '- '
+                                                                                                                                                                                         '正式レポートの「参考文献」セクションを参照してください。',
+ '🔎 Live legislation search (extra API cost)': '🔎 法令のライブ検索 (追加の API 費用)',
+ 'Upload a previous log (CSV) to merge': '統合する過去のログ (CSV) をアップロード',
+ '📄 Download PDF': '📄 PDF をダウンロード',
+ '🌐 Download HTML': '🌐 HTML をダウンロード',
+ 'Band': '区分',
+ 'Governing hazard': '支配的ハザード',
+ 'Initial risk': '初期リスク',
+ 'Residual risk': '残留リスク',
+ 'No controls selected yet - residual risk equals initial risk.': '対策がまだ選択されていません - 残留リスクは初期リスクと同じです。',
+ 'The exact numeric thresholds that force a mandatory stop-work condition (safety_override), with the named source constant in code each threshold comes from.': '作業停止 '
+                                                                                                                                                                 '(safety_override) '
+                                                                                                                                                                 'を強制する正確な数値しきい値と、各しきい値の出典となるコード内の定数名。',
+ 'Every scoring formula mapped against its claimed standard, with an honest status: direct implementation, adapted/approximated, or illustrative (not standards-derived).': '各スコア計算式を根拠とする規格と照合し、直接実装・調整/近似・例示 '
+                                                                                                                                                                            '(規格由来ではない) '
+                                                                                                                                                                            'のいずれかを正直に示します。',
+ '**MAKU is temporarily unavailable.** The production database is not answering or is not configured correctly. No assessment can be saved, and nothing is being saved anywhere else. The administrator has been alerted through the server log. Please try again in a few minutes.': '**MAKU '
+                                                                                                                                                                                                                                                                                      'は一時的に利用できません。** '
+                                                                                                                                                                                                                                                                                      '本番データベースが応答しないか、正しく設定されていません。評価は保存できず、他の場所にも保存されません。管理者にはサーバーログで通知済みです。数分後にもう一度お試しください。',
+ 'Demo - data is not kept.': 'デモ - データは保持されません。',
+ 'HSE Virtual Library': 'HSE バーチャルライブラリ',
+ 'Lets Claude search the web live to check applicable legislation, on top of the verified references below. Uses your existing API key.': '下記の検証済み参考資料に加えて、Claude '
+                                                                                                                                          'がウェブをライブ検索し、適用される法令を確認できるようにします。既存の '
+                                                                                                                                          'API '
+                                                                                                                                          'キーを使用します。',
+ 'Trend Analysis & Monthly Report': '傾向分析と月次レポート',
+ "This session's assessment log only (Streamlit Cloud has no persistent database). Download the CSV periodically and re-upload it in a future session to build a multi-month history.": 'このセッションの評価ログのみです '
+                                                                                                                                                                                        '(Streamlit '
+                                                                                                                                                                                        'Cloud '
+                                                                                                                                                                                        'には永続的なデータベースがありません)。定期的に '
+                                                                                                                                                                                        'CSV '
+                                                                                                                                                                                        'をダウンロードし、後のセッションで再アップロードすると、数か月分の履歴を作成できます。',
+ 'No assessments logged yet this session - run an assessment on any module to start building the log.': 'このセッションではまだ評価が記録されていません '
+                                                                                                        '- '
+                                                                                                        'いずれかのモジュールで評価を実行するとログが始まります。',
+ 'assessment(s) logged this session': '件の評価がこのセッションで記録されました',
+ '⬇️ Download log (CSV)': '⬇️ ログをダウンロード (CSV)',
+ '📊 Monthly Excel Report': '📊 月次 Excel レポート',
+ 'Monthly summary': '月次サマリー',
+ "The selected controls don't address any assessed hazard, so no reduction is credited.": '選択した対策は評価対象のハザードに該当しないため、リスク低減は計上されません。',
+ 'No accessible organization - the log is not available.': 'アクセスできる組織がありません - ログは利用できません。',
+ "Method {version}: a control only reduces the hazards it addresses. Elimination (stop work, de-energize, evacuate) → likelihood 'rare'; engineering, administrative, PPE → −1 each. Severity is never reduced.": '方法 '
+                                                                                                                                                                                                                  '{version}: '
+                                                                                                                                                                                                                  '対策が低減するのは対象とするハザードのみです。除去 '
+                                                                                                                                                                                                                  '(作業停止、遮断、退避) '
+                                                                                                                                                                                                                  '→ '
+                                                                                                                                                                                                                  '発生可能性「まれ」; '
+                                                                                                                                                                                                                  '工学的対策・管理的対策・保護具 '
+                                                                                                                                                                                                                  '→ '
+                                                                                                                                                                                                                  'それぞれ '
+                                                                                                                                                                                                                  '−1。重大性は低減されません。',
+ 'No effect on the assessed hazards: ': '評価対象のハザードへの効果なし: ',
+ 'Search books on this topic (Google Books)': 'このテーマの書籍を検索 (Google Books)',
+ 'Import NOT saved - the database is unavailable.': 'インポートは保存されていません - データベースを利用できません。',
+ 'Your role in this organization is read-only: import is not allowed.': 'この組織でのあなたのロールは閲覧のみです: '
+                                                                        'インポートは許可されていません。',
+ 'Merge failed: the file could not be read.': '統合に失敗しました: ファイルを読み込めませんでした。',
+ 'Share PDF': 'PDF を共有',
+ 'Freshness': '鮮度',
+ 'refreshed at least every {seconds}s while this page is open': 'このページを開いている間、少なくとも {seconds} 秒ごとに更新',
+ '{count} new row(s) merged.': '{count} 行の新しいデータを統合しました。',
+ 'Merge failed': '統合に失敗しました',
+ "MAKU HSE Decision-Support System — Results are intended for risk screening and decision support and do not replace a competent person's assessment, engineering analysis, statutory requirement, manufacturer instruction or formal specialist study.": 'MAKU '
+                                                                                                                                                                                                                                                          'HSE '
+                                                                                                                                                                                                                                                          '意思決定支援システム '
+                                                                                                                                                                                                                                                          '— '
+                                                                                                                                                                                                                                                          '結果はリスクのスクリーニングと意思決定支援を目的としたものであり、有資格者による評価、工学的分析、法令上の要件、メーカーの指示、または正式な専門調査に代わるものではありません。',
+ 'AI briefings (optional)': 'AI ブリーフィング (任意)',
+ 'Send the assessment results for this session (risk scores, module, site name, and anonymised worker-strain summaries) to Anthropic, PBC to generate a written AI briefing. No name, email or GPS coordinates are sent. Without consent you still get the full rule-based briefing.': 'このセッションの評価結果 '
+                                                                                                                                                                                                                                                                                       '(リスクスコア、モジュール、サイト名、匿名化された作業者の負担の要約) '
+                                                                                                                                                                                                                                                                                       'を '
+                                                                                                                                                                                                                                                                                       'Anthropic, '
+                                                                                                                                                                                                                                                                                       'PBC '
+                                                                                                                                                                                                                                                                                       'に送信し、文章による '
+                                                                                                                                                                                                                                                                                       'AI '
+                                                                                                                                                                                                                                                                                       'ブリーフィングを生成します。氏名、メールアドレス、GPS '
+                                                                                                                                                                                                                                                                                       '座標は送信されません。同意しなくても、ルールに基づく完全なブリーフィングを受け取れます。',
+ 'Location (optional)': '位置情報 (任意)',
+ "Use this device's GPS position (or, if GPS is denied, an approximate location from your IP address) to pick the nearest site, local weather and the applicable country regulations. Location is used for the current session only and is not stored.": 'このデバイスの '
+                                                                                                                                                                                                                                                         'GPS '
+                                                                                                                                                                                                                                                         '位置 '
+                                                                                                                                                                                                                                                         '(GPS '
+                                                                                                                                                                                                                                                         'が拒否された場合は '
+                                                                                                                                                                                                                                                         'IP '
+                                                                                                                                                                                                                                                         'アドレスからの概略位置) '
+                                                                                                                                                                                                                                                         'を使い、最寄りのサイト、現地の天気、適用される国の規制を選択します。位置情報は現在のセッションでのみ使用され、保存されません。',
+ 'Work clothes (baseline)': '作業服 (基準)',
+ 'SMS polypropylene coveralls': 'SMS ポリプロピレン製つなぎ',
+ 'Polyolefin coveralls': 'ポリオレフィン製つなぎ',
+ 'Double-layer woven coveralls': '二層織りのつなぎ',
+ 'Vapor-barrier coveralls (limited use)': '防湿型つなぎ (限定使用)',
+ '**Nothing was saved. Please try again in a few minutes.**': '**何も保存されていません。数分後にもう一度お試しください。**',
+ 'Assessment NOT saved - the database is unavailable.': '評価は保存されていません - データベースを利用できません。',
+ 'Commonly-cited approximation of the ACGIH TLV very_heavy/acclimatized figures - verify against the current ACGIH TLV booklet before relying on this for a real compliance decision.': 'ACGIH '
+                                                                                                                                                                                        'TLV '
+                                                                                                                                                                                        'の極重作業/暑熱順化済みの値として一般に引用される近似値です '
+                                                                                                                                                                                        '- '
+                                                                                                                                                                                        '実際のコンプライアンス判断に用いる前に、最新の '
+                                                                                                                                                                                        'ACGIH '
+                                                                                                                                                                                        'TLV '
+                                                                                                                                                                                        '冊子で確認してください。',
+ 'Invalid input values:': '無効な入力値:',
+ 'Recommended ratio': '推奨比率',
+ 'STOP WORK': '作業中止',
+ "Supplements (never replaces) this module's own risk assessment above.": 'このモジュール上部のリスク評価を補完します '
+                                                                          '(置き換えるものではありません)。',
+ 'WBGT effective': '実効 WBGT',
+ 'streamlit-js-eval is not installed - geolocation is unavailable. Add it to requirements.txt to enable this section.': 'streamlit-js-eval '
+                                                                                                                        'がインストールされていません '
+                                                                                                                        '- '
+                                                                                                                        '位置情報を利用できません。このセクションを有効にするには '
+                                                                                                                        'requirements.txt '
+                                                                                                                        'に追加してください。',
+ '⚠️ STOP WORK: no compliant work/rest ratio exists for this workload/clothing/acclimatization combination, even at 25/75.': '⚠️ '
+                                                                                                                             '作業中止: '
+                                                                                                                             'この作業負荷/服装/暑熱順化の組み合わせでは、25/75 '
+                                                                                                                             'であっても適合する作業/休憩比率がありません。',
+ '⚠️ STOP WORK: vapor-barrier PPE requires direct physiological monitoring, not a WBGT table lookup alone.': '⚠️ '
+                                                                                                             '作業中止: '
+                                                                                                             '防湿型保護具には直接の生理モニタリングが必要です。WBGT '
+                                                                                                             '表の参照だけでは不十分です。'}

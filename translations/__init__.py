@@ -100,3 +100,17 @@ def drivers_table(drivers: dict, lang: str, yes: str = "Yes", no: str = "No") ->
             shown = str(value)
         out[engine(key, lang)] = shown
     return out
+
+
+def inline(fr_text: str, en_text: str, lang: str) -> str:
+    """For interface text written directly in the code as a French/English
+    pair: French for "fr", otherwise the language's translation of the
+    English text (translations/<lang>.py INLINE), else English."""
+    if lang == "fr":
+        return fr_text
+    mod = _module(lang)
+    if mod is not None:
+        found = getattr(mod, "INLINE", {}).get(en_text)
+        if found is not None:
+            return found
+    return en_text

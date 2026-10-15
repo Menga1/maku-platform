@@ -530,3 +530,861 @@ ENGINE_TEMPLATES = {
     "arc_flash_ppe": "Ljusbågsskydd för arbete under spänning: {0} (källa: {1})",
     "work_rest": "Tillämpa en {0} arbets-/vilocykel för att hålla dig inom ACGIH TLV-åtgärdsgränsen för denna arbetsbelastning och klädsel",
 }
+
+INLINE = {'Measuring equipment / Sensor model (optional)': 'Mätutrustning / Sensormodell (valfritt)',
+ 'e.g. Kestrel 5400 Heat Stress Tracker, black-globe thermometer, Class 2 sound level meter...': 't.ex. '
+                                                                                                 'Kestrel '
+                                                                                                 '5400 Heat '
+                                                                                                 'Stress '
+                                                                                                 'Tracker, '
+                                                                                                 'globtermometer, '
+                                                                                                 'ljudnivåmätare '
+                                                                                                 'klass 2...',
+ '+ New organization...': '+ Ny organisation...',
+ 'Open sea / coast - ASCE D (α 0.11)': 'Öppet hav / kust - ASCE D (α 0.11)',
+ 'Open country - ASCE C (α 0.15)': 'Öppen terräng - ASCE C (α 0.15)',
+ 'Urban / suburban - ASCE B (α 0.25)': 'Stad / förort - ASCE B (α 0.25)',
+ 'Dense city centre (α 0.33)': 'Tät stadskärna (α 0.33)',
+ 'Terrain roughness': 'Terrängens råhet',
+ 'Floor-to-floor height (m)': 'Våningshöjd (m)',
+ 'Wind measured at working height': 'Vind uppmätt på arbetshöjd',
+ "Best source first: (1) the equipment's arc-flash label, (2) a Lee screening calculation from fault data, (3) unknown - MAKU never invents a value.": 'Bästa '
+                                                                                                                                                       'källan '
+                                                                                                                                                       'först: '
+                                                                                                                                                       '(1) '
+                                                                                                                                                       'utrustningens '
+                                                                                                                                                       'ljusbågsetikett, '
+                                                                                                                                                       '(2) '
+                                                                                                                                                       'en '
+                                                                                                                                                       'Lee-screeningberäkning '
+                                                                                                                                                       'utifrån '
+                                                                                                                                                       'feldata, '
+                                                                                                                                                       '(3) '
+                                                                                                                                                       'okänd '
+                                                                                                                                                       '- '
+                                                                                                                                                       'MAKU '
+                                                                                                                                                       'hittar '
+                                                                                                                                                       'aldrig '
+                                                                                                                                                       'på '
+                                                                                                                                                       'ett '
+                                                                                                                                                       'värde.',
+ 'Source': 'Källa',
+ 'Cold-aisle setpoint (°C)': 'Börvärde för kall gång (°C)',
+ 'Energized work planned': 'Arbete under spänning planerat',
+ "🔒 AI briefings are off (your privacy choices). Turn them on under 'My account'.": '🔒 AI-genomgångar är '
+                                                                                    'avstängda (dina '
+                                                                                    'integritetsval). Slå på '
+                                                                                    "dem under 'Mitt konto'.",
+ 'Your account is not a member of any organization yet. Ask your MAKU administrator to add you to your organization. The My account page is still available.': 'Ditt '
+                                                                                                                                                               'konto '
+                                                                                                                                                               'är '
+                                                                                                                                                               'ännu '
+                                                                                                                                                               'inte '
+                                                                                                                                                               'medlem '
+                                                                                                                                                               'i '
+                                                                                                                                                               'någon '
+                                                                                                                                                               'organisation. '
+                                                                                                                                                               'Be '
+                                                                                                                                                               'din '
+                                                                                                                                                               'MAKU-administratör '
+                                                                                                                                                               'att '
+                                                                                                                                                               'lägga '
+                                                                                                                                                               'till '
+                                                                                                                                                               'dig '
+                                                                                                                                                               'i '
+                                                                                                                                                               'din '
+                                                                                                                                                               'organisation. '
+                                                                                                                                                               'Sidan '
+                                                                                                                                                               'Mitt '
+                                                                                                                                                               'konto '
+                                                                                                                                                               'är '
+                                                                                                                                                               'fortfarande '
+                                                                                                                                                               'tillgänglig.',
+ 'Read-only: assessments are not saved.': 'Endast läsning: bedömningar sparas inte.',
+ 'One vectorized NumPy/Pandas batch calculation across every site, instead of one function call per site - a performance optimization.': 'En '
+                                                                                                                                         'enda '
+                                                                                                                                         'vektoriserad '
+                                                                                                                                         'NumPy/Pandas-batchberäkning '
+                                                                                                                                         'för '
+                                                                                                                                         'alla '
+                                                                                                                                         'platser '
+                                                                                                                                         'i '
+                                                                                                                                         'stället '
+                                                                                                                                         'för '
+                                                                                                                                         'ett '
+                                                                                                                                         'funktionsanrop '
+                                                                                                                                         'per '
+                                                                                                                                         'plats '
+                                                                                                                                         '- '
+                                                                                                                                         'en '
+                                                                                                                                         'prestandaoptimering.',
+ "📍 Location is off (your privacy choices). Turn it on under 'My account' to use GPS and automatic country detection.": '📍 '
+                                                                                                                        'Plats '
+                                                                                                                        'är '
+                                                                                                                        'avstängd '
+                                                                                                                        '(dina '
+                                                                                                                        'integritetsval). '
+                                                                                                                        'Slå '
+                                                                                                                        'på '
+                                                                                                                        'den '
+                                                                                                                        'under '
+                                                                                                                        "'Mitt "
+                                                                                                                        "konto' "
+                                                                                                                        'för '
+                                                                                                                        'att '
+                                                                                                                        'använda '
+                                                                                                                        'GPS '
+                                                                                                                        'och '
+                                                                                                                        'automatisk '
+                                                                                                                        'landsidentifiering.',
+ 'Photos attached to the PDF report': 'Foton bifogade till PDF-rapporten',
+ 'Remove photos': 'Ta bort foton',
+ 'Get a notification when an assessment in your organisation triggers a safety override.': 'Få en avisering '
+                                                                                           'när en bedömning '
+                                                                                           'i din '
+                                                                                           'organisation '
+                                                                                           'utlöser ett '
+                                                                                           'säkerhetsstopp.',
+ 'Turn on for this phone': 'Aktivera på den här telefonen',
+ 'Durable (SQLite) history of critical/warning alerts fired by every module, including worker physiological strain.': 'Beständig '
+                                                                                                                      '(SQLite) '
+                                                                                                                      'historik '
+                                                                                                                      'över '
+                                                                                                                      'kritiska '
+                                                                                                                      'larm/varningslarm '
+                                                                                                                      'från '
+                                                                                                                      'alla '
+                                                                                                                      'moduler, '
+                                                                                                                      'inklusive '
+                                                                                                                      'arbetstagarnas '
+                                                                                                                      'fysiologiska '
+                                                                                                                      'belastning.',
+ 'Measured hook / floor wind (kn)': 'Uppmätt vind vid krok / våning (knop)',
+ 'Arc-flash incident energy': 'Infallande ljusbågsenergi',
+ 'Incident energy on the label (cal/cm²)': 'Infallande energi enligt etikett (cal/cm²)',
+ 'Server-configured API key in use (no entry required).': 'Serverkonfigurerad API-nyckel används (ingen '
+                                                          'inmatning krävs).',
+ 'AI advisory layer temporarily unavailable - showing the offline summary below.': 'AI-rådgivningslagret är '
+                                                                                   'tillfälligt '
+                                                                                   'otillgängligt - '
+                                                                                   'offlinesammanfattningen '
+                                                                                   'visas nedan.',
+ 'Multi-Site Overview (vectorized batch)': 'Översikt över flera platser (vektoriserad batch)',
+ 'Use phone GPS': 'Använd telefonens GPS',
+ 'Take site photo': 'Ta foto av platsen',
+ 'Alerts turned on.': 'Larm aktiverade.',
+ "Notifications are off - turn them on in the phone's Settings.": 'Aviseringar är avstängda - slå på dem i '
+                                                                  'telefonens inställningar.',
+ 'Site Alert Log': 'Platsens larmlogg',
+ '7-Day Meteorology Forecast': 'Väderprognos för 7 dagar',
+ 'e.g. 6.4': 't.ex. 6.4',
+ 'Voltage (kV)': 'Spänning (kV)',
+ 'Bolted fault current (kA)': 'Kortslutningsström vid fast fel (kA)',
+ 'Clearing time (s)': 'Brytningstid (s)',
+ 'Working distance (mm)': 'Arbetsavstånd (mm)',
+ 'Unknown': 'Okänd',
+ '⚡ Incident energy unknown: no energized work until the equipment label or an arc-flash study (IEEE 1584) confirms the incident energy and the required arc rating.': '⚡ '
+                                                                                                                                                                       'Infallande '
+                                                                                                                                                                       'energi '
+                                                                                                                                                                       'okänd: '
+                                                                                                                                                                       'inget '
+                                                                                                                                                                       'arbete '
+                                                                                                                                                                       'under '
+                                                                                                                                                                       'spänning '
+                                                                                                                                                                       'förrän '
+                                                                                                                                                                       'utrustningens '
+                                                                                                                                                                       'etikett '
+                                                                                                                                                                       'eller '
+                                                                                                                                                                       'en '
+                                                                                                                                                                       'ljusbågsstudie '
+                                                                                                                                                                       '(IEEE '
+                                                                                                                                                                       '1584) '
+                                                                                                                                                                       'bekräftar '
+                                                                                                                                                                       'infallande '
+                                                                                                                                                                       'energi '
+                                                                                                                                                                       'och '
+                                                                                                                                                                       'krävd '
+                                                                                                                                                                       'ljusbågsklassning.',
+ 'Access to this organization is denied.': 'Åtkomst till denna organisation nekad.',
+ 'Your role: ': 'Din roll: ',
+ 'Camera open…': 'Kameran öppen…',
+ 'Stop-work alerts': 'Larm om arbetsstopp',
+ 'Stop-work alerts go to members of the organization only.': 'Larm om arbetsstopp skickas endast till '
+                                                             'organisationens medlemmar.',
+ 'Could not register this device.': 'Den här enheten kunde inte registreras.',
+ 'Live weather unavailable - verify conditions on site.': 'Livevädret är inte tillgängligt - kontrollera '
+                                                          'förhållandena på plats.',
+ ' (context only)': ' (endast kontext)',
+ 'Recorded for the report only - load is not used in the arc-flash calculation.': 'Registreras endast för '
+                                                                                  'rapporten - lasten '
+                                                                                  'används inte i '
+                                                                                  'ljusbågsberäkningen.',
+ 'Platform administrator': 'Plattformsadministratör',
+ 'Organization admin': 'Organisationsadministratör',
+ 'Supervisor': 'Arbetsledare',
+ 'Viewer (read-only)': 'Läsare (endast läsning)',
+ 'Camera unavailable.': 'Kameran är inte tillgänglig.',
+ 'Equipment arc-flash label': 'Utrustningens ljusbågsetikett',
+ 'Lee calculation (voltage, fault current, clearing time)': 'Lee-beräkning (spänning, felström, '
+                                                            'brytningstid)',
+ 'Unknown / not yet studied': 'Okänd / ännu inte utredd',
+ 'Alert shown but NOT recorded in the alert log.': 'Larmet visades men registrerades INTE i larmloggen.',
+ 'New organization name': 'Namn på den nya organisationen',
+ "MAKU processes your data under the GDPR and the UAE PDPL. Make your choices below; you can change them at any time under 'My account'.": 'MAKU '
+                                                                                                                                           'behandlar '
+                                                                                                                                           'dina '
+                                                                                                                                           'uppgifter '
+                                                                                                                                           'enligt '
+                                                                                                                                           'GDPR '
+                                                                                                                                           'och '
+                                                                                                                                           'Förenade '
+                                                                                                                                           'Arabemiratens '
+                                                                                                                                           'PDPL. '
+                                                                                                                                           'Gör '
+                                                                                                                                           'dina '
+                                                                                                                                           'val '
+                                                                                                                                           'nedan; '
+                                                                                                                                           'du '
+                                                                                                                                           'kan '
+                                                                                                                                           'ändra '
+                                                                                                                                           'dem '
+                                                                                                                                           'när '
+                                                                                                                                           'som '
+                                                                                                                                           'helst '
+                                                                                                                                           'under '
+                                                                                                                                           "'Mitt "
+                                                                                                                                           "konto'.",
+ 'A JSON copy of all personal data linked to your account (GDPR Art. 15/20).': 'En JSON-kopia av alla '
+                                                                               'personuppgifter som är '
+                                                                               'kopplade till ditt konto '
+                                                                               '(GDPR art. 15/20).',
+ 'Prepare export': 'Förbered export',
+ 'Permanently deletes your account, your consent records and every assessment you ran. Time-stamped security log entries are retained as described in the privacy policy. This cannot be undone.': 'Raderar '
+                                                                                                                                                                                                   'permanent '
+                                                                                                                                                                                                   'ditt '
+                                                                                                                                                                                                   'konto, '
+                                                                                                                                                                                                   'dina '
+                                                                                                                                                                                                   'samtyckesposter '
+                                                                                                                                                                                                   'och '
+                                                                                                                                                                                                   'varje '
+                                                                                                                                                                                                   'bedömning '
+                                                                                                                                                                                                   'du '
+                                                                                                                                                                                                   'har '
+                                                                                                                                                                                                   'gjort. '
+                                                                                                                                                                                                   'Tidsstämplade '
+                                                                                                                                                                                                   'säkerhetsloggposter '
+                                                                                                                                                                                                   'bevaras '
+                                                                                                                                                                                                   'enligt '
+                                                                                                                                                                                                   'integritetspolicyn. '
+                                                                                                                                                                                                   'Detta '
+                                                                                                                                                                                                   'kan '
+                                                                                                                                                                                                   'inte '
+                                                                                                                                                                                                   'ångras.',
+ 'A user only sees and changes data of the organizations they are a member of.': 'En användare ser och '
+                                                                                 'ändrar bara data för de '
+                                                                                 'organisationer hen är '
+                                                                                 'medlem i.',
+ 'viewer - read only': 'viewer - endast läsning',
+ 'supervisor - runs assessments': 'supervisor - gör bedömningar',
+ 'org_admin - manages the organization': 'org_admin - administrerar organisationen',
+ 'Your privacy choices': 'Dina integritetsval',
+ 'Save and continue': 'Spara och fortsätt',
+ 'My account': 'Mitt konto',
+ 'Privacy and consent': 'Integritet och samtycke',
+ 'Export my data': 'Exportera mina uppgifter',
+ 'This account is managed by the deployment configuration. Contact your MAKU administrator to change or delete it.': 'Det '
+                                                                                                                     'här '
+                                                                                                                     'kontot '
+                                                                                                                     'hanteras '
+                                                                                                                     'via '
+                                                                                                                     'driftsättningens '
+                                                                                                                     'konfiguration. '
+                                                                                                                     'Kontakta '
+                                                                                                                     'din '
+                                                                                                                     'MAKU-administratör '
+                                                                                                                     'för '
+                                                                                                                     'att '
+                                                                                                                     'ändra '
+                                                                                                                     'eller '
+                                                                                                                     'radera '
+                                                                                                                     'det.',
+ 'Change password': 'Byt lösenord',
+ 'Current password': 'Nuvarande lösenord',
+ 'New password': 'Nytt lösenord',
+ 'Confirm new password': 'Bekräfta nytt lösenord',
+ 'Update password': 'Uppdatera lösenord',
+ 'Delete my account': 'Radera mitt konto',
+ 'Type your username to confirm': 'Skriv ditt användarnamn för att bekräfta',
+ 'Password': 'Lösenord',
+ 'Delete permanently': 'Radera permanent',
+ 'Users': 'Användare',
+ 'Administrators only.': 'Endast för administratörer.',
+ 'No database accounts yet.': 'Inga databaskonton ännu.',
+ 'Create account': 'Skapa konto',
+ 'Username': 'Användarnamn',
+ 'Email (optional)': 'E-post (valfritt)',
+ 'Role': 'Roll',
+ 'Initial password': 'Startlösenord',
+ 'Create': 'Skapa',
+ 'Organizations and members': 'Organisationer och medlemmar',
+ 'New organization': 'Ny organisation',
+ 'Organization': 'Organisation',
+ 'Add / change role': 'Lägg till / ändra roll',
+ 'Remove from organization': 'Ta bort från organisationen',
+ 'Privacy policy': 'Integritetspolicy',
+ 'Signed in as': 'Inloggad som',
+ 'role': 'roll',
+ 'Read the privacy policy': 'Läs integritetspolicyn',
+ 'Download (JSON)': 'Ladda ner (JSON)',
+ 'Database unavailable.': 'Databasen är inte tillgänglig.',
+ 'Create organization': 'Skapa organisation',
+ 'Export unavailable right now.': 'Exporten är inte tillgänglig just nu.',
+ 'Passwords do not match.': 'Lösenorden matchar inte.',
+ 'Username does not match.': 'Användarnamnet matchar inte.',
+ 'Could not save your choices right now. Please try again.': 'Dina val kunde inte sparas just nu. Försök '
+                                                             'igen.',
+ 'Preference saved': 'Inställning sparad',
+ 'Could not save. Please retry.': 'Kunde inte spara. Försök igen.',
+ 'Password updated.': 'Lösenordet har uppdaterats.',
+ 'Account created: ': 'Konto skapat: ',
+ 'Organization created: ': 'Organisation skapad: ',
+ 'Service unavailable.': 'Tjänsten är inte tillgänglig.',
+ 'Service unavailable - nothing was deleted.': 'Tjänsten är inte tillgänglig - inget har raderats.',
+ 'Membership saved: ': 'Medlemskap sparat: ',
+ 'No such membership.': 'Medlemskapet finns inte.',
+ 'Removed: ': 'Borttagen: ',
+ 'Regulatory threshold legend': 'Förklaring av regulatoriska gränsvärden',
+ 'Risk Matrix (calculation transparency)': 'Riskmatris (beräkningens transparens)',
+ 'Formula: Score = Likelihood (1-5) x Severity (1-5)': 'Formel: Poäng = Sannolikhet (1-5) x Allvarlighet '
+                                                       '(1-5)',
+ 'Controls applied on site': 'Åtgärder som tillämpats på plats',
+ 'Select which of the controls above have actually been implemented, to calculate residual risk.': 'Välj '
+                                                                                                   'vilka av '
+                                                                                                   'åtgärderna '
+                                                                                                   'ovan som '
+                                                                                                   'faktiskt '
+                                                                                                   'har '
+                                                                                                   'genomförts, '
+                                                                                                   'för att '
+                                                                                                   'beräkna '
+                                                                                                   'kvarstående '
+                                                                                                   'risk.',
+ 'Initial Risk -> Applied Controls -> Residual Risk': 'Initial risk -> Tillämpade åtgärder -> Kvarstående '
+                                                      'risk',
+ 'Stop-Work Trigger Registry': 'Register över villkor för arbetsstopp',
+ 'Regulatory Algorithm Validation': 'Validering av regulatoriska algoritmer',
+ 'These values come from a simulator or demonstration dataset - they are NOT real measurements. Measure on site before making any decision.': 'Dessa '
+                                                                                                                                              'värden '
+                                                                                                                                              'kommer '
+                                                                                                                                              'från '
+                                                                                                                                              'en '
+                                                                                                                                              'simulator '
+                                                                                                                                              'eller '
+                                                                                                                                              'ett '
+                                                                                                                                              'demonstrationsdataset '
+                                                                                                                                              '- '
+                                                                                                                                              'de '
+                                                                                                                                              'är '
+                                                                                                                                              'INTE '
+                                                                                                                                              'verkliga '
+                                                                                                                                              'mätningar. '
+                                                                                                                                              'Mät '
+                                                                                                                                              'på '
+                                                                                                                                              'plats '
+                                                                                                                                              'innan '
+                                                                                                                                              'du '
+                                                                                                                                              'fattar '
+                                                                                                                                              'något '
+                                                                                                                                              'beslut.',
+ '<tr><th>Hazard</th><th>Likelihood</th><th>Severity</th><th>Score</th><th>Band</th><th>Note</th></tr>': '<tr><th>Fara</th><th>Sannolikhet</th><th>Allvarlighet</th><th>Poäng</th><th>Nivå</th><th>Anmärkning</th></tr>',
+ 'Overall score (worst hazard governs)': 'Totalpoäng (den allvarligaste faran styr)',
+ '<tr><th>Module</th><th>Trigger condition</th><th>Threshold</th><th>Source constant</th></tr>': '<tr><th>Modul</th><th>Utlösande '
+                                                                                                 'villkor</th><th>Gränsvärde</th><th>Källkonstant</th></tr>',
+ '<tr><th>Formula</th><th>Cited standard(s)</th><th>Status</th><th>Caveat</th></tr>': '<tr><th>Formel</th><th>Angiven(a) '
+                                                                                      'standard(er)</th><th>Status</th><th>Förbehåll</th></tr>',
+ 'The live data feed is unavailable - enter measured values manually below before running the assessment.': 'Livedataströmmen '
+                                                                                                            'är '
+                                                                                                            'inte '
+                                                                                                            'tillgänglig '
+                                                                                                            '- '
+                                                                                                            'ange '
+                                                                                                            'uppmätta '
+                                                                                                            'värden '
+                                                                                                            'manuellt '
+                                                                                                            'nedan '
+                                                                                                            'innan '
+                                                                                                            'du '
+                                                                                                            'kör '
+                                                                                                            'bedömningen.',
+ 'The configured production database (Postgres/Supabase) is unreachable. All writes are frozen - no data is being silently redirected to ephemeral local storage. Contact an administrator.': 'Den '
+                                                                                                                                                                                              'konfigurerade '
+                                                                                                                                                                                              'produktionsdatabasen '
+                                                                                                                                                                                              '(Postgres/Supabase) '
+                                                                                                                                                                                              'går '
+                                                                                                                                                                                              'inte '
+                                                                                                                                                                                              'att '
+                                                                                                                                                                                              'nå. '
+                                                                                                                                                                                              'Alla '
+                                                                                                                                                                                              'skrivningar '
+                                                                                                                                                                                              'är '
+                                                                                                                                                                                              'frysta '
+                                                                                                                                                                                              '- '
+                                                                                                                                                                                              'inga '
+                                                                                                                                                                                              'data '
+                                                                                                                                                                                              'omdirigeras '
+                                                                                                                                                                                              'tyst '
+                                                                                                                                                                                              'till '
+                                                                                                                                                                                              'tillfällig '
+                                                                                                                                                                                              'lokal '
+                                                                                                                                                                                              'lagring. '
+                                                                                                                                                                                              'Kontakta '
+                                                                                                                                                                                              'en '
+                                                                                                                                                                                              'administratör.',
+ 'Free, legally accessible resources. MAKU reproduces no copyrighted content - these links go to the official sources.': 'Kostnadsfria, '
+                                                                                                                         'lagligt '
+                                                                                                                         'tillgängliga '
+                                                                                                                         'resurser. '
+                                                                                                                         'MAKU '
+                                                                                                                         'återger '
+                                                                                                                         'inget '
+                                                                                                                         'upphovsrättsskyddat '
+                                                                                                                         'innehåll '
+                                                                                                                         '- '
+                                                                                                                         'dessa '
+                                                                                                                         'länkar '
+                                                                                                                         'går '
+                                                                                                                         'till '
+                                                                                                                         'de '
+                                                                                                                         'officiella '
+                                                                                                                         'källorna.',
+ "For copyrighted texts (e.g. Brauer's *Safety and Health for Engineers*), purchase them or check your institutional library - see the Further Reading section of the official report.": 'För '
+                                                                                                                                                                                         'upphovsrättsskyddade '
+                                                                                                                                                                                         'texter '
+                                                                                                                                                                                         '(t.ex. '
+                                                                                                                                                                                         'Brauers '
+                                                                                                                                                                                         '*Safety '
+                                                                                                                                                                                         'and '
+                                                                                                                                                                                         'Health '
+                                                                                                                                                                                         'for '
+                                                                                                                                                                                         'Engineers*), '
+                                                                                                                                                                                         'köp '
+                                                                                                                                                                                         'dem '
+                                                                                                                                                                                         'eller '
+                                                                                                                                                                                         'kontrollera '
+                                                                                                                                                                                         'ditt '
+                                                                                                                                                                                         'institutionsbibliotek '
+                                                                                                                                                                                         '- '
+                                                                                                                                                                                         'se '
+                                                                                                                                                                                         'avsnittet '
+                                                                                                                                                                                         'Vidare '
+                                                                                                                                                                                         'läsning '
+                                                                                                                                                                                         'i '
+                                                                                                                                                                                         'den '
+                                                                                                                                                                                         'officiella '
+                                                                                                                                                                                         'rapporten.',
+ '🔎 Live legislation search (extra API cost)': '🔎 Livesökning i lagstiftning (extra API-kostnad)',
+ 'Upload a previous log (CSV) to merge': 'Ladda upp en tidigare logg (CSV) för sammanslagning',
+ '📄 Download PDF': '📄 Ladda ner PDF',
+ '🌐 Download HTML': '🌐 Ladda ner HTML',
+ 'Band': 'Nivå',
+ 'Governing hazard': 'Styrande fara',
+ 'Initial risk': 'Initial risk',
+ 'Residual risk': 'Kvarstående risk',
+ 'No controls selected yet - residual risk equals initial risk.': 'Inga åtgärder valda ännu - den '
+                                                                  'kvarstående risken är lika med den '
+                                                                  'initiala risken.',
+ 'The exact numeric thresholds that force a mandatory stop-work condition (safety_override), with the named source constant in code each threshold comes from.': 'De '
+                                                                                                                                                                 'exakta '
+                                                                                                                                                                 'numeriska '
+                                                                                                                                                                 'gränsvärden '
+                                                                                                                                                                 'som '
+                                                                                                                                                                 'tvingar '
+                                                                                                                                                                 'fram '
+                                                                                                                                                                 'ett '
+                                                                                                                                                                 'obligatoriskt '
+                                                                                                                                                                 'arbetsstopp '
+                                                                                                                                                                 '(safety_override), '
+                                                                                                                                                                 'med '
+                                                                                                                                                                 'den '
+                                                                                                                                                                 'namngivna '
+                                                                                                                                                                 'källkonstanten '
+                                                                                                                                                                 'i '
+                                                                                                                                                                 'koden '
+                                                                                                                                                                 'som '
+                                                                                                                                                                 'varje '
+                                                                                                                                                                 'gränsvärde '
+                                                                                                                                                                 'kommer '
+                                                                                                                                                                 'från.',
+ 'Every scoring formula mapped against its claimed standard, with an honest status: direct implementation, adapted/approximated, or illustrative (not standards-derived).': 'Varje '
+                                                                                                                                                                            'poängformel '
+                                                                                                                                                                            'jämförd '
+                                                                                                                                                                            'med '
+                                                                                                                                                                            'den '
+                                                                                                                                                                            'standard '
+                                                                                                                                                                            'den '
+                                                                                                                                                                            'hänvisar '
+                                                                                                                                                                            'till, '
+                                                                                                                                                                            'med '
+                                                                                                                                                                            'en '
+                                                                                                                                                                            'ärlig '
+                                                                                                                                                                            'status: '
+                                                                                                                                                                            'direkt '
+                                                                                                                                                                            'implementering, '
+                                                                                                                                                                            'anpassad/approximerad '
+                                                                                                                                                                            'eller '
+                                                                                                                                                                            'illustrativ '
+                                                                                                                                                                            '(inte '
+                                                                                                                                                                            'härledd '
+                                                                                                                                                                            'ur '
+                                                                                                                                                                            'standarder).',
+ '**MAKU is temporarily unavailable.** The production database is not answering or is not configured correctly. No assessment can be saved, and nothing is being saved anywhere else. The administrator has been alerted through the server log. Please try again in a few minutes.': '**MAKU '
+                                                                                                                                                                                                                                                                                      'är '
+                                                                                                                                                                                                                                                                                      'tillfälligt '
+                                                                                                                                                                                                                                                                                      'otillgängligt.** '
+                                                                                                                                                                                                                                                                                      'Produktionsdatabasen '
+                                                                                                                                                                                                                                                                                      'svarar '
+                                                                                                                                                                                                                                                                                      'inte '
+                                                                                                                                                                                                                                                                                      'eller '
+                                                                                                                                                                                                                                                                                      'är '
+                                                                                                                                                                                                                                                                                      'inte '
+                                                                                                                                                                                                                                                                                      'korrekt '
+                                                                                                                                                                                                                                                                                      'konfigurerad. '
+                                                                                                                                                                                                                                                                                      'Ingen '
+                                                                                                                                                                                                                                                                                      'bedömning '
+                                                                                                                                                                                                                                                                                      'kan '
+                                                                                                                                                                                                                                                                                      'sparas, '
+                                                                                                                                                                                                                                                                                      'och '
+                                                                                                                                                                                                                                                                                      'inget '
+                                                                                                                                                                                                                                                                                      'sparas '
+                                                                                                                                                                                                                                                                                      'någon '
+                                                                                                                                                                                                                                                                                      'annanstans. '
+                                                                                                                                                                                                                                                                                      'Administratören '
+                                                                                                                                                                                                                                                                                      'har '
+                                                                                                                                                                                                                                                                                      'larmats '
+                                                                                                                                                                                                                                                                                      'via '
+                                                                                                                                                                                                                                                                                      'serverloggen. '
+                                                                                                                                                                                                                                                                                      'Försök '
+                                                                                                                                                                                                                                                                                      'igen '
+                                                                                                                                                                                                                                                                                      'om '
+                                                                                                                                                                                                                                                                                      'några '
+                                                                                                                                                                                                                                                                                      'minuter.',
+ 'Demo - data is not kept.': 'Demo - data sparas inte.',
+ 'HSE Virtual Library': 'Virtuellt HSE-bibliotek',
+ 'Lets Claude search the web live to check applicable legislation, on top of the verified references below. Uses your existing API key.': 'Låter '
+                                                                                                                                          'Claude '
+                                                                                                                                          'söka '
+                                                                                                                                          'live '
+                                                                                                                                          'på '
+                                                                                                                                          'webben '
+                                                                                                                                          'för '
+                                                                                                                                          'att '
+                                                                                                                                          'kontrollera '
+                                                                                                                                          'tillämplig '
+                                                                                                                                          'lagstiftning, '
+                                                                                                                                          'utöver '
+                                                                                                                                          'de '
+                                                                                                                                          'verifierade '
+                                                                                                                                          'referenserna '
+                                                                                                                                          'nedan. '
+                                                                                                                                          'Använder '
+                                                                                                                                          'din '
+                                                                                                                                          'befintliga '
+                                                                                                                                          'API-nyckel.',
+ 'Trend Analysis & Monthly Report': 'Trendanalys & månadsrapport',
+ "This session's assessment log only (Streamlit Cloud has no persistent database). Download the CSV periodically and re-upload it in a future session to build a multi-month history.": 'Endast '
+                                                                                                                                                                                        'denna '
+                                                                                                                                                                                        'sessions '
+                                                                                                                                                                                        'bedömningslogg '
+                                                                                                                                                                                        '(Streamlit '
+                                                                                                                                                                                        'Cloud '
+                                                                                                                                                                                        'har '
+                                                                                                                                                                                        'ingen '
+                                                                                                                                                                                        'beständig '
+                                                                                                                                                                                        'databas). '
+                                                                                                                                                                                        'Ladda '
+                                                                                                                                                                                        'ner '
+                                                                                                                                                                                        'CSV-filen '
+                                                                                                                                                                                        'regelbundet '
+                                                                                                                                                                                        'och '
+                                                                                                                                                                                        'ladda '
+                                                                                                                                                                                        'upp '
+                                                                                                                                                                                        'den '
+                                                                                                                                                                                        'igen '
+                                                                                                                                                                                        'i '
+                                                                                                                                                                                        'en '
+                                                                                                                                                                                        'senare '
+                                                                                                                                                                                        'session '
+                                                                                                                                                                                        'för '
+                                                                                                                                                                                        'att '
+                                                                                                                                                                                        'bygga '
+                                                                                                                                                                                        'upp '
+                                                                                                                                                                                        'en '
+                                                                                                                                                                                        'historik '
+                                                                                                                                                                                        'över '
+                                                                                                                                                                                        'flera '
+                                                                                                                                                                                        'månader.',
+ 'No assessments logged yet this session - run an assessment on any module to start building the log.': 'Inga '
+                                                                                                        'bedömningar '
+                                                                                                        'loggade '
+                                                                                                        'ännu '
+                                                                                                        'i '
+                                                                                                        'denna '
+                                                                                                        'session '
+                                                                                                        '- '
+                                                                                                        'kör '
+                                                                                                        'en '
+                                                                                                        'bedömning '
+                                                                                                        'i '
+                                                                                                        'valfri '
+                                                                                                        'modul '
+                                                                                                        'för '
+                                                                                                        'att '
+                                                                                                        'börja '
+                                                                                                        'bygga '
+                                                                                                        'loggen.',
+ 'assessment(s) logged this session': 'bedömning(ar) loggade i denna session',
+ '⬇️ Download log (CSV)': '⬇️ Ladda ner loggen (CSV)',
+ '📊 Monthly Excel Report': '📊 Månatlig Excel-rapport',
+ 'Monthly summary': 'Månadssammanfattning',
+ "The selected controls don't address any assessed hazard, so no reduction is credited.": 'De valda '
+                                                                                          'åtgärderna '
+                                                                                          'hanterar ingen '
+                                                                                          'bedömd fara, så '
+                                                                                          'ingen minskning '
+                                                                                          'tillgodoräknas.',
+ 'No accessible organization - the log is not available.': 'Ingen tillgänglig organisation - loggen är inte '
+                                                           'tillgänglig.',
+ "Method {version}: a control only reduces the hazards it addresses. Elimination (stop work, de-energize, evacuate) → likelihood 'rare'; engineering, administrative, PPE → −1 each. Severity is never reduced.": 'Metod '
+                                                                                                                                                                                                                  '{version}: '
+                                                                                                                                                                                                                  'en '
+                                                                                                                                                                                                                  'åtgärd '
+                                                                                                                                                                                                                  'minskar '
+                                                                                                                                                                                                                  'bara '
+                                                                                                                                                                                                                  'de '
+                                                                                                                                                                                                                  'faror '
+                                                                                                                                                                                                                  'den '
+                                                                                                                                                                                                                  'riktar '
+                                                                                                                                                                                                                  'sig '
+                                                                                                                                                                                                                  'mot. '
+                                                                                                                                                                                                                  'Eliminering '
+                                                                                                                                                                                                                  '(arbetsstopp, '
+                                                                                                                                                                                                                  'frånkoppling, '
+                                                                                                                                                                                                                  'utrymning) '
+                                                                                                                                                                                                                  '→ '
+                                                                                                                                                                                                                  'sannolikhet '
+                                                                                                                                                                                                                  "'sällsynt'; "
+                                                                                                                                                                                                                  'tekniska, '
+                                                                                                                                                                                                                  'administrativa '
+                                                                                                                                                                                                                  'åtgärder, '
+                                                                                                                                                                                                                  'skyddsutrustning '
+                                                                                                                                                                                                                  '→ '
+                                                                                                                                                                                                                  '−1 '
+                                                                                                                                                                                                                  'vardera. '
+                                                                                                                                                                                                                  'Allvarligheten '
+                                                                                                                                                                                                                  'minskas '
+                                                                                                                                                                                                                  'aldrig.',
+ 'No effect on the assessed hazards: ': 'Ingen effekt på de bedömda farorna: ',
+ 'Search books on this topic (Google Books)': 'Sök böcker om detta ämne (Google Books)',
+ 'Import NOT saved - the database is unavailable.': 'Importen sparades INTE - databasen är inte tillgänglig.',
+ 'Your role in this organization is read-only: import is not allowed.': 'Din roll i denna organisation är '
+                                                                        'endast läsning: import är inte '
+                                                                        'tillåten.',
+ 'Merge failed: the file could not be read.': 'Sammanslagningen misslyckades: filen kunde inte läsas.',
+ 'Share PDF': 'Dela PDF',
+ 'Freshness': 'Aktualitet',
+ 'refreshed at least every {seconds}s while this page is open': 'uppdateras minst var {seconds}s medan denna '
+                                                                'sida är öppen',
+ '{count} new row(s) merged.': '{count} ny(a) rad(er) sammanslagna.',
+ 'Merge failed': 'Sammanslagningen misslyckades',
+ "MAKU HSE Decision-Support System — Results are intended for risk screening and decision support and do not replace a competent person's assessment, engineering analysis, statutory requirement, manufacturer instruction or formal specialist study.": 'MAKU '
+                                                                                                                                                                                                                                                          'HSE-beslutsstödssystem '
+                                                                                                                                                                                                                                                          '— '
+                                                                                                                                                                                                                                                          'Resultaten '
+                                                                                                                                                                                                                                                          'är '
+                                                                                                                                                                                                                                                          'avsedda '
+                                                                                                                                                                                                                                                          'för '
+                                                                                                                                                                                                                                                          'riskscreening '
+                                                                                                                                                                                                                                                          'och '
+                                                                                                                                                                                                                                                          'beslutsstöd '
+                                                                                                                                                                                                                                                          'och '
+                                                                                                                                                                                                                                                          'ersätter '
+                                                                                                                                                                                                                                                          'inte '
+                                                                                                                                                                                                                                                          'en '
+                                                                                                                                                                                                                                                          'kompetent '
+                                                                                                                                                                                                                                                          'persons '
+                                                                                                                                                                                                                                                          'bedömning, '
+                                                                                                                                                                                                                                                          'teknisk '
+                                                                                                                                                                                                                                                          'analys, '
+                                                                                                                                                                                                                                                          'lagkrav, '
+                                                                                                                                                                                                                                                          'tillverkarens '
+                                                                                                                                                                                                                                                          'anvisningar '
+                                                                                                                                                                                                                                                          'eller '
+                                                                                                                                                                                                                                                          'en '
+                                                                                                                                                                                                                                                          'formell '
+                                                                                                                                                                                                                                                          'specialistutredning.',
+ 'AI briefings (optional)': 'AI-genomgångar (valfritt)',
+ 'Send the assessment results for this session (risk scores, module, site name, and anonymised worker-strain summaries) to Anthropic, PBC to generate a written AI briefing. No name, email or GPS coordinates are sent. Without consent you still get the full rule-based briefing.': 'Skicka '
+                                                                                                                                                                                                                                                                                       'denna '
+                                                                                                                                                                                                                                                                                       'sessions '
+                                                                                                                                                                                                                                                                                       'bedömningsresultat '
+                                                                                                                                                                                                                                                                                       '(riskpoäng, '
+                                                                                                                                                                                                                                                                                       'modul, '
+                                                                                                                                                                                                                                                                                       'platsnamn '
+                                                                                                                                                                                                                                                                                       'och '
+                                                                                                                                                                                                                                                                                       'anonymiserade '
+                                                                                                                                                                                                                                                                                       'sammanfattningar '
+                                                                                                                                                                                                                                                                                       'av '
+                                                                                                                                                                                                                                                                                       'arbetstagarnas '
+                                                                                                                                                                                                                                                                                       'belastning) '
+                                                                                                                                                                                                                                                                                       'till '
+                                                                                                                                                                                                                                                                                       'Anthropic, '
+                                                                                                                                                                                                                                                                                       'PBC '
+                                                                                                                                                                                                                                                                                       'för '
+                                                                                                                                                                                                                                                                                       'att '
+                                                                                                                                                                                                                                                                                       'generera '
+                                                                                                                                                                                                                                                                                       'en '
+                                                                                                                                                                                                                                                                                       'skriftlig '
+                                                                                                                                                                                                                                                                                       'AI-genomgång. '
+                                                                                                                                                                                                                                                                                       'Inget '
+                                                                                                                                                                                                                                                                                       'namn, '
+                                                                                                                                                                                                                                                                                       'ingen '
+                                                                                                                                                                                                                                                                                       'e-post '
+                                                                                                                                                                                                                                                                                       'och '
+                                                                                                                                                                                                                                                                                       'inga '
+                                                                                                                                                                                                                                                                                       'GPS-koordinater '
+                                                                                                                                                                                                                                                                                       'skickas. '
+                                                                                                                                                                                                                                                                                       'Utan '
+                                                                                                                                                                                                                                                                                       'samtycke '
+                                                                                                                                                                                                                                                                                       'får '
+                                                                                                                                                                                                                                                                                       'du '
+                                                                                                                                                                                                                                                                                       'ändå '
+                                                                                                                                                                                                                                                                                       'den '
+                                                                                                                                                                                                                                                                                       'fullständiga '
+                                                                                                                                                                                                                                                                                       'regelbaserade '
+                                                                                                                                                                                                                                                                                       'genomgången.',
+ 'Location (optional)': 'Plats (valfritt)',
+ "Use this device's GPS position (or, if GPS is denied, an approximate location from your IP address) to pick the nearest site, local weather and the applicable country regulations. Location is used for the current session only and is not stored.": 'Använd '
+                                                                                                                                                                                                                                                         'enhetens '
+                                                                                                                                                                                                                                                         'GPS-position '
+                                                                                                                                                                                                                                                         '(eller, '
+                                                                                                                                                                                                                                                         'om '
+                                                                                                                                                                                                                                                         'GPS '
+                                                                                                                                                                                                                                                         'nekas, '
+                                                                                                                                                                                                                                                         'en '
+                                                                                                                                                                                                                                                         'ungefärlig '
+                                                                                                                                                                                                                                                         'plats '
+                                                                                                                                                                                                                                                         'utifrån '
+                                                                                                                                                                                                                                                         'din '
+                                                                                                                                                                                                                                                         'IP-adress) '
+                                                                                                                                                                                                                                                         'för '
+                                                                                                                                                                                                                                                         'att '
+                                                                                                                                                                                                                                                         'välja '
+                                                                                                                                                                                                                                                         'närmaste '
+                                                                                                                                                                                                                                                         'plats, '
+                                                                                                                                                                                                                                                         'lokalt '
+                                                                                                                                                                                                                                                         'väder '
+                                                                                                                                                                                                                                                         'och '
+                                                                                                                                                                                                                                                         'tillämpliga '
+                                                                                                                                                                                                                                                         'nationella '
+                                                                                                                                                                                                                                                         'regler. '
+                                                                                                                                                                                                                                                         'Platsen '
+                                                                                                                                                                                                                                                         'används '
+                                                                                                                                                                                                                                                         'endast '
+                                                                                                                                                                                                                                                         'för '
+                                                                                                                                                                                                                                                         'den '
+                                                                                                                                                                                                                                                         'aktuella '
+                                                                                                                                                                                                                                                         'sessionen '
+                                                                                                                                                                                                                                                         'och '
+                                                                                                                                                                                                                                                         'lagras '
+                                                                                                                                                                                                                                                         'inte.',
+ 'Work clothes (baseline)': 'Arbetskläder (referens)',
+ 'SMS polypropylene coveralls': 'SMS-overall av polypropen',
+ 'Polyolefin coveralls': 'Overall av polyolefin',
+ 'Double-layer woven coveralls': 'Vävd overall i dubbelt lager',
+ 'Vapor-barrier coveralls (limited use)': 'Ångspärrande overall (begränsad användning)',
+ '**Nothing was saved. Please try again in a few minutes.**': '**Inget sparades. Försök igen om några '
+                                                              'minuter.**',
+ 'Assessment NOT saved - the database is unavailable.': 'Bedömningen sparades INTE - databasen är inte '
+                                                        'tillgänglig.',
+ 'Commonly-cited approximation of the ACGIH TLV very_heavy/acclimatized figures - verify against the current ACGIH TLV booklet before relying on this for a real compliance decision.': 'Vanligt '
+                                                                                                                                                                                        'citerad '
+                                                                                                                                                                                        'approximation '
+                                                                                                                                                                                        'av '
+                                                                                                                                                                                        'ACGIH '
+                                                                                                                                                                                        'TLV-värdena '
+                                                                                                                                                                                        'för '
+                                                                                                                                                                                        'mycket '
+                                                                                                                                                                                        'tungt/acklimatiserad '
+                                                                                                                                                                                        '- '
+                                                                                                                                                                                        'kontrollera '
+                                                                                                                                                                                        'mot '
+                                                                                                                                                                                        'den '
+                                                                                                                                                                                        'aktuella '
+                                                                                                                                                                                        'ACGIH '
+                                                                                                                                                                                        'TLV-skriften '
+                                                                                                                                                                                        'innan '
+                                                                                                                                                                                        'du '
+                                                                                                                                                                                        'stöder '
+                                                                                                                                                                                        'ett '
+                                                                                                                                                                                        'verkligt '
+                                                                                                                                                                                        'efterlevnadsbeslut '
+                                                                                                                                                                                        'på '
+                                                                                                                                                                                        'den.',
+ 'Invalid input values:': 'Ogiltiga indatavärden:',
+ 'Recommended ratio': 'Rekommenderad kvot',
+ 'STOP WORK': 'STOPPA ARBETET',
+ "Supplements (never replaces) this module's own risk assessment above.": 'Kompletterar (ersätter aldrig) '
+                                                                          'modulens egen riskbedömning ovan.',
+ 'WBGT effective': 'Effektiv WBGT',
+ 'streamlit-js-eval is not installed - geolocation is unavailable. Add it to requirements.txt to enable this section.': 'streamlit-js-eval '
+                                                                                                                        'är '
+                                                                                                                        'inte '
+                                                                                                                        'installerat '
+                                                                                                                        '- '
+                                                                                                                        'positionering '
+                                                                                                                        'är '
+                                                                                                                        'inte '
+                                                                                                                        'tillgänglig. '
+                                                                                                                        'Lägg '
+                                                                                                                        'till '
+                                                                                                                        'det '
+                                                                                                                        'i '
+                                                                                                                        'requirements.txt '
+                                                                                                                        'för '
+                                                                                                                        'att '
+                                                                                                                        'aktivera '
+                                                                                                                        'detta '
+                                                                                                                        'avsnitt.',
+ '⚠️ STOP WORK: no compliant work/rest ratio exists for this workload/clothing/acclimatization combination, even at 25/75.': '⚠️ '
+                                                                                                                             'STOPPA '
+                                                                                                                             'ARBETET: '
+                                                                                                                             'det '
+                                                                                                                             'finns '
+                                                                                                                             'ingen '
+                                                                                                                             'godkänd '
+                                                                                                                             'arbets-/vilokvot '
+                                                                                                                             'för '
+                                                                                                                             'denna '
+                                                                                                                             'kombination '
+                                                                                                                             'av '
+                                                                                                                             'arbetsbelastning/klädsel/acklimatisering, '
+                                                                                                                             'inte '
+                                                                                                                             'ens '
+                                                                                                                             'vid '
+                                                                                                                             '25/75.',
+ '⚠️ STOP WORK: vapor-barrier PPE requires direct physiological monitoring, not a WBGT table lookup alone.': '⚠️ '
+                                                                                                             'STOPPA '
+                                                                                                             'ARBETET: '
+                                                                                                             'ångspärrande '
+                                                                                                             'skyddsutrustning '
+                                                                                                             'kräver '
+                                                                                                             'direkt '
+                                                                                                             'fysiologisk '
+                                                                                                             'övervakning, '
+                                                                                                             'inte '
+                                                                                                             'bara '
+                                                                                                             'en '
+                                                                                                             'uppslagning '
+                                                                                                             'i '
+                                                                                                             'en '
+                                                                                                             'WBGT-tabell.'}

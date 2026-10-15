@@ -530,3 +530,1024 @@ ENGINE_TEMPLATES = {
     "arc_flash_ppe": "बिजली चालू रहते काम के लिए आर्क फ्लैश PPE: {0} (स्रोत: {1})",
     "work_rest": "इस कार्यभार और कपड़ों के लिए ACGIH TLV कार्रवाई सीमा के भीतर रहने हेतु {0} कार्य/विश्राम चक्र लागू करें",
 }
+
+INLINE = {'Measuring equipment / Sensor model (optional)': 'मापन उपकरण / सेंसर मॉडल (वैकल्पिक)',
+ 'e.g. Kestrel 5400 Heat Stress Tracker, black-globe thermometer, Class 2 sound level meter...': 'जैसे '
+                                                                                                 'Kestrel '
+                                                                                                 '5400 Heat '
+                                                                                                 'Stress '
+                                                                                                 'Tracker, '
+                                                                                                 'ब्लैक-ग्लोब '
+                                                                                                 'थर्मामीटर, '
+                                                                                                 'क्लास 2 '
+                                                                                                 'ध्वनि स्तर '
+                                                                                                 'मीटर...',
+ '+ New organization...': '+ नया संगठन...',
+ 'Open sea / coast - ASCE D (α 0.11)': 'खुला समुद्र / तट - ASCE D (α 0.11)',
+ 'Open country - ASCE C (α 0.15)': 'खुला क्षेत्र - ASCE C (α 0.15)',
+ 'Urban / suburban - ASCE B (α 0.25)': 'शहरी / उपनगरीय - ASCE B (α 0.25)',
+ 'Dense city centre (α 0.33)': 'घना शहरी केंद्र (α 0.33)',
+ 'Terrain roughness': 'भू-भाग की खुरदरापन',
+ 'Floor-to-floor height (m)': 'मंज़िल से मंज़िल की ऊँचाई (m)',
+ 'Wind measured at working height': 'कार्य ऊँचाई पर मापी गई हवा',
+ "Best source first: (1) the equipment's arc-flash label, (2) a Lee screening calculation from fault data, (3) unknown - MAKU never invents a value.": 'सबसे '
+                                                                                                                                                       'अच्छा '
+                                                                                                                                                       'स्रोत '
+                                                                                                                                                       'पहले: '
+                                                                                                                                                       '(1) '
+                                                                                                                                                       'उपकरण '
+                                                                                                                                                       'का '
+                                                                                                                                                       'आर्क '
+                                                                                                                                                       'फ्लैश '
+                                                                                                                                                       'लेबल, '
+                                                                                                                                                       '(2) '
+                                                                                                                                                       'फ़ॉल्ट '
+                                                                                                                                                       'डेटा '
+                                                                                                                                                       'से '
+                                                                                                                                                       'Lee '
+                                                                                                                                                       'स्क्रीनिंग '
+                                                                                                                                                       'गणना, '
+                                                                                                                                                       '(3) '
+                                                                                                                                                       'अज्ञात '
+                                                                                                                                                       '- '
+                                                                                                                                                       'MAKU '
+                                                                                                                                                       'कभी '
+                                                                                                                                                       'कोई '
+                                                                                                                                                       'मान '
+                                                                                                                                                       'नहीं '
+                                                                                                                                                       'गढ़ता।',
+ 'Source': 'स्रोत',
+ 'Cold-aisle setpoint (°C)': 'ठंडे गलियारे का सेटपॉइंट (°C)',
+ 'Energized work planned': 'बिजली चालू रहते काम की योजना',
+ "🔒 AI briefings are off (your privacy choices). Turn them on under 'My account'.": '🔒 AI ब्रीफ़िंग बंद है '
+                                                                                    '(आपकी गोपनीयता पसंद)। '
+                                                                                    "इसे 'मेरा खाता' में "
+                                                                                    'चालू करें।',
+ 'Your account is not a member of any organization yet. Ask your MAKU administrator to add you to your organization. The My account page is still available.': 'आपका '
+                                                                                                                                                               'खाता '
+                                                                                                                                                               'अभी '
+                                                                                                                                                               'किसी '
+                                                                                                                                                               'संगठन '
+                                                                                                                                                               'का '
+                                                                                                                                                               'सदस्य '
+                                                                                                                                                               'नहीं '
+                                                                                                                                                               'है। '
+                                                                                                                                                               'अपने '
+                                                                                                                                                               'MAKU '
+                                                                                                                                                               'व्यवस्थापक '
+                                                                                                                                                               'से '
+                                                                                                                                                               'आपको '
+                                                                                                                                                               'अपने '
+                                                                                                                                                               'संगठन '
+                                                                                                                                                               'में '
+                                                                                                                                                               'जोड़ने '
+                                                                                                                                                               'को '
+                                                                                                                                                               'कहें। '
+                                                                                                                                                               "'मेरा "
+                                                                                                                                                               "खाता' "
+                                                                                                                                                               'पेज '
+                                                                                                                                                               'उपलब्ध '
+                                                                                                                                                               'रहता '
+                                                                                                                                                               'है।',
+ 'Read-only: assessments are not saved.': 'केवल पढ़ने के लिए: आकलन सहेजे नहीं जाते।',
+ 'One vectorized NumPy/Pandas batch calculation across every site, instead of one function call per site - a performance optimization.': 'हर '
+                                                                                                                                         'साइट '
+                                                                                                                                         'के '
+                                                                                                                                         'लिए '
+                                                                                                                                         'एक '
+                                                                                                                                         'फ़ंक्शन '
+                                                                                                                                         'कॉल '
+                                                                                                                                         'के '
+                                                                                                                                         'बजाय '
+                                                                                                                                         'सभी '
+                                                                                                                                         'साइटों '
+                                                                                                                                         'पर '
+                                                                                                                                         'एक '
+                                                                                                                                         'ही '
+                                                                                                                                         'वेक्टराइज़्ड '
+                                                                                                                                         'NumPy/Pandas '
+                                                                                                                                         'बैच '
+                                                                                                                                         'गणना '
+                                                                                                                                         '- '
+                                                                                                                                         'एक '
+                                                                                                                                         'प्रदर्शन '
+                                                                                                                                         'अनुकूलन।',
+ "📍 Location is off (your privacy choices). Turn it on under 'My account' to use GPS and automatic country detection.": '📍 '
+                                                                                                                        'स्थान '
+                                                                                                                        'बंद '
+                                                                                                                        'है '
+                                                                                                                        '(आपकी '
+                                                                                                                        'गोपनीयता '
+                                                                                                                        'पसंद)। '
+                                                                                                                        'GPS '
+                                                                                                                        'और '
+                                                                                                                        'देश '
+                                                                                                                        'की '
+                                                                                                                        'स्वचालित '
+                                                                                                                        'पहचान '
+                                                                                                                        'के '
+                                                                                                                        'लिए '
+                                                                                                                        'इसे '
+                                                                                                                        "'मेरा "
+                                                                                                                        "खाता' "
+                                                                                                                        'में '
+                                                                                                                        'चालू '
+                                                                                                                        'करें।',
+ 'Photos attached to the PDF report': 'PDF रिपोर्ट से जुड़ी तस्वीरें',
+ 'Remove photos': 'तस्वीरें हटाएँ',
+ 'Get a notification when an assessment in your organisation triggers a safety override.': 'जब आपके संगठन '
+                                                                                           'में कोई आकलन '
+                                                                                           'सुरक्षा रोक लागू '
+                                                                                           'करे तो सूचना '
+                                                                                           'पाएँ।',
+ 'Turn on for this phone': 'इस फ़ोन पर चालू करें',
+ 'Durable (SQLite) history of critical/warning alerts fired by every module, including worker physiological strain.': 'सभी '
+                                                                                                                      'मॉड्यूल '
+                                                                                                                      'द्वारा '
+                                                                                                                      'जारी '
+                                                                                                                      'गंभीर/चेतावनी '
+                                                                                                                      'अलर्ट '
+                                                                                                                      'का '
+                                                                                                                      'स्थायी '
+                                                                                                                      '(SQLite) '
+                                                                                                                      'इतिहास, '
+                                                                                                                      'जिसमें '
+                                                                                                                      'कर्मचारियों '
+                                                                                                                      'का '
+                                                                                                                      'शारीरिक '
+                                                                                                                      'दबाव '
+                                                                                                                      'भी '
+                                                                                                                      'शामिल '
+                                                                                                                      'है।',
+ 'Measured hook / floor wind (kn)': 'हुक / मंज़िल पर मापी गई हवा (नॉट)',
+ 'Arc-flash incident energy': 'आर्क फ्लैश आपतित ऊर्जा',
+ 'Incident energy on the label (cal/cm²)': 'लेबल पर आपतित ऊर्जा (cal/cm²)',
+ 'Server-configured API key in use (no entry required).': 'सर्वर पर कॉन्फ़िगर की गई API कुंजी उपयोग में है '
+                                                          '(दर्ज करने की ज़रूरत नहीं)।',
+ 'AI advisory layer temporarily unavailable - showing the offline summary below.': 'AI सलाह परत अस्थायी रूप '
+                                                                                   'से उपलब्ध नहीं है - नीचे '
+                                                                                   'ऑफ़लाइन सारांश दिखाया जा '
+                                                                                   'रहा है।',
+ 'Multi-Site Overview (vectorized batch)': 'बहु-साइट अवलोकन (वेक्टराइज़्ड बैच)',
+ 'Use phone GPS': 'फ़ोन का GPS उपयोग करें',
+ 'Take site photo': 'साइट की तस्वीर लें',
+ 'Alerts turned on.': 'अलर्ट चालू किए गए।',
+ "Notifications are off - turn them on in the phone's Settings.": 'सूचनाएँ बंद हैं - इन्हें फ़ोन की सेटिंग्स '
+                                                                  'में चालू करें।',
+ 'Site Alert Log': 'साइट अलर्ट लॉग',
+ '7-Day Meteorology Forecast': '7 दिन का मौसम पूर्वानुमान',
+ 'e.g. 6.4': 'जैसे 6.4',
+ 'Voltage (kV)': 'वोल्टेज (kV)',
+ 'Bolted fault current (kA)': 'बोल्टेड फ़ॉल्ट धारा (kA)',
+ 'Clearing time (s)': 'क्लियरिंग समय (s)',
+ 'Working distance (mm)': 'कार्य दूरी (mm)',
+ 'Unknown': 'अज्ञात',
+ '⚡ Incident energy unknown: no energized work until the equipment label or an arc-flash study (IEEE 1584) confirms the incident energy and the required arc rating.': '⚡ '
+                                                                                                                                                                       'आपतित '
+                                                                                                                                                                       'ऊर्जा '
+                                                                                                                                                                       'अज्ञात: '
+                                                                                                                                                                       'जब '
+                                                                                                                                                                       'तक '
+                                                                                                                                                                       'उपकरण '
+                                                                                                                                                                       'का '
+                                                                                                                                                                       'लेबल '
+                                                                                                                                                                       'या '
+                                                                                                                                                                       'आर्क '
+                                                                                                                                                                       'फ्लैश '
+                                                                                                                                                                       'अध्ययन '
+                                                                                                                                                                       '(IEEE '
+                                                                                                                                                                       '1584) '
+                                                                                                                                                                       'आपतित '
+                                                                                                                                                                       'ऊर्जा '
+                                                                                                                                                                       'और '
+                                                                                                                                                                       'आवश्यक '
+                                                                                                                                                                       'आर्क '
+                                                                                                                                                                       'रेटिंग '
+                                                                                                                                                                       'की '
+                                                                                                                                                                       'पुष्टि '
+                                                                                                                                                                       'न '
+                                                                                                                                                                       'करे, '
+                                                                                                                                                                       'बिजली '
+                                                                                                                                                                       'चालू '
+                                                                                                                                                                       'रहते '
+                                                                                                                                                                       'कोई '
+                                                                                                                                                                       'काम '
+                                                                                                                                                                       'नहीं।',
+ 'Access to this organization is denied.': 'इस संगठन तक पहुँच अस्वीकृत।',
+ 'Your role: ': 'आपकी भूमिका: ',
+ 'Camera open…': 'कैमरा खुला है…',
+ 'Stop-work alerts': 'काम रोकने के अलर्ट',
+ 'Stop-work alerts go to members of the organization only.': 'काम रोकने के अलर्ट केवल संगठन के सदस्यों को '
+                                                             'भेजे जाते हैं।',
+ 'Could not register this device.': 'इस डिवाइस को पंजीकृत नहीं किया जा सका।',
+ 'Live weather unavailable - verify conditions on site.': 'लाइव मौसम उपलब्ध नहीं - साइट पर स्थितियाँ जाँचें।',
+ ' (context only)': ' (केवल संदर्भ)',
+ 'Recorded for the report only - load is not used in the arc-flash calculation.': 'केवल रिपोर्ट के लिए दर्ज '
+                                                                                  '- भार का उपयोग आर्क फ्लैश '
+                                                                                  'गणना में नहीं होता।',
+ 'Platform administrator': 'प्लेटफ़ॉर्म व्यवस्थापक',
+ 'Organization admin': 'संगठन व्यवस्थापक',
+ 'Supervisor': 'पर्यवेक्षक',
+ 'Viewer (read-only)': 'दर्शक (केवल पढ़ने के लिए)',
+ 'Camera unavailable.': 'कैमरा उपलब्ध नहीं।',
+ 'Equipment arc-flash label': 'उपकरण का आर्क फ्लैश लेबल',
+ 'Lee calculation (voltage, fault current, clearing time)': 'Lee गणना (वोल्टेज, फ़ॉल्ट धारा, क्लियरिंग समय)',
+ 'Unknown / not yet studied': 'अज्ञात / अभी अध्ययन नहीं हुआ',
+ 'Alert shown but NOT recorded in the alert log.': 'अलर्ट दिखाया गया लेकिन अलर्ट लॉग में दर्ज नहीं हुआ।',
+ 'New organization name': 'नए संगठन का नाम',
+ "MAKU processes your data under the GDPR and the UAE PDPL. Make your choices below; you can change them at any time under 'My account'.": 'MAKU '
+                                                                                                                                           'आपके '
+                                                                                                                                           'डेटा '
+                                                                                                                                           'को '
+                                                                                                                                           'GDPR '
+                                                                                                                                           'और '
+                                                                                                                                           'UAE '
+                                                                                                                                           'PDPL '
+                                                                                                                                           'के '
+                                                                                                                                           'अनुसार '
+                                                                                                                                           'संसाधित '
+                                                                                                                                           'करता '
+                                                                                                                                           'है। '
+                                                                                                                                           'नीचे '
+                                                                                                                                           'अपनी '
+                                                                                                                                           'पसंद '
+                                                                                                                                           'चुनें; '
+                                                                                                                                           'आप '
+                                                                                                                                           'इसे '
+                                                                                                                                           "'मेरा "
+                                                                                                                                           "खाता' "
+                                                                                                                                           'में '
+                                                                                                                                           'कभी '
+                                                                                                                                           'भी '
+                                                                                                                                           'बदल '
+                                                                                                                                           'सकते '
+                                                                                                                                           'हैं।',
+ 'A JSON copy of all personal data linked to your account (GDPR Art. 15/20).': 'आपके खाते से जुड़े सभी '
+                                                                               'व्यक्तिगत डेटा की JSON प्रति '
+                                                                               '(GDPR अनुच्छेद 15/20)।',
+ 'Prepare export': 'निर्यात तैयार करें',
+ 'Permanently deletes your account, your consent records and every assessment you ran. Time-stamped security log entries are retained as described in the privacy policy. This cannot be undone.': 'आपका '
+                                                                                                                                                                                                   'खाता, '
+                                                                                                                                                                                                   'आपके '
+                                                                                                                                                                                                   'सहमति '
+                                                                                                                                                                                                   'रिकॉर्ड '
+                                                                                                                                                                                                   'और '
+                                                                                                                                                                                                   'आपके '
+                                                                                                                                                                                                   'द्वारा '
+                                                                                                                                                                                                   'किया '
+                                                                                                                                                                                                   'गया '
+                                                                                                                                                                                                   'हर '
+                                                                                                                                                                                                   'आकलन '
+                                                                                                                                                                                                   'स्थायी '
+                                                                                                                                                                                                   'रूप '
+                                                                                                                                                                                                   'से '
+                                                                                                                                                                                                   'हटा '
+                                                                                                                                                                                                   'देता '
+                                                                                                                                                                                                   'है। '
+                                                                                                                                                                                                   'समय-अंकित '
+                                                                                                                                                                                                   'सुरक्षा '
+                                                                                                                                                                                                   'लॉग '
+                                                                                                                                                                                                   'प्रविष्टियाँ '
+                                                                                                                                                                                                   'गोपनीयता '
+                                                                                                                                                                                                   'नीति '
+                                                                                                                                                                                                   'में '
+                                                                                                                                                                                                   'बताए '
+                                                                                                                                                                                                   'अनुसार '
+                                                                                                                                                                                                   'रखी '
+                                                                                                                                                                                                   'जाती '
+                                                                                                                                                                                                   'हैं। '
+                                                                                                                                                                                                   'इसे '
+                                                                                                                                                                                                   'पूर्ववत '
+                                                                                                                                                                                                   'नहीं '
+                                                                                                                                                                                                   'किया '
+                                                                                                                                                                                                   'जा '
+                                                                                                                                                                                                   'सकता।',
+ 'A user only sees and changes data of the organizations they are a member of.': 'उपयोगकर्ता केवल उन्हीं '
+                                                                                 'संगठनों का डेटा देखता और '
+                                                                                 'बदलता है जिनका वह सदस्य '
+                                                                                 'है।',
+ 'viewer - read only': 'viewer - केवल पढ़ने के लिए',
+ 'supervisor - runs assessments': 'supervisor - आकलन करता है',
+ 'org_admin - manages the organization': 'org_admin - संगठन का प्रबंधन करता है',
+ 'Your privacy choices': 'आपकी गोपनीयता पसंद',
+ 'Save and continue': 'सहेजें और जारी रखें',
+ 'My account': 'मेरा खाता',
+ 'Privacy and consent': 'गोपनीयता और सहमति',
+ 'Export my data': 'मेरा डेटा निर्यात करें',
+ 'This account is managed by the deployment configuration. Contact your MAKU administrator to change or delete it.': 'यह '
+                                                                                                                     'खाता '
+                                                                                                                     'डिप्लॉयमेंट '
+                                                                                                                     'कॉन्फ़िगरेशन '
+                                                                                                                     'द्वारा '
+                                                                                                                     'प्रबंधित '
+                                                                                                                     'है। '
+                                                                                                                     'इसे '
+                                                                                                                     'बदलने '
+                                                                                                                     'या '
+                                                                                                                     'हटाने '
+                                                                                                                     'के '
+                                                                                                                     'लिए '
+                                                                                                                     'अपने '
+                                                                                                                     'MAKU '
+                                                                                                                     'व्यवस्थापक '
+                                                                                                                     'से '
+                                                                                                                     'संपर्क '
+                                                                                                                     'करें।',
+ 'Change password': 'पासवर्ड बदलें',
+ 'Current password': 'वर्तमान पासवर्ड',
+ 'New password': 'नया पासवर्ड',
+ 'Confirm new password': 'नए पासवर्ड की पुष्टि करें',
+ 'Update password': 'पासवर्ड अपडेट करें',
+ 'Delete my account': 'मेरा खाता हटाएँ',
+ 'Type your username to confirm': 'पुष्टि के लिए अपना उपयोगकर्ता नाम लिखें',
+ 'Password': 'पासवर्ड',
+ 'Delete permanently': 'स्थायी रूप से हटाएँ',
+ 'Users': 'उपयोगकर्ता',
+ 'Administrators only.': 'केवल व्यवस्थापकों के लिए।',
+ 'No database accounts yet.': 'अभी कोई डेटाबेस खाता नहीं है।',
+ 'Create account': 'खाता बनाएँ',
+ 'Username': 'उपयोगकर्ता नाम',
+ 'Email (optional)': 'ईमेल (वैकल्पिक)',
+ 'Role': 'भूमिका',
+ 'Initial password': 'प्रारंभिक पासवर्ड',
+ 'Create': 'बनाएँ',
+ 'Organizations and members': 'संगठन और सदस्य',
+ 'New organization': 'नया संगठन',
+ 'Organization': 'संगठन',
+ 'Add / change role': 'जोड़ें / भूमिका बदलें',
+ 'Remove from organization': 'संगठन से हटाएँ',
+ 'Privacy policy': 'गोपनीयता नीति',
+ 'Signed in as': 'साइन इन:',
+ 'role': 'भूमिका',
+ 'Read the privacy policy': 'गोपनीयता नीति पढ़ें',
+ 'Download (JSON)': 'डाउनलोड (JSON)',
+ 'Database unavailable.': 'डेटाबेस उपलब्ध नहीं।',
+ 'Create organization': 'संगठन बनाएँ',
+ 'Export unavailable right now.': 'निर्यात अभी उपलब्ध नहीं है।',
+ 'Passwords do not match.': 'पासवर्ड मेल नहीं खाते।',
+ 'Username does not match.': 'उपयोगकर्ता नाम मेल नहीं खाता।',
+ 'Could not save your choices right now. Please try again.': 'आपकी पसंद अभी सहेजी नहीं जा सकी। कृपया फिर से '
+                                                             'कोशिश करें।',
+ 'Preference saved': 'पसंद सहेजी गई',
+ 'Could not save. Please retry.': 'सहेजा नहीं जा सका। कृपया फिर से कोशिश करें।',
+ 'Password updated.': 'पासवर्ड अपडेट हो गया।',
+ 'Account created: ': 'खाता बनाया गया: ',
+ 'Organization created: ': 'संगठन बनाया गया: ',
+ 'Service unavailable.': 'सेवा उपलब्ध नहीं।',
+ 'Service unavailable - nothing was deleted.': 'सेवा उपलब्ध नहीं - कुछ भी हटाया नहीं गया।',
+ 'Membership saved: ': 'सदस्यता सहेजी गई: ',
+ 'No such membership.': 'ऐसी कोई सदस्यता नहीं है।',
+ 'Removed: ': 'हटाया गया: ',
+ 'Regulatory threshold legend': 'नियामक सीमाओं की कुंजी',
+ 'Risk Matrix (calculation transparency)': 'जोखिम मैट्रिक्स (गणना की पारदर्शिता)',
+ 'Formula: Score = Likelihood (1-5) x Severity (1-5)': 'सूत्र: स्कोर = संभावना (1-5) x गंभीरता (1-5)',
+ 'Controls applied on site': 'साइट पर लागू नियंत्रण',
+ 'Select which of the controls above have actually been implemented, to calculate residual risk.': 'अवशिष्ट '
+                                                                                                   'जोखिम की '
+                                                                                                   'गणना के '
+                                                                                                   'लिए '
+                                                                                                   'चुनें कि '
+                                                                                                   'ऊपर के '
+                                                                                                   'कौन से '
+                                                                                                   'नियंत्रण '
+                                                                                                   'वास्तव '
+                                                                                                   'में लागू '
+                                                                                                   'किए गए '
+                                                                                                   'हैं।',
+ 'Initial Risk -> Applied Controls -> Residual Risk': 'प्रारंभिक जोखिम -> लागू नियंत्रण -> अवशिष्ट जोखिम',
+ 'Stop-Work Trigger Registry': 'काम रोकने की शर्तों का रजिस्टर',
+ 'Regulatory Algorithm Validation': 'नियामक एल्गोरिदम का सत्यापन',
+ 'These values come from a simulator or demonstration dataset - they are NOT real measurements. Measure on site before making any decision.': 'ये '
+                                                                                                                                              'मान '
+                                                                                                                                              'किसी '
+                                                                                                                                              'सिम्युलेटर '
+                                                                                                                                              'या '
+                                                                                                                                              'प्रदर्शन '
+                                                                                                                                              'डेटासेट '
+                                                                                                                                              'से '
+                                                                                                                                              'आते '
+                                                                                                                                              'हैं '
+                                                                                                                                              '- '
+                                                                                                                                              'ये '
+                                                                                                                                              'वास्तविक '
+                                                                                                                                              'माप '
+                                                                                                                                              'नहीं '
+                                                                                                                                              'हैं। '
+                                                                                                                                              'कोई '
+                                                                                                                                              'भी '
+                                                                                                                                              'निर्णय '
+                                                                                                                                              'लेने '
+                                                                                                                                              'से '
+                                                                                                                                              'पहले '
+                                                                                                                                              'साइट '
+                                                                                                                                              'पर '
+                                                                                                                                              'मापें।',
+ '<tr><th>Hazard</th><th>Likelihood</th><th>Severity</th><th>Score</th><th>Band</th><th>Note</th></tr>': '<tr><th>खतरा</th><th>संभावना</th><th>गंभीरता</th><th>स्कोर</th><th>स्तर</th><th>टिप्पणी</th></tr>',
+ 'Overall score (worst hazard governs)': 'कुल स्कोर (सबसे गंभीर खतरा निर्णायक)',
+ '<tr><th>Module</th><th>Trigger condition</th><th>Threshold</th><th>Source constant</th></tr>': '<tr><th>मॉड्यूल</th><th>ट्रिगर '
+                                                                                                 'शर्त</th><th>सीमा</th><th>स्रोत '
+                                                                                                 'स्थिरांक</th></tr>',
+ '<tr><th>Formula</th><th>Cited standard(s)</th><th>Status</th><th>Caveat</th></tr>': '<tr><th>सूत्र</th><th>उद्धृत '
+                                                                                      'मानक</th><th>स्थिति</th><th>चेतावनी</th></tr>',
+ 'The live data feed is unavailable - enter measured values manually below before running the assessment.': 'लाइव '
+                                                                                                            'डेटा '
+                                                                                                            'स्रोत '
+                                                                                                            'उपलब्ध '
+                                                                                                            'नहीं '
+                                                                                                            'है '
+                                                                                                            '- '
+                                                                                                            'आकलन '
+                                                                                                            'चलाने '
+                                                                                                            'से '
+                                                                                                            'पहले '
+                                                                                                            'नीचे '
+                                                                                                            'मापे '
+                                                                                                            'गए '
+                                                                                                            'मान '
+                                                                                                            'मैन्युअल '
+                                                                                                            'रूप '
+                                                                                                            'से '
+                                                                                                            'दर्ज '
+                                                                                                            'करें।',
+ 'The configured production database (Postgres/Supabase) is unreachable. All writes are frozen - no data is being silently redirected to ephemeral local storage. Contact an administrator.': 'कॉन्फ़िगर '
+                                                                                                                                                                                              'किया '
+                                                                                                                                                                                              'गया '
+                                                                                                                                                                                              'प्रोडक्शन '
+                                                                                                                                                                                              'डेटाबेस '
+                                                                                                                                                                                              '(Postgres/Supabase) '
+                                                                                                                                                                                              'पहुँच '
+                                                                                                                                                                                              'से '
+                                                                                                                                                                                              'बाहर '
+                                                                                                                                                                                              'है। '
+                                                                                                                                                                                              'सभी '
+                                                                                                                                                                                              'लेखन '
+                                                                                                                                                                                              'रुके '
+                                                                                                                                                                                              'हुए '
+                                                                                                                                                                                              'हैं '
+                                                                                                                                                                                              '- '
+                                                                                                                                                                                              'कोई '
+                                                                                                                                                                                              'भी '
+                                                                                                                                                                                              'डेटा '
+                                                                                                                                                                                              'चुपचाप '
+                                                                                                                                                                                              'अस्थायी '
+                                                                                                                                                                                              'स्थानीय '
+                                                                                                                                                                                              'भंडारण '
+                                                                                                                                                                                              'में '
+                                                                                                                                                                                              'नहीं '
+                                                                                                                                                                                              'भेजा '
+                                                                                                                                                                                              'जा '
+                                                                                                                                                                                              'रहा। '
+                                                                                                                                                                                              'किसी '
+                                                                                                                                                                                              'व्यवस्थापक '
+                                                                                                                                                                                              'से '
+                                                                                                                                                                                              'संपर्क '
+                                                                                                                                                                                              'करें।',
+ 'Free, legally accessible resources. MAKU reproduces no copyrighted content - these links go to the official sources.': 'निःशुल्क, '
+                                                                                                                         'कानूनी '
+                                                                                                                         'रूप '
+                                                                                                                         'से '
+                                                                                                                         'सुलभ '
+                                                                                                                         'संसाधन। '
+                                                                                                                         'MAKU '
+                                                                                                                         'कोई '
+                                                                                                                         'कॉपीराइट '
+                                                                                                                         'सामग्री '
+                                                                                                                         'पुनः '
+                                                                                                                         'प्रस्तुत '
+                                                                                                                         'नहीं '
+                                                                                                                         'करता '
+                                                                                                                         '- '
+                                                                                                                         'ये '
+                                                                                                                         'लिंक '
+                                                                                                                         'आधिकारिक '
+                                                                                                                         'स्रोतों '
+                                                                                                                         'तक '
+                                                                                                                         'ले '
+                                                                                                                         'जाते '
+                                                                                                                         'हैं।',
+ "For copyrighted texts (e.g. Brauer's *Safety and Health for Engineers*), purchase them or check your institutional library - see the Further Reading section of the official report.": 'कॉपीराइट '
+                                                                                                                                                                                         'वाले '
+                                                                                                                                                                                         'ग्रंथों '
+                                                                                                                                                                                         '(जैसे '
+                                                                                                                                                                                         'Brauer '
+                                                                                                                                                                                         'की '
+                                                                                                                                                                                         '*Safety '
+                                                                                                                                                                                         'and '
+                                                                                                                                                                                         'Health '
+                                                                                                                                                                                         'for '
+                                                                                                                                                                                         'Engineers*) '
+                                                                                                                                                                                         'के '
+                                                                                                                                                                                         'लिए '
+                                                                                                                                                                                         'उन्हें '
+                                                                                                                                                                                         'खरीदें '
+                                                                                                                                                                                         'या '
+                                                                                                                                                                                         'अपने '
+                                                                                                                                                                                         'संस्थान '
+                                                                                                                                                                                         'का '
+                                                                                                                                                                                         'पुस्तकालय '
+                                                                                                                                                                                         'देखें '
+                                                                                                                                                                                         '- '
+                                                                                                                                                                                         'आधिकारिक '
+                                                                                                                                                                                         'रिपोर्ट '
+                                                                                                                                                                                         'का '
+                                                                                                                                                                                         "'आगे "
+                                                                                                                                                                                         "पढ़ें' "
+                                                                                                                                                                                         'खंड '
+                                                                                                                                                                                         'देखें।',
+ '🔎 Live legislation search (extra API cost)': '🔎 लाइव कानून खोज (अतिरिक्त API लागत)',
+ 'Upload a previous log (CSV) to merge': 'मर्ज करने के लिए पिछला लॉग (CSV) अपलोड करें',
+ '📄 Download PDF': '📄 PDF डाउनलोड करें',
+ '🌐 Download HTML': '🌐 HTML डाउनलोड करें',
+ 'Band': 'स्तर',
+ 'Governing hazard': 'निर्णायक खतरा',
+ 'Initial risk': 'प्रारंभिक जोखिम',
+ 'Residual risk': 'अवशिष्ट जोखिम',
+ 'No controls selected yet - residual risk equals initial risk.': 'अभी कोई नियंत्रण नहीं चुना गया - अवशिष्ट '
+                                                                  'जोखिम प्रारंभिक जोखिम के बराबर है।',
+ 'The exact numeric thresholds that force a mandatory stop-work condition (safety_override), with the named source constant in code each threshold comes from.': 'अनिवार्य '
+                                                                                                                                                                 'रूप '
+                                                                                                                                                                 'से '
+                                                                                                                                                                 'काम '
+                                                                                                                                                                 'रोकने '
+                                                                                                                                                                 '(safety_override) '
+                                                                                                                                                                 'को '
+                                                                                                                                                                 'लागू '
+                                                                                                                                                                 'करने '
+                                                                                                                                                                 'वाली '
+                                                                                                                                                                 'सटीक '
+                                                                                                                                                                 'संख्यात्मक '
+                                                                                                                                                                 'सीमाएँ, '
+                                                                                                                                                                 'साथ '
+                                                                                                                                                                 'में '
+                                                                                                                                                                 'कोड '
+                                                                                                                                                                 'का '
+                                                                                                                                                                 'वह '
+                                                                                                                                                                 'नामित '
+                                                                                                                                                                 'स्रोत '
+                                                                                                                                                                 'स्थिरांक '
+                                                                                                                                                                 'जिससे '
+                                                                                                                                                                 'हर '
+                                                                                                                                                                 'सीमा '
+                                                                                                                                                                 'आती '
+                                                                                                                                                                 'है।',
+ 'Every scoring formula mapped against its claimed standard, with an honest status: direct implementation, adapted/approximated, or illustrative (not standards-derived).': 'हर '
+                                                                                                                                                                            'स्कोरिंग '
+                                                                                                                                                                            'सूत्र '
+                                                                                                                                                                            'की '
+                                                                                                                                                                            'उसके '
+                                                                                                                                                                            'दावा '
+                                                                                                                                                                            'किए '
+                                                                                                                                                                            'गए '
+                                                                                                                                                                            'मानक '
+                                                                                                                                                                            'से '
+                                                                                                                                                                            'तुलना, '
+                                                                                                                                                                            'ईमानदार '
+                                                                                                                                                                            'स्थिति '
+                                                                                                                                                                            'के '
+                                                                                                                                                                            'साथ: '
+                                                                                                                                                                            'प्रत्यक्ष '
+                                                                                                                                                                            'कार्यान्वयन, '
+                                                                                                                                                                            'अनुकूलित/अनुमानित, '
+                                                                                                                                                                            'या '
+                                                                                                                                                                            'उदाहरणात्मक '
+                                                                                                                                                                            '(मानकों '
+                                                                                                                                                                            'से '
+                                                                                                                                                                            'व्युत्पन्न '
+                                                                                                                                                                            'नहीं)।',
+ '**MAKU is temporarily unavailable.** The production database is not answering or is not configured correctly. No assessment can be saved, and nothing is being saved anywhere else. The administrator has been alerted through the server log. Please try again in a few minutes.': '**MAKU '
+                                                                                                                                                                                                                                                                                      'अस्थायी '
+                                                                                                                                                                                                                                                                                      'रूप '
+                                                                                                                                                                                                                                                                                      'से '
+                                                                                                                                                                                                                                                                                      'उपलब्ध '
+                                                                                                                                                                                                                                                                                      'नहीं '
+                                                                                                                                                                                                                                                                                      'है।** '
+                                                                                                                                                                                                                                                                                      'प्रोडक्शन '
+                                                                                                                                                                                                                                                                                      'डेटाबेस '
+                                                                                                                                                                                                                                                                                      'जवाब '
+                                                                                                                                                                                                                                                                                      'नहीं '
+                                                                                                                                                                                                                                                                                      'दे '
+                                                                                                                                                                                                                                                                                      'रहा '
+                                                                                                                                                                                                                                                                                      'या '
+                                                                                                                                                                                                                                                                                      'सही '
+                                                                                                                                                                                                                                                                                      'ढंग '
+                                                                                                                                                                                                                                                                                      'से '
+                                                                                                                                                                                                                                                                                      'कॉन्फ़िगर '
+                                                                                                                                                                                                                                                                                      'नहीं '
+                                                                                                                                                                                                                                                                                      'है। '
+                                                                                                                                                                                                                                                                                      'कोई '
+                                                                                                                                                                                                                                                                                      'आकलन '
+                                                                                                                                                                                                                                                                                      'सहेजा '
+                                                                                                                                                                                                                                                                                      'नहीं '
+                                                                                                                                                                                                                                                                                      'जा '
+                                                                                                                                                                                                                                                                                      'सकता, '
+                                                                                                                                                                                                                                                                                      'और '
+                                                                                                                                                                                                                                                                                      'कहीं '
+                                                                                                                                                                                                                                                                                      'और '
+                                                                                                                                                                                                                                                                                      'भी '
+                                                                                                                                                                                                                                                                                      'कुछ '
+                                                                                                                                                                                                                                                                                      'सहेजा '
+                                                                                                                                                                                                                                                                                      'नहीं '
+                                                                                                                                                                                                                                                                                      'जा '
+                                                                                                                                                                                                                                                                                      'रहा। '
+                                                                                                                                                                                                                                                                                      'सर्वर '
+                                                                                                                                                                                                                                                                                      'लॉग '
+                                                                                                                                                                                                                                                                                      'के '
+                                                                                                                                                                                                                                                                                      'ज़रिए '
+                                                                                                                                                                                                                                                                                      'व्यवस्थापक '
+                                                                                                                                                                                                                                                                                      'को '
+                                                                                                                                                                                                                                                                                      'सूचित '
+                                                                                                                                                                                                                                                                                      'कर '
+                                                                                                                                                                                                                                                                                      'दिया '
+                                                                                                                                                                                                                                                                                      'गया '
+                                                                                                                                                                                                                                                                                      'है। '
+                                                                                                                                                                                                                                                                                      'कृपया '
+                                                                                                                                                                                                                                                                                      'कुछ '
+                                                                                                                                                                                                                                                                                      'मिनट '
+                                                                                                                                                                                                                                                                                      'बाद '
+                                                                                                                                                                                                                                                                                      'फिर '
+                                                                                                                                                                                                                                                                                      'से '
+                                                                                                                                                                                                                                                                                      'कोशिश '
+                                                                                                                                                                                                                                                                                      'करें।',
+ 'Demo - data is not kept.': 'डेमो - डेटा रखा नहीं जाता।',
+ 'HSE Virtual Library': 'HSE वर्चुअल लाइब्रेरी',
+ 'Lets Claude search the web live to check applicable legislation, on top of the verified references below. Uses your existing API key.': 'नीचे '
+                                                                                                                                          'दिए '
+                                                                                                                                          'सत्यापित '
+                                                                                                                                          'संदर्भों '
+                                                                                                                                          'के '
+                                                                                                                                          'अलावा, '
+                                                                                                                                          'लागू '
+                                                                                                                                          'कानून '
+                                                                                                                                          'की '
+                                                                                                                                          'जाँच '
+                                                                                                                                          'के '
+                                                                                                                                          'लिए '
+                                                                                                                                          'Claude '
+                                                                                                                                          'को '
+                                                                                                                                          'वेब '
+                                                                                                                                          'पर '
+                                                                                                                                          'लाइव '
+                                                                                                                                          'खोज '
+                                                                                                                                          'करने '
+                                                                                                                                          'देता '
+                                                                                                                                          'है। '
+                                                                                                                                          'आपकी '
+                                                                                                                                          'मौजूदा '
+                                                                                                                                          'API '
+                                                                                                                                          'कुंजी '
+                                                                                                                                          'का '
+                                                                                                                                          'उपयोग '
+                                                                                                                                          'करता '
+                                                                                                                                          'है।',
+ 'Trend Analysis & Monthly Report': 'रुझान विश्लेषण और मासिक रिपोर्ट',
+ "This session's assessment log only (Streamlit Cloud has no persistent database). Download the CSV periodically and re-upload it in a future session to build a multi-month history.": 'केवल '
+                                                                                                                                                                                        'इस '
+                                                                                                                                                                                        'सत्र '
+                                                                                                                                                                                        'का '
+                                                                                                                                                                                        'आकलन '
+                                                                                                                                                                                        'लॉग '
+                                                                                                                                                                                        '(Streamlit '
+                                                                                                                                                                                        'Cloud '
+                                                                                                                                                                                        'में '
+                                                                                                                                                                                        'कोई '
+                                                                                                                                                                                        'स्थायी '
+                                                                                                                                                                                        'डेटाबेस '
+                                                                                                                                                                                        'नहीं '
+                                                                                                                                                                                        'है)। '
+                                                                                                                                                                                        'कई '
+                                                                                                                                                                                        'महीनों '
+                                                                                                                                                                                        'का '
+                                                                                                                                                                                        'इतिहास '
+                                                                                                                                                                                        'बनाने '
+                                                                                                                                                                                        'के '
+                                                                                                                                                                                        'लिए '
+                                                                                                                                                                                        'समय-समय '
+                                                                                                                                                                                        'पर '
+                                                                                                                                                                                        'CSV '
+                                                                                                                                                                                        'डाउनलोड '
+                                                                                                                                                                                        'करें '
+                                                                                                                                                                                        'और '
+                                                                                                                                                                                        'भविष्य '
+                                                                                                                                                                                        'के '
+                                                                                                                                                                                        'सत्र '
+                                                                                                                                                                                        'में '
+                                                                                                                                                                                        'उसे '
+                                                                                                                                                                                        'फिर '
+                                                                                                                                                                                        'से '
+                                                                                                                                                                                        'अपलोड '
+                                                                                                                                                                                        'करें।',
+ 'No assessments logged yet this session - run an assessment on any module to start building the log.': 'इस '
+                                                                                                        'सत्र '
+                                                                                                        'में '
+                                                                                                        'अभी '
+                                                                                                        'कोई '
+                                                                                                        'आकलन '
+                                                                                                        'दर्ज '
+                                                                                                        'नहीं '
+                                                                                                        'हुआ '
+                                                                                                        '- '
+                                                                                                        'लॉग '
+                                                                                                        'शुरू '
+                                                                                                        'करने '
+                                                                                                        'के '
+                                                                                                        'लिए '
+                                                                                                        'किसी '
+                                                                                                        'भी '
+                                                                                                        'मॉड्यूल '
+                                                                                                        'में '
+                                                                                                        'आकलन '
+                                                                                                        'चलाएँ।',
+ 'assessment(s) logged this session': 'आकलन इस सत्र में दर्ज',
+ '⬇️ Download log (CSV)': '⬇️ लॉग डाउनलोड करें (CSV)',
+ '📊 Monthly Excel Report': '📊 मासिक Excel रिपोर्ट',
+ 'Monthly summary': 'मासिक सारांश',
+ "The selected controls don't address any assessed hazard, so no reduction is credited.": 'चुने गए नियंत्रण '
+                                                                                          'किसी भी आकलित '
+                                                                                          'खतरे से संबंधित '
+                                                                                          'नहीं हैं, इसलिए '
+                                                                                          'कोई कमी नहीं गिनी '
+                                                                                          'जाती।',
+ 'No accessible organization - the log is not available.': 'कोई सुलभ संगठन नहीं - लॉग उपलब्ध नहीं है।',
+ "Method {version}: a control only reduces the hazards it addresses. Elimination (stop work, de-energize, evacuate) → likelihood 'rare'; engineering, administrative, PPE → −1 each. Severity is never reduced.": 'विधि '
+                                                                                                                                                                                                                  '{version}: '
+                                                                                                                                                                                                                  'नियंत्रण '
+                                                                                                                                                                                                                  'केवल '
+                                                                                                                                                                                                                  'उन्हीं '
+                                                                                                                                                                                                                  'खतरों '
+                                                                                                                                                                                                                  'को '
+                                                                                                                                                                                                                  'घटाता '
+                                                                                                                                                                                                                  'है '
+                                                                                                                                                                                                                  'जिन्हें '
+                                                                                                                                                                                                                  'वह '
+                                                                                                                                                                                                                  'लक्षित '
+                                                                                                                                                                                                                  'करता '
+                                                                                                                                                                                                                  'है। '
+                                                                                                                                                                                                                  'उन्मूलन '
+                                                                                                                                                                                                                  '(काम '
+                                                                                                                                                                                                                  'रोकना, '
+                                                                                                                                                                                                                  'बिजली '
+                                                                                                                                                                                                                  'बंद '
+                                                                                                                                                                                                                  'करना, '
+                                                                                                                                                                                                                  'खाली '
+                                                                                                                                                                                                                  'कराना) '
+                                                                                                                                                                                                                  '→ '
+                                                                                                                                                                                                                  'संभावना '
+                                                                                                                                                                                                                  "'दुर्लभ'; "
+                                                                                                                                                                                                                  'इंजीनियरिंग, '
+                                                                                                                                                                                                                  'प्रशासनिक '
+                                                                                                                                                                                                                  'नियंत्रण, '
+                                                                                                                                                                                                                  'PPE '
+                                                                                                                                                                                                                  '→ '
+                                                                                                                                                                                                                  'प्रत्येक '
+                                                                                                                                                                                                                  '−1। '
+                                                                                                                                                                                                                  'गंभीरता '
+                                                                                                                                                                                                                  'कभी '
+                                                                                                                                                                                                                  'नहीं '
+                                                                                                                                                                                                                  'घटाई '
+                                                                                                                                                                                                                  'जाती।',
+ 'No effect on the assessed hazards: ': 'आकलित खतरों पर कोई प्रभाव नहीं: ',
+ 'Search books on this topic (Google Books)': 'इस विषय पर किताबें खोजें (Google Books)',
+ 'Import NOT saved - the database is unavailable.': 'आयात सहेजा नहीं गया - डेटाबेस उपलब्ध नहीं है।',
+ 'Your role in this organization is read-only: import is not allowed.': 'इस संगठन में आपकी भूमिका केवल पढ़ने '
+                                                                        'की है: आयात की अनुमति नहीं है।',
+ 'Merge failed: the file could not be read.': 'मर्ज विफल: फ़ाइल पढ़ी नहीं जा सकी।',
+ 'Share PDF': 'PDF साझा करें',
+ 'Freshness': 'ताज़गी',
+ 'refreshed at least every {seconds}s while this page is open': 'यह पेज खुला रहने तक कम से कम हर {seconds} '
+                                                                'सेकंड में ताज़ा होता है',
+ '{count} new row(s) merged.': '{count} नई पंक्ति (पंक्तियाँ) मर्ज की गईं।',
+ 'Merge failed': 'मर्ज विफल',
+ "MAKU HSE Decision-Support System — Results are intended for risk screening and decision support and do not replace a competent person's assessment, engineering analysis, statutory requirement, manufacturer instruction or formal specialist study.": 'MAKU '
+                                                                                                                                                                                                                                                          'HSE '
+                                                                                                                                                                                                                                                          'निर्णय-सहायता '
+                                                                                                                                                                                                                                                          'प्रणाली '
+                                                                                                                                                                                                                                                          '— '
+                                                                                                                                                                                                                                                          'परिणाम '
+                                                                                                                                                                                                                                                          'जोखिम '
+                                                                                                                                                                                                                                                          'स्क्रीनिंग '
+                                                                                                                                                                                                                                                          'और '
+                                                                                                                                                                                                                                                          'निर्णय '
+                                                                                                                                                                                                                                                          'सहायता '
+                                                                                                                                                                                                                                                          'के '
+                                                                                                                                                                                                                                                          'लिए '
+                                                                                                                                                                                                                                                          'हैं '
+                                                                                                                                                                                                                                                          'और '
+                                                                                                                                                                                                                                                          'किसी '
+                                                                                                                                                                                                                                                          'सक्षम '
+                                                                                                                                                                                                                                                          'व्यक्ति '
+                                                                                                                                                                                                                                                          'के '
+                                                                                                                                                                                                                                                          'आकलन, '
+                                                                                                                                                                                                                                                          'इंजीनियरिंग '
+                                                                                                                                                                                                                                                          'विश्लेषण, '
+                                                                                                                                                                                                                                                          'कानूनी '
+                                                                                                                                                                                                                                                          'आवश्यकता, '
+                                                                                                                                                                                                                                                          'निर्माता '
+                                                                                                                                                                                                                                                          'के '
+                                                                                                                                                                                                                                                          'निर्देश '
+                                                                                                                                                                                                                                                          'या '
+                                                                                                                                                                                                                                                          'औपचारिक '
+                                                                                                                                                                                                                                                          'विशेषज्ञ '
+                                                                                                                                                                                                                                                          'अध्ययन '
+                                                                                                                                                                                                                                                          'का '
+                                                                                                                                                                                                                                                          'स्थान '
+                                                                                                                                                                                                                                                          'नहीं '
+                                                                                                                                                                                                                                                          'लेते।',
+ 'AI briefings (optional)': 'AI ब्रीफ़िंग (वैकल्पिक)',
+ 'Send the assessment results for this session (risk scores, module, site name, and anonymised worker-strain summaries) to Anthropic, PBC to generate a written AI briefing. No name, email or GPS coordinates are sent. Without consent you still get the full rule-based briefing.': 'लिखित '
+                                                                                                                                                                                                                                                                                       'AI '
+                                                                                                                                                                                                                                                                                       'ब्रीफ़िंग '
+                                                                                                                                                                                                                                                                                       'बनाने '
+                                                                                                                                                                                                                                                                                       'के '
+                                                                                                                                                                                                                                                                                       'लिए '
+                                                                                                                                                                                                                                                                                       'इस '
+                                                                                                                                                                                                                                                                                       'सत्र '
+                                                                                                                                                                                                                                                                                       'के '
+                                                                                                                                                                                                                                                                                       'आकलन '
+                                                                                                                                                                                                                                                                                       'परिणाम '
+                                                                                                                                                                                                                                                                                       '(जोखिम '
+                                                                                                                                                                                                                                                                                       'स्कोर, '
+                                                                                                                                                                                                                                                                                       'मॉड्यूल, '
+                                                                                                                                                                                                                                                                                       'साइट '
+                                                                                                                                                                                                                                                                                       'का '
+                                                                                                                                                                                                                                                                                       'नाम '
+                                                                                                                                                                                                                                                                                       'और '
+                                                                                                                                                                                                                                                                                       'कर्मचारियों '
+                                                                                                                                                                                                                                                                                       'के '
+                                                                                                                                                                                                                                                                                       'दबाव '
+                                                                                                                                                                                                                                                                                       'के '
+                                                                                                                                                                                                                                                                                       'गुमनाम '
+                                                                                                                                                                                                                                                                                       'सारांश) '
+                                                                                                                                                                                                                                                                                       'Anthropic, '
+                                                                                                                                                                                                                                                                                       'PBC '
+                                                                                                                                                                                                                                                                                       'को '
+                                                                                                                                                                                                                                                                                       'भेजें। '
+                                                                                                                                                                                                                                                                                       'कोई '
+                                                                                                                                                                                                                                                                                       'नाम, '
+                                                                                                                                                                                                                                                                                       'ईमेल '
+                                                                                                                                                                                                                                                                                       'या '
+                                                                                                                                                                                                                                                                                       'GPS '
+                                                                                                                                                                                                                                                                                       'निर्देशांक '
+                                                                                                                                                                                                                                                                                       'नहीं '
+                                                                                                                                                                                                                                                                                       'भेजे '
+                                                                                                                                                                                                                                                                                       'जाते। '
+                                                                                                                                                                                                                                                                                       'सहमति '
+                                                                                                                                                                                                                                                                                       'के '
+                                                                                                                                                                                                                                                                                       'बिना '
+                                                                                                                                                                                                                                                                                       'भी '
+                                                                                                                                                                                                                                                                                       'आपको '
+                                                                                                                                                                                                                                                                                       'पूरी '
+                                                                                                                                                                                                                                                                                       'नियम-आधारित '
+                                                                                                                                                                                                                                                                                       'ब्रीफ़िंग '
+                                                                                                                                                                                                                                                                                       'मिलती '
+                                                                                                                                                                                                                                                                                       'है।',
+ 'Location (optional)': 'स्थान (वैकल्पिक)',
+ "Use this device's GPS position (or, if GPS is denied, an approximate location from your IP address) to pick the nearest site, local weather and the applicable country regulations. Location is used for the current session only and is not stored.": 'निकटतम '
+                                                                                                                                                                                                                                                         'साइट, '
+                                                                                                                                                                                                                                                         'स्थानीय '
+                                                                                                                                                                                                                                                         'मौसम '
+                                                                                                                                                                                                                                                         'और '
+                                                                                                                                                                                                                                                         'लागू '
+                                                                                                                                                                                                                                                         'देश '
+                                                                                                                                                                                                                                                         'के '
+                                                                                                                                                                                                                                                         'नियम '
+                                                                                                                                                                                                                                                         'चुनने '
+                                                                                                                                                                                                                                                         'के '
+                                                                                                                                                                                                                                                         'लिए '
+                                                                                                                                                                                                                                                         'इस '
+                                                                                                                                                                                                                                                         'डिवाइस '
+                                                                                                                                                                                                                                                         'की '
+                                                                                                                                                                                                                                                         'GPS '
+                                                                                                                                                                                                                                                         'स्थिति '
+                                                                                                                                                                                                                                                         '(या, '
+                                                                                                                                                                                                                                                         'GPS '
+                                                                                                                                                                                                                                                         'अस्वीकृत '
+                                                                                                                                                                                                                                                         'होने '
+                                                                                                                                                                                                                                                         'पर, '
+                                                                                                                                                                                                                                                         'आपके '
+                                                                                                                                                                                                                                                         'IP '
+                                                                                                                                                                                                                                                         'पते '
+                                                                                                                                                                                                                                                         'से '
+                                                                                                                                                                                                                                                         'अनुमानित '
+                                                                                                                                                                                                                                                         'स्थान) '
+                                                                                                                                                                                                                                                         'का '
+                                                                                                                                                                                                                                                         'उपयोग '
+                                                                                                                                                                                                                                                         'करें। '
+                                                                                                                                                                                                                                                         'स्थान '
+                                                                                                                                                                                                                                                         'का '
+                                                                                                                                                                                                                                                         'उपयोग '
+                                                                                                                                                                                                                                                         'केवल '
+                                                                                                                                                                                                                                                         'वर्तमान '
+                                                                                                                                                                                                                                                         'सत्र '
+                                                                                                                                                                                                                                                         'के '
+                                                                                                                                                                                                                                                         'लिए '
+                                                                                                                                                                                                                                                         'होता '
+                                                                                                                                                                                                                                                         'है '
+                                                                                                                                                                                                                                                         'और '
+                                                                                                                                                                                                                                                         'इसे '
+                                                                                                                                                                                                                                                         'संग्रहीत '
+                                                                                                                                                                                                                                                         'नहीं '
+                                                                                                                                                                                                                                                         'किया '
+                                                                                                                                                                                                                                                         'जाता।',
+ 'Work clothes (baseline)': 'कार्य वस्त्र (आधार)',
+ 'SMS polypropylene coveralls': 'SMS पॉलीप्रोपाइलीन कवरऑल',
+ 'Polyolefin coveralls': 'पॉलीओलेफ़िन कवरऑल',
+ 'Double-layer woven coveralls': 'दोहरी परत वाला बुना हुआ कवरऑल',
+ 'Vapor-barrier coveralls (limited use)': 'वाष्प-रोधी कवरऑल (सीमित उपयोग)',
+ '**Nothing was saved. Please try again in a few minutes.**': '**कुछ भी सहेजा नहीं गया। कृपया कुछ मिनट बाद '
+                                                              'फिर से कोशिश करें।**',
+ 'Assessment NOT saved - the database is unavailable.': 'आकलन सहेजा नहीं गया - डेटाबेस उपलब्ध नहीं है।',
+ 'Commonly-cited approximation of the ACGIH TLV very_heavy/acclimatized figures - verify against the current ACGIH TLV booklet before relying on this for a real compliance decision.': 'ACGIH '
+                                                                                                                                                                                        'TLV '
+                                                                                                                                                                                        'के '
+                                                                                                                                                                                        'अत्यधिक '
+                                                                                                                                                                                        'भारी/अनुकूलित '
+                                                                                                                                                                                        'मानों '
+                                                                                                                                                                                        'का '
+                                                                                                                                                                                        'आमतौर '
+                                                                                                                                                                                        'पर '
+                                                                                                                                                                                        'उद्धृत '
+                                                                                                                                                                                        'अनुमान '
+                                                                                                                                                                                        '- '
+                                                                                                                                                                                        'वास्तविक '
+                                                                                                                                                                                        'अनुपालन '
+                                                                                                                                                                                        'निर्णय '
+                                                                                                                                                                                        'के '
+                                                                                                                                                                                        'लिए '
+                                                                                                                                                                                        'इस '
+                                                                                                                                                                                        'पर '
+                                                                                                                                                                                        'भरोसा '
+                                                                                                                                                                                        'करने '
+                                                                                                                                                                                        'से '
+                                                                                                                                                                                        'पहले '
+                                                                                                                                                                                        'वर्तमान '
+                                                                                                                                                                                        'ACGIH '
+                                                                                                                                                                                        'TLV '
+                                                                                                                                                                                        'पुस्तिका '
+                                                                                                                                                                                        'से '
+                                                                                                                                                                                        'इसकी '
+                                                                                                                                                                                        'जाँच '
+                                                                                                                                                                                        'करें।',
+ 'Invalid input values:': 'अमान्य इनपुट मान:',
+ 'Recommended ratio': 'अनुशंसित अनुपात',
+ 'STOP WORK': 'काम रोकें',
+ "Supplements (never replaces) this module's own risk assessment above.": 'ऊपर दिए इस मॉड्यूल के अपने जोखिम '
+                                                                          'आकलन का पूरक है (कभी उसका स्थान '
+                                                                          'नहीं लेता)।',
+ 'WBGT effective': 'प्रभावी WBGT',
+ 'streamlit-js-eval is not installed - geolocation is unavailable. Add it to requirements.txt to enable this section.': 'streamlit-js-eval '
+                                                                                                                        'इंस्टॉल '
+                                                                                                                        'नहीं '
+                                                                                                                        'है '
+                                                                                                                        '- '
+                                                                                                                        'भौगोलिक '
+                                                                                                                        'स्थान '
+                                                                                                                        'उपलब्ध '
+                                                                                                                        'नहीं '
+                                                                                                                        'है। '
+                                                                                                                        'इस '
+                                                                                                                        'खंड '
+                                                                                                                        'को '
+                                                                                                                        'सक्षम '
+                                                                                                                        'करने '
+                                                                                                                        'के '
+                                                                                                                        'लिए '
+                                                                                                                        'इसे '
+                                                                                                                        'requirements.txt '
+                                                                                                                        'में '
+                                                                                                                        'जोड़ें।',
+ '⚠️ STOP WORK: no compliant work/rest ratio exists for this workload/clothing/acclimatization combination, even at 25/75.': '⚠️ '
+                                                                                                                             'काम '
+                                                                                                                             'रोकें: '
+                                                                                                                             'इस '
+                                                                                                                             'कार्यभार/कपड़े/अनुकूलन '
+                                                                                                                             'संयोजन '
+                                                                                                                             'के '
+                                                                                                                             'लिए '
+                                                                                                                             '25/75 '
+                                                                                                                             'पर '
+                                                                                                                             'भी '
+                                                                                                                             'कोई '
+                                                                                                                             'अनुरूप '
+                                                                                                                             'कार्य/विश्राम '
+                                                                                                                             'अनुपात '
+                                                                                                                             'मौजूद '
+                                                                                                                             'नहीं '
+                                                                                                                             'है।',
+ '⚠️ STOP WORK: vapor-barrier PPE requires direct physiological monitoring, not a WBGT table lookup alone.': '⚠️ '
+                                                                                                             'काम '
+                                                                                                             'रोकें: '
+                                                                                                             'वाष्प-रोधी '
+                                                                                                             'PPE '
+                                                                                                             'के '
+                                                                                                             'लिए '
+                                                                                                             'प्रत्यक्ष '
+                                                                                                             'शारीरिक '
+                                                                                                             'निगरानी '
+                                                                                                             'आवश्यक '
+                                                                                                             'है, '
+                                                                                                             'केवल '
+                                                                                                             'WBGT '
+                                                                                                             'तालिका '
+                                                                                                             'देखना '
+                                                                                                             'पर्याप्त '
+                                                                                                             'नहीं।'}

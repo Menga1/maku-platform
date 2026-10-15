@@ -45,6 +45,8 @@ import time
 
 import streamlit as st
 
+from translations import inline as _tx
+
 import accounts
 
 try:
@@ -455,7 +457,9 @@ _CONSENT_TEXT = {
 
 def _consent_text(purpose: str, lang: str) -> tuple[str, str]:
     texts = _CONSENT_TEXT[purpose]
-    return texts.get(lang, texts["en"])
+    if lang in texts:
+        return texts[lang]
+    return tuple(_tx(fr_part, en_part, lang) for fr_part, en_part in zip(texts["fr"], texts["en"]))
 
 
 def session_consents() -> dict:
@@ -482,15 +486,11 @@ def require_privacy_choices(lang: str = "fr") -> None:
     if all(v is not None for v in consents.values()):
         return
 
-    st.title("🔐 " + ("Vos choix de confidentialité" if lang == "fr" else "Your privacy choices"))
+    st.title("🔐 " + (_tx('Vos choix de confidentialité', 'Your privacy choices', lang)))
     st.write(
-        "MAKU traite vos données conformément au RGPD et à la loi émiratie PDPL. Choisissez ci-dessous ; "
-        "vous pourrez changer d'avis à tout moment dans « Mon compte »."
-        if lang == "fr" else
-        "MAKU processes your data under the GDPR and the UAE PDPL. Make your choices below; you can "
-        "change them at any time under 'My account'."
+        _tx("MAKU traite vos données conformément au RGPD et à la loi émiratie PDPL. Choisissez ci-dessous ; vous pourrez changer d'avis à tout moment dans « Mon compte ».", "MAKU processes your data under the GDPR and the UAE PDPL. Make your choices below; you can change them at any time under 'My account'.", lang)
     )
-    st.markdown(f"[{'Politique de confidentialité' if lang == 'fr' else 'Privacy policy'}]"
+    st.markdown(f"[{_tx('Politique de confidentialité', 'Privacy policy', lang)}]"
                 f"({accounts.PRIVACY_POLICY_URL}) · v{accounts.PRIVACY_POLICY_VERSION}")
     with st.form("privacy_choices"):
         choices = {}
@@ -498,7 +498,7 @@ def require_privacy_choices(lang: str = "fr") -> None:
             title, body = _consent_text(purpose, lang)
             choices[purpose] = st.toggle(title, value=False, key=f"consent_init_{purpose}")
             st.caption(body)
-        if st.form_submit_button("Enregistrer et continuer" if lang == "fr" else "Save and continue",
+        if st.form_submit_button(_tx('Enregistrer et continuer', 'Save and continue', lang),
                                  type="primary", width="stretch"):
             try:
                 for purpose, granted in choices.items():
@@ -506,8 +506,7 @@ def require_privacy_choices(lang: str = "fr") -> None:
                 st.session_state.pop("_auth_consents", None)
                 st.rerun()
             except accounts.AccountStoreUnavailable:
-                st.error("Impossible d'enregistrer vos choix pour le moment." if lang == "fr"
-                         else "Could not save your choices right now. Please try again.")
+                st.error(_tx("Impossible d'enregistrer vos choix pour le moment.", 'Could not save your choices right now. Please try again.', lang))
     st.stop()
 
 
@@ -518,12 +517,12 @@ def require_privacy_choices(lang: str = "fr") -> None:
 def render_account_page(lang: str = "fr") -> None:
     fr = lang == "fr"
     username = current_username()
-    st.title("👤 " + ("Mon compte" if fr else "My account"))
-    st.caption(f"{'Connecté en tant que' if fr else 'Signed in as'} **{username}** · "
-               f"{'rôle' if fr else 'role'}: {current_role()}")
+    st.title("👤 " + (_tx('Mon compte', 'My account', lang)))
+    st.caption(f"{_tx('Connecté en tant que', 'Signed in as', lang)} **{username}** · "
+               f"{_tx('rôle', 'role', lang)}: {current_role()}")
 
     # --- Privacy -----------------------------------------------------------
-    st.subheader("🔐 " + ("Confidentialité et consentements" if fr else "Privacy and consent"))
+    st.subheader("🔐 " + (_tx('Confidentialité et consentements', 'Privacy and consent', lang)))
     consents = session_consents()
     for purpose in accounts.CONSENT_PURPOSES:
         title, body = _consent_text(purpose, lang)
@@ -534,70 +533,60 @@ def render_account_page(lang: str = "fr") -> None:
             try:
                 accounts.set_consent(username, purpose, new_value)
                 st.session_state.pop("_auth_consents", None)
-                st.toast("✅ " + ("Préférence enregistrée" if fr else "Preference saved"))
+                st.toast("✅ " + (_tx('Préférence enregistrée', 'Preference saved', lang)))
                 st.rerun()
             except accounts.AccountStoreUnavailable:
-                st.error("Impossible d'enregistrer." if fr else "Could not save. Please retry.")
-    st.markdown(f"[{'Lire la politique de confidentialité' if fr else 'Read the privacy policy'}]"
+                st.error(_tx("Impossible d'enregistrer.", 'Could not save. Please retry.', lang))
+    st.markdown(f"[{_tx('Lire la politique de confidentialité', 'Read the privacy policy', lang)}]"
                 f"({accounts.PRIVACY_POLICY_URL})")
 
     # --- Data export -------------------------------------------------------
-    st.subheader("📦 " + ("Exporter mes données" if fr else "Export my data"))
-    st.caption("Copie JSON de toutes les données personnelles associées à votre compte (RGPD art. 15/20)."
-               if fr else "A JSON copy of all personal data linked to your account (GDPR Art. 15/20).")
-    if st.button("Préparer l'export" if fr else "Prepare export", key="export_prepare"):
+    st.subheader("📦 " + (_tx('Exporter mes données', 'Export my data', lang)))
+    st.caption(_tx('Copie JSON de toutes les données personnelles associées à votre compte (RGPD art. 15/20).', 'A JSON copy of all personal data linked to your account (GDPR Art. 15/20).', lang))
+    if st.button(_tx("Préparer l'export", 'Prepare export', lang), key="export_prepare"):
         try:
             st.session_state["_account_export"] = accounts.export_user_data(username)
         except accounts.AccountStoreUnavailable:
-            st.error("Export indisponible pour le moment." if fr else "Export unavailable right now.")
+            st.error(_tx('Export indisponible pour le moment.', 'Export unavailable right now.', lang))
     if st.session_state.get("_account_export"):
-        st.download_button("⬇️ " + ("Télécharger (JSON)" if fr else "Download (JSON)"),
+        st.download_button("⬇️ " + (_tx('Télécharger (JSON)', 'Download (JSON)', lang)),
                            data=st.session_state["_account_export"],
                            file_name=f"maku-data-{username}.json", mime="application/json")
 
     if st.session_state.get("_auth_source") != "database":
-        st.info("Ce compte est géré par la configuration du déploiement. Contactez votre administrateur MAKU "
-                "pour toute modification ou suppression." if fr else
-                "This account is managed by the deployment configuration. Contact your MAKU administrator "
-                "to change or delete it.")
+        st.info(_tx('Ce compte est géré par la configuration du déploiement. Contactez votre administrateur MAKU pour toute modification ou suppression.', 'This account is managed by the deployment configuration. Contact your MAKU administrator to change or delete it.', lang))
         return
 
     # --- Password ----------------------------------------------------------
-    st.subheader("🔑 " + ("Changer le mot de passe" if fr else "Change password"))
+    st.subheader("🔑 " + (_tx('Changer le mot de passe', 'Change password', lang)))
     with st.form("change_password"):
-        current_pw = st.text_input("Mot de passe actuel" if fr else "Current password", type="password")
-        new_pw = st.text_input("Nouveau mot de passe" if fr else "New password", type="password",
+        current_pw = st.text_input(_tx('Mot de passe actuel', 'Current password', lang), type="password")
+        new_pw = st.text_input(_tx('Nouveau mot de passe', 'New password', lang), type="password",
                                help=f"≥ {accounts.MIN_PASSWORD_LENGTH} caractères / characters")
-        new_pw2 = st.text_input("Confirmer" if fr else "Confirm new password", type="password")
-        if st.form_submit_button("Mettre à jour" if fr else "Update password"):
+        new_pw2 = st.text_input(_tx('Confirmer', 'Confirm new password', lang), type="password")
+        if st.form_submit_button(_tx('Mettre à jour', 'Update password', lang)):
             if new_pw != new_pw2:
-                st.error("Les mots de passe ne correspondent pas." if fr else "Passwords do not match.")
+                st.error(_tx('Les mots de passe ne correspondent pas.', 'Passwords do not match.', lang))
             else:
                 try:
                     accounts.change_password(username, current_pw, new_pw)
-                    st.success("Mot de passe mis à jour." if fr else "Password updated.")
+                    st.success(_tx('Mot de passe mis à jour.', 'Password updated.', lang))
                 except accounts.AccountError as exc:
                     st.error(str(exc))
                 except accounts.AccountStoreUnavailable:
-                    st.error("Service indisponible." if fr else "Service unavailable.")
+                    st.error(_tx('Service indisponible.', 'Service unavailable.', lang))
 
     # --- Delete account ----------------------------------------------------
-    st.subheader("🗑️ " + ("Supprimer mon compte" if fr else "Delete my account"))
+    st.subheader("🗑️ " + (_tx('Supprimer mon compte', 'Delete my account', lang)))
     st.warning(
-        "Supprime définitivement votre compte, vos consentements et toutes les évaluations que vous avez "
-        "réalisées. Les journaux de sécurité horodatés sont conservés comme indiqué dans la politique de "
-        "confidentialité. Cette action est irréversible."
-        if fr else
-        "Permanently deletes your account, your consent records and every assessment you ran. Time-stamped "
-        "security log entries are retained as described in the privacy policy. This cannot be undone."
+        _tx('Supprime définitivement votre compte, vos consentements et toutes les évaluations que vous avez réalisées. Les journaux de sécurité horodatés sont conservés comme indiqué dans la politique de confidentialité. Cette action est irréversible.', 'Permanently deletes your account, your consent records and every assessment you ran. Time-stamped security log entries are retained as described in the privacy policy. This cannot be undone.', lang)
     )
     with st.form("delete_account"):
-        confirm_name = st.text_input(("Tapez votre identifiant pour confirmer" if fr
-                                      else "Type your username to confirm"))
-        confirm_pw = st.text_input("Mot de passe" if fr else "Password", type="password")
-        if st.form_submit_button("Supprimer définitivement" if fr else "Delete permanently", type="primary"):
+        confirm_name = st.text_input((_tx('Tapez votre identifiant pour confirmer', 'Type your username to confirm', lang)))
+        confirm_pw = st.text_input(_tx('Mot de passe', 'Password', lang), type="password")
+        if st.form_submit_button(_tx('Supprimer définitivement', 'Delete permanently', lang), type="primary"):
             if confirm_name.strip() != username:
-                st.error("L'identifiant ne correspond pas." if fr else "Username does not match.")
+                st.error(_tx("L'identifiant ne correspond pas.", 'Username does not match.', lang))
             else:
                 try:
                     accounts.delete_account(username, confirm_pw, requested_via="in_app")
@@ -607,8 +596,7 @@ def render_account_page(lang: str = "fr") -> None:
                 except accounts.AccountError as exc:
                     st.error(str(exc))
                 except accounts.AccountStoreUnavailable:
-                    st.error("Service indisponible - rien n'a été supprimé." if fr
-                             else "Service unavailable - nothing was deleted.")
+                    st.error(_tx("Service indisponible - rien n'a été supprimé.", 'Service unavailable - nothing was deleted.', lang))
 
 
 # ---------------------------------------------------------------------------
@@ -617,36 +605,36 @@ def render_account_page(lang: str = "fr") -> None:
 
 def render_admin_users_page(lang: str = "fr") -> None:
     fr = lang == "fr"
-    st.title("🛠️ " + ("Utilisateurs" if fr else "Users"))
+    st.title("🛠️ " + (_tx('Utilisateurs', 'Users', lang)))
     if not is_admin():
-        st.error("Accès réservé aux administrateurs." if fr else "Administrators only.")
+        st.error(_tx('Accès réservé aux administrateurs.', 'Administrators only.', lang))
         return
     try:
         users = accounts.list_users()
     except accounts.AccountStoreUnavailable:
-        st.error("Base de données indisponible." if fr else "Database unavailable.")
+        st.error(_tx('Base de données indisponible.', 'Database unavailable.', lang))
         return
     if users:
         st.dataframe(users, hide_index=True, width="stretch")
     else:
-        st.info("Aucun compte en base pour l'instant." if fr else "No database accounts yet.")
+        st.info(_tx("Aucun compte en base pour l'instant.", 'No database accounts yet.', lang))
 
-    st.subheader("➕ " + ("Créer un compte" if fr else "Create account"))
+    st.subheader("➕ " + (_tx('Créer un compte', 'Create account', lang)))
     with st.form("create_user", clear_on_submit=True):
-        new_username = st.text_input("Identifiant" if fr else "Username")
-        new_email = st.text_input("E-mail (facultatif)" if fr else "Email (optional)")
-        new_role = st.selectbox("Rôle" if fr else "Role", accounts.ROLES, index=accounts.ROLES.index("supervisor"))
-        new_password = st.text_input("Mot de passe initial" if fr else "Initial password", type="password",
+        new_username = st.text_input(_tx('Identifiant', 'Username', lang))
+        new_email = st.text_input(_tx('E-mail (facultatif)', 'Email (optional)', lang))
+        new_role = st.selectbox(_tx('Rôle', 'Role', lang), accounts.ROLES, index=accounts.ROLES.index("supervisor"))
+        new_password = st.text_input(_tx('Mot de passe initial', 'Initial password', lang), type="password",
                                      help=f"≥ {accounts.MIN_PASSWORD_LENGTH}")
-        if st.form_submit_button("Créer" if fr else "Create", type="primary"):
+        if st.form_submit_button(_tx('Créer', 'Create', lang), type="primary"):
             try:
                 accounts.create_user(new_username, new_password, new_role, created_by=current_username(),
                                      email=new_email or None)
-                st.success(("Compte créé : " if fr else "Account created: ") + new_username)
+                st.success((_tx('Compte créé : ', 'Account created: ', lang)) + new_username)
             except accounts.AccountError as exc:
                 st.error(str(exc))
             except accounts.AccountStoreUnavailable:
-                st.error("Base de données indisponible." if fr else "Database unavailable.")
+                st.error(_tx('Base de données indisponible.', 'Database unavailable.', lang))
 
     _render_membership_admin(fr)
 
@@ -658,24 +646,23 @@ def _render_membership_admin(fr: bool) -> None:
     import tenancy
 
     actor = tenancy.principal_from_session(st)
-    st.subheader("🏢 " + ("Organisations et membres" if fr else "Organizations and members"))
-    st.caption("Un utilisateur ne voit et ne modifie que les données des organisations dont il est membre."
-               if fr else "A user only sees and changes data of the organizations they are a member of.")
+    st.subheader("🏢 " + (_tx('Organisations et membres', 'Organizations and members', st.session_state.get("lang", "fr"))))
+    st.caption(_tx('Un utilisateur ne voit et ne modifie que les données des organisations dont il est membre.', 'A user only sees and changes data of the organizations they are a member of.', st.session_state.get("lang", "fr")))
     try:
         orgs = tenancy.accessible_organizations(actor)
         members = tenancy.list_memberships()
     except Exception:  # noqa: BLE001
-        st.error("Base de données indisponible." if fr else "Database unavailable.")
+        st.error(_tx('Base de données indisponible.', 'Database unavailable.', st.session_state.get("lang", "fr")))
         return
     if members:
         st.dataframe(members, hide_index=True, width="stretch")
 
     with st.form("create_org", clear_on_submit=True):
-        org_name = st.text_input("Nouvelle organisation" if fr else "New organization")
-        if st.form_submit_button("Créer l'organisation" if fr else "Create organization") and org_name.strip():
+        org_name = st.text_input(_tx('Nouvelle organisation', 'New organization', st.session_state.get("lang", "fr")))
+        if st.form_submit_button(_tx("Créer l'organisation", 'Create organization', st.session_state.get("lang", "fr"))) and org_name.strip():
             try:
                 tenancy.create_organization(actor, org_name)
-                st.success(("Organisation créée : " if fr else "Organization created: ") + org_name.strip())
+                st.success((_tx('Organisation créée : ', 'Organization created: ', st.session_state.get("lang", "fr"))) + org_name.strip())
                 st.rerun()
             except (tenancy.TenancyError, tenancy.TenantAccessDenied) as exc:
                 st.error(str(exc))
@@ -683,29 +670,29 @@ def _render_membership_admin(fr: bool) -> None:
     if not orgs:
         return
     names = {o["name"]: o["id"] for o in orgs}
-    role_labels = {"viewer": "viewer - lecture seule" if fr else "viewer - read only",
-                   "supervisor": "supervisor - évaluations" if fr else "supervisor - runs assessments",
-                   "org_admin": "org_admin - gère l'organisation" if fr else "org_admin - manages the organization"}
+    role_labels = {"viewer": _tx('viewer - lecture seule', 'viewer - read only', st.session_state.get("lang", "fr")),
+                   "supervisor": _tx('supervisor - évaluations', 'supervisor - runs assessments', st.session_state.get("lang", "fr")),
+                   "org_admin": _tx("org_admin - gère l'organisation", 'org_admin - manages the organization', st.session_state.get("lang", "fr"))}
     with st.form("set_membership", clear_on_submit=True):
         c1, c2, c3 = st.columns(3)
-        member_user = c1.text_input("Identifiant" if fr else "Username")
-        member_org = c2.selectbox("Organisation" if fr else "Organization", list(names))
-        member_role = c3.selectbox("Rôle" if fr else "Role", list(tenancy.ORG_ROLES),
+        member_user = c1.text_input(_tx('Identifiant', 'Username', st.session_state.get("lang", "fr")))
+        member_org = c2.selectbox(_tx('Organisation', 'Organization', st.session_state.get("lang", "fr")), list(names))
+        member_role = c3.selectbox(_tx('Rôle', 'Role', st.session_state.get("lang", "fr")), list(tenancy.ORG_ROLES),
                                    index=list(tenancy.ORG_ROLES).index(tenancy.DEFAULT_ORG_ROLE),
                                    format_func=lambda r: role_labels[r])
         b1, b2 = st.columns(2)
-        add = b1.form_submit_button("Ajouter / changer le rôle" if fr else "Add / change role", type="primary")
-        remove = b2.form_submit_button("Retirer de l'organisation" if fr else "Remove from organization")
+        add = b1.form_submit_button(_tx('Ajouter / changer le rôle', 'Add / change role', st.session_state.get("lang", "fr")), type="primary")
+        remove = b2.form_submit_button(_tx("Retirer de l'organisation", 'Remove from organization', st.session_state.get("lang", "fr")))
         if (add or remove) and member_user.strip():
             try:
                 if add:
                     tenancy.set_membership(actor, member_user.strip(), names[member_org], member_role)
-                    st.success(("Membre enregistré : " if fr else "Membership saved: ")
+                    st.success((_tx('Membre enregistré : ', 'Membership saved: ', st.session_state.get("lang", "fr")))
                                + f"{member_user.strip()} → {member_org} ({member_role})")
                 elif tenancy.remove_membership(actor, member_user.strip(), names[member_org]):
-                    st.success(("Retiré : " if fr else "Removed: ") + f"{member_user.strip()} / {member_org}")
+                    st.success((_tx('Retiré : ', 'Removed: ', st.session_state.get("lang", "fr"))) + f"{member_user.strip()} / {member_org}")
                 else:
-                    st.info("Aucune adhésion à retirer." if fr else "No such membership.")
+                    st.info(_tx('Aucune adhésion à retirer.', 'No such membership.', st.session_state.get("lang", "fr")))
                 st.rerun()
             except (tenancy.TenancyError, tenancy.TenantAccessDenied) as exc:
                 st.error(str(exc))

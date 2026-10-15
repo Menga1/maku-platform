@@ -530,3 +530,920 @@ ENGINE_TEMPLATES = {
     "arc_flash_ppe": "Störlichtbogen-PSA für Arbeiten unter Spannung: {0} (Quelle: {1})",
     "work_rest": "Einen {0}-Arbeits-/Pausenzyklus einhalten, um innerhalb der ACGIH-TLV-Aktionsgrenze für diese Arbeitsschwere und Kleidung zu bleiben",
 }
+
+INLINE = {'Measuring equipment / Sensor model (optional)': 'Messgerät / Sensormodell (optional)',
+ 'e.g. Kestrel 5400 Heat Stress Tracker, black-globe thermometer, Class 2 sound level meter...': 'z. B. '
+                                                                                                 'Kestrel '
+                                                                                                 '5400 Heat '
+                                                                                                 'Stress '
+                                                                                                 'Tracker, '
+                                                                                                 'Globethermometer, '
+                                                                                                 'Schallpegelmesser '
+                                                                                                 'der Klasse '
+                                                                                                 '2...',
+ '+ New organization...': '+ Neue Organisation...',
+ 'Open sea / coast - ASCE D (α 0.11)': 'Offene See / Küste - ASCE D (α 0.11)',
+ 'Open country - ASCE C (α 0.15)': 'Offenes Gelände - ASCE C (α 0.15)',
+ 'Urban / suburban - ASCE B (α 0.25)': 'Städtisch / Vorstadt - ASCE B (α 0.25)',
+ 'Dense city centre (α 0.33)': 'Dichte Innenstadt (α 0.33)',
+ 'Terrain roughness': 'Geländerauigkeit',
+ 'Floor-to-floor height (m)': 'Geschosshöhe (m)',
+ 'Wind measured at working height': 'Auf Arbeitshöhe gemessener Wind',
+ "Best source first: (1) the equipment's arc-flash label, (2) a Lee screening calculation from fault data, (3) unknown - MAKU never invents a value.": 'Beste '
+                                                                                                                                                       'Quelle '
+                                                                                                                                                       'zuerst: '
+                                                                                                                                                       '(1) '
+                                                                                                                                                       'das '
+                                                                                                                                                       'Störlichtbogen-Etikett '
+                                                                                                                                                       'des '
+                                                                                                                                                       'Geräts, '
+                                                                                                                                                       '(2) '
+                                                                                                                                                       'eine '
+                                                                                                                                                       'Lee-Screening-Berechnung '
+                                                                                                                                                       'aus '
+                                                                                                                                                       'Fehlerdaten, '
+                                                                                                                                                       '(3) '
+                                                                                                                                                       'unbekannt '
+                                                                                                                                                       '- '
+                                                                                                                                                       'MAKU '
+                                                                                                                                                       'erfindet '
+                                                                                                                                                       'nie '
+                                                                                                                                                       'einen '
+                                                                                                                                                       'Wert.',
+ 'Source': 'Quelle',
+ 'Cold-aisle setpoint (°C)': 'Sollwert Kaltgang (°C)',
+ 'Energized work planned': 'Arbeiten unter Spannung geplant',
+ "🔒 AI briefings are off (your privacy choices). Turn them on under 'My account'.": '🔒 KI-Briefings sind '
+                                                                                    'deaktiviert (Ihre '
+                                                                                    'Datenschutzeinstellungen). '
+                                                                                    'Aktivieren Sie sie '
+                                                                                    "unter 'Mein Konto'.",
+ 'Your account is not a member of any organization yet. Ask your MAKU administrator to add you to your organization. The My account page is still available.': 'Ihr '
+                                                                                                                                                               'Konto '
+                                                                                                                                                               'ist '
+                                                                                                                                                               'noch '
+                                                                                                                                                               'keiner '
+                                                                                                                                                               'Organisation '
+                                                                                                                                                               'zugeordnet. '
+                                                                                                                                                               'Bitten '
+                                                                                                                                                               'Sie '
+                                                                                                                                                               'Ihren '
+                                                                                                                                                               'MAKU-Administrator, '
+                                                                                                                                                               'Sie '
+                                                                                                                                                               'Ihrer '
+                                                                                                                                                               'Organisation '
+                                                                                                                                                               'hinzuzufügen. '
+                                                                                                                                                               'Die '
+                                                                                                                                                               'Seite '
+                                                                                                                                                               'Mein '
+                                                                                                                                                               'Konto '
+                                                                                                                                                               'bleibt '
+                                                                                                                                                               'verfügbar.',
+ 'Read-only: assessments are not saved.': 'Nur Lesen: Bewertungen werden nicht gespeichert.',
+ 'One vectorized NumPy/Pandas batch calculation across every site, instead of one function call per site - a performance optimization.': 'Eine '
+                                                                                                                                         'einzige '
+                                                                                                                                         'vektorisierte '
+                                                                                                                                         'NumPy/Pandas-Stapelberechnung '
+                                                                                                                                         'über '
+                                                                                                                                         'alle '
+                                                                                                                                         'Standorte '
+                                                                                                                                         'statt '
+                                                                                                                                         'eines '
+                                                                                                                                         'Funktionsaufrufs '
+                                                                                                                                         'pro '
+                                                                                                                                         'Standort '
+                                                                                                                                         '- '
+                                                                                                                                         'eine '
+                                                                                                                                         'Leistungsoptimierung.',
+ "📍 Location is off (your privacy choices). Turn it on under 'My account' to use GPS and automatic country detection.": '📍 '
+                                                                                                                        'Standort '
+                                                                                                                        'ist '
+                                                                                                                        'deaktiviert '
+                                                                                                                        '(Ihre '
+                                                                                                                        'Datenschutzeinstellungen). '
+                                                                                                                        'Aktivieren '
+                                                                                                                        'Sie '
+                                                                                                                        'ihn '
+                                                                                                                        'unter '
+                                                                                                                        "'Mein "
+                                                                                                                        "Konto', "
+                                                                                                                        'um '
+                                                                                                                        'GPS '
+                                                                                                                        'und '
+                                                                                                                        'die '
+                                                                                                                        'automatische '
+                                                                                                                        'Landeserkennung '
+                                                                                                                        'zu '
+                                                                                                                        'nutzen.',
+ 'Photos attached to the PDF report': 'Dem PDF-Bericht beigefügte Fotos',
+ 'Remove photos': 'Fotos entfernen',
+ 'Get a notification when an assessment in your organisation triggers a safety override.': 'Erhalten Sie '
+                                                                                           'eine '
+                                                                                           'Benachrichtigung, '
+                                                                                           'wenn eine '
+                                                                                           'Bewertung in '
+                                                                                           'Ihrer '
+                                                                                           'Organisation '
+                                                                                           'einen '
+                                                                                           'Sicherheitsstopp '
+                                                                                           'auslöst.',
+ 'Turn on for this phone': 'Auf diesem Telefon aktivieren',
+ 'Durable (SQLite) history of critical/warning alerts fired by every module, including worker physiological strain.': 'Dauerhafter '
+                                                                                                                      '(SQLite-)Verlauf '
+                                                                                                                      'der '
+                                                                                                                      'kritischen/Warn-Alarme '
+                                                                                                                      'aller '
+                                                                                                                      'Module, '
+                                                                                                                      'einschließlich '
+                                                                                                                      'der '
+                                                                                                                      'physiologischen '
+                                                                                                                      'Belastung '
+                                                                                                                      'der '
+                                                                                                                      'Beschäftigten.',
+ 'Measured hook / floor wind (kn)': 'Gemessener Wind am Haken / Geschoss (kn)',
+ 'Arc-flash incident energy': 'Störlichtbogen-Einwirkenergie',
+ 'Incident energy on the label (cal/cm²)': 'Einwirkenergie laut Etikett (cal/cm²)',
+ 'Server-configured API key in use (no entry required).': 'Serverseitig konfigurierter API-Schlüssel in '
+                                                          'Verwendung (keine Eingabe nötig).',
+ 'AI advisory layer temporarily unavailable - showing the offline summary below.': 'KI-Beratungsebene '
+                                                                                   'vorübergehend nicht '
+                                                                                   'verfügbar - unten wird '
+                                                                                   'die '
+                                                                                   'Offline-Zusammenfassung '
+                                                                                   'angezeigt.',
+ 'Multi-Site Overview (vectorized batch)': 'Übersicht mehrerer Standorte (vektorisierter Stapel)',
+ 'Use phone GPS': 'Telefon-GPS verwenden',
+ 'Take site photo': 'Foto vom Standort aufnehmen',
+ 'Alerts turned on.': 'Alarme aktiviert.',
+ "Notifications are off - turn them on in the phone's Settings.": 'Benachrichtigungen sind deaktiviert - '
+                                                                  'aktivieren Sie sie in den Einstellungen '
+                                                                  'des Telefons.',
+ 'Site Alert Log': 'Alarmprotokoll des Standorts',
+ '7-Day Meteorology Forecast': '7-Tage-Wettervorhersage',
+ 'e.g. 6.4': 'z. B. 6.4',
+ 'Voltage (kV)': 'Spannung (kV)',
+ 'Bolted fault current (kA)': 'Satter Kurzschlussstrom (kA)',
+ 'Clearing time (s)': 'Abschaltzeit (s)',
+ 'Working distance (mm)': 'Arbeitsabstand (mm)',
+ 'Unknown': 'Unbekannt',
+ '⚡ Incident energy unknown: no energized work until the equipment label or an arc-flash study (IEEE 1584) confirms the incident energy and the required arc rating.': '⚡ '
+                                                                                                                                                                       'Einwirkenergie '
+                                                                                                                                                                       'unbekannt: '
+                                                                                                                                                                       'keine '
+                                                                                                                                                                       'Arbeiten '
+                                                                                                                                                                       'unter '
+                                                                                                                                                                       'Spannung, '
+                                                                                                                                                                       'bis '
+                                                                                                                                                                       'das '
+                                                                                                                                                                       'Geräteetikett '
+                                                                                                                                                                       'oder '
+                                                                                                                                                                       'eine '
+                                                                                                                                                                       'Störlichtbogenstudie '
+                                                                                                                                                                       '(IEEE '
+                                                                                                                                                                       '1584) '
+                                                                                                                                                                       'die '
+                                                                                                                                                                       'Einwirkenergie '
+                                                                                                                                                                       'und '
+                                                                                                                                                                       'die '
+                                                                                                                                                                       'erforderliche '
+                                                                                                                                                                       'Lichtbogenklasse '
+                                                                                                                                                                       'bestätigt.',
+ 'Access to this organization is denied.': 'Zugriff auf diese Organisation verweigert.',
+ 'Your role: ': 'Ihre Rolle: ',
+ 'Camera open…': 'Kamera geöffnet…',
+ 'Stop-work alerts': 'Arbeitsstopp-Alarme',
+ 'Stop-work alerts go to members of the organization only.': 'Arbeitsstopp-Alarme gehen nur an Mitglieder '
+                                                             'der Organisation.',
+ 'Could not register this device.': 'Dieses Gerät konnte nicht registriert werden.',
+ 'Live weather unavailable - verify conditions on site.': 'Live-Wetter nicht verfügbar - Bedingungen vor Ort '
+                                                          'prüfen.',
+ ' (context only)': ' (nur Kontext)',
+ 'Recorded for the report only - load is not used in the arc-flash calculation.': 'Nur für den Bericht '
+                                                                                  'erfasst - die Last wird '
+                                                                                  'in der '
+                                                                                  'Störlichtbogenberechnung '
+                                                                                  'nicht verwendet.',
+ 'Platform administrator': 'Plattformadministrator',
+ 'Organization admin': 'Organisationsadministrator',
+ 'Supervisor': 'Vorgesetzter',
+ 'Viewer (read-only)': 'Betrachter (nur Lesen)',
+ 'Camera unavailable.': 'Kamera nicht verfügbar.',
+ 'Equipment arc-flash label': 'Störlichtbogen-Etikett des Geräts',
+ 'Lee calculation (voltage, fault current, clearing time)': 'Lee-Berechnung (Spannung, Fehlerstrom, '
+                                                            'Abschaltzeit)',
+ 'Unknown / not yet studied': 'Unbekannt / noch nicht untersucht',
+ 'Alert shown but NOT recorded in the alert log.': 'Alarm angezeigt, aber NICHT im Alarmprotokoll erfasst.',
+ 'New organization name': 'Name der neuen Organisation',
+ "MAKU processes your data under the GDPR and the UAE PDPL. Make your choices below; you can change them at any time under 'My account'.": 'MAKU '
+                                                                                                                                           'verarbeitet '
+                                                                                                                                           'Ihre '
+                                                                                                                                           'Daten '
+                                                                                                                                           'gemäß '
+                                                                                                                                           'DSGVO '
+                                                                                                                                           'und '
+                                                                                                                                           'dem '
+                                                                                                                                           'PDPL '
+                                                                                                                                           'der '
+                                                                                                                                           'VAE. '
+                                                                                                                                           'Treffen '
+                                                                                                                                           'Sie '
+                                                                                                                                           'unten '
+                                                                                                                                           'Ihre '
+                                                                                                                                           'Wahl; '
+                                                                                                                                           'Sie '
+                                                                                                                                           'können '
+                                                                                                                                           'sie '
+                                                                                                                                           'jederzeit '
+                                                                                                                                           'unter '
+                                                                                                                                           "'Mein "
+                                                                                                                                           "Konto' "
+                                                                                                                                           'ändern.',
+ 'A JSON copy of all personal data linked to your account (GDPR Art. 15/20).': 'Eine JSON-Kopie aller mit '
+                                                                               'Ihrem Konto verknüpften '
+                                                                               'personenbezogenen Daten '
+                                                                               '(DSGVO Art. 15/20).',
+ 'Prepare export': 'Export vorbereiten',
+ 'Permanently deletes your account, your consent records and every assessment you ran. Time-stamped security log entries are retained as described in the privacy policy. This cannot be undone.': 'Löscht '
+                                                                                                                                                                                                   'Ihr '
+                                                                                                                                                                                                   'Konto, '
+                                                                                                                                                                                                   'Ihre '
+                                                                                                                                                                                                   'Einwilligungsnachweise '
+                                                                                                                                                                                                   'und '
+                                                                                                                                                                                                   'alle '
+                                                                                                                                                                                                   'von '
+                                                                                                                                                                                                   'Ihnen '
+                                                                                                                                                                                                   'durchgeführten '
+                                                                                                                                                                                                   'Bewertungen '
+                                                                                                                                                                                                   'endgültig. '
+                                                                                                                                                                                                   'Zeitgestempelte '
+                                                                                                                                                                                                   'Sicherheitsprotokolleinträge '
+                                                                                                                                                                                                   'werden '
+                                                                                                                                                                                                   'wie '
+                                                                                                                                                                                                   'in '
+                                                                                                                                                                                                   'der '
+                                                                                                                                                                                                   'Datenschutzerklärung '
+                                                                                                                                                                                                   'beschrieben '
+                                                                                                                                                                                                   'aufbewahrt. '
+                                                                                                                                                                                                   'Dies '
+                                                                                                                                                                                                   'kann '
+                                                                                                                                                                                                   'nicht '
+                                                                                                                                                                                                   'rückgängig '
+                                                                                                                                                                                                   'gemacht '
+                                                                                                                                                                                                   'werden.',
+ 'A user only sees and changes data of the organizations they are a member of.': 'Ein Benutzer sieht und '
+                                                                                 'ändert nur Daten der '
+                                                                                 'Organisationen, deren '
+                                                                                 'Mitglied er ist.',
+ 'viewer - read only': 'viewer - nur Lesen',
+ 'supervisor - runs assessments': 'supervisor - führt Bewertungen durch',
+ 'org_admin - manages the organization': 'org_admin - verwaltet die Organisation',
+ 'Your privacy choices': 'Ihre Datenschutzeinstellungen',
+ 'Save and continue': 'Speichern und fortfahren',
+ 'My account': 'Mein Konto',
+ 'Privacy and consent': 'Datenschutz und Einwilligung',
+ 'Export my data': 'Meine Daten exportieren',
+ 'This account is managed by the deployment configuration. Contact your MAKU administrator to change or delete it.': 'Dieses '
+                                                                                                                     'Konto '
+                                                                                                                     'wird '
+                                                                                                                     'über '
+                                                                                                                     'die '
+                                                                                                                     'Bereitstellungskonfiguration '
+                                                                                                                     'verwaltet. '
+                                                                                                                     'Wenden '
+                                                                                                                     'Sie '
+                                                                                                                     'sich '
+                                                                                                                     'an '
+                                                                                                                     'Ihren '
+                                                                                                                     'MAKU-Administrator, '
+                                                                                                                     'um '
+                                                                                                                     'es '
+                                                                                                                     'zu '
+                                                                                                                     'ändern '
+                                                                                                                     'oder '
+                                                                                                                     'zu '
+                                                                                                                     'löschen.',
+ 'Change password': 'Passwort ändern',
+ 'Current password': 'Aktuelles Passwort',
+ 'New password': 'Neues Passwort',
+ 'Confirm new password': 'Neues Passwort bestätigen',
+ 'Update password': 'Passwort aktualisieren',
+ 'Delete my account': 'Mein Konto löschen',
+ 'Type your username to confirm': 'Geben Sie zur Bestätigung Ihren Benutzernamen ein',
+ 'Password': 'Passwort',
+ 'Delete permanently': 'Endgültig löschen',
+ 'Users': 'Benutzer',
+ 'Administrators only.': 'Nur für Administratoren.',
+ 'No database accounts yet.': 'Noch keine Datenbankkonten.',
+ 'Create account': 'Konto erstellen',
+ 'Username': 'Benutzername',
+ 'Email (optional)': 'E-Mail (optional)',
+ 'Role': 'Rolle',
+ 'Initial password': 'Anfangspasswort',
+ 'Create': 'Erstellen',
+ 'Organizations and members': 'Organisationen und Mitglieder',
+ 'New organization': 'Neue Organisation',
+ 'Organization': 'Organisation',
+ 'Add / change role': 'Hinzufügen / Rolle ändern',
+ 'Remove from organization': 'Aus der Organisation entfernen',
+ 'Privacy policy': 'Datenschutzerklärung',
+ 'Signed in as': 'Angemeldet als',
+ 'role': 'Rolle',
+ 'Read the privacy policy': 'Datenschutzerklärung lesen',
+ 'Download (JSON)': 'Herunterladen (JSON)',
+ 'Database unavailable.': 'Datenbank nicht verfügbar.',
+ 'Create organization': 'Organisation erstellen',
+ 'Export unavailable right now.': 'Export derzeit nicht verfügbar.',
+ 'Passwords do not match.': 'Die Passwörter stimmen nicht überein.',
+ 'Username does not match.': 'Der Benutzername stimmt nicht überein.',
+ 'Could not save your choices right now. Please try again.': 'Ihre Auswahl konnte gerade nicht gespeichert '
+                                                             'werden. Bitte versuchen Sie es erneut.',
+ 'Preference saved': 'Einstellung gespeichert',
+ 'Could not save. Please retry.': 'Speichern nicht möglich. Bitte erneut versuchen.',
+ 'Password updated.': 'Passwort aktualisiert.',
+ 'Account created: ': 'Konto erstellt: ',
+ 'Organization created: ': 'Organisation erstellt: ',
+ 'Service unavailable.': 'Dienst nicht verfügbar.',
+ 'Service unavailable - nothing was deleted.': 'Dienst nicht verfügbar - es wurde nichts gelöscht.',
+ 'Membership saved: ': 'Mitgliedschaft gespeichert: ',
+ 'No such membership.': 'Diese Mitgliedschaft existiert nicht.',
+ 'Removed: ': 'Entfernt: ',
+ 'Regulatory threshold legend': 'Legende der regulatorischen Grenzwerte',
+ 'Risk Matrix (calculation transparency)': 'Risikomatrix (Transparenz der Berechnung)',
+ 'Formula: Score = Likelihood (1-5) x Severity (1-5)': 'Formel: Punktzahl = Wahrscheinlichkeit (1-5) x '
+                                                       'Schwere (1-5)',
+ 'Controls applied on site': 'Vor Ort angewendete Maßnahmen',
+ 'Select which of the controls above have actually been implemented, to calculate residual risk.': 'Wählen '
+                                                                                                   'Sie aus, '
+                                                                                                   'welche '
+                                                                                                   'der '
+                                                                                                   'obigen '
+                                                                                                   'Maßnahmen '
+                                                                                                   'tatsächlich '
+                                                                                                   'umgesetzt '
+                                                                                                   'wurden, '
+                                                                                                   'um das '
+                                                                                                   'Restrisiko '
+                                                                                                   'zu '
+                                                                                                   'berechnen.',
+ 'Initial Risk -> Applied Controls -> Residual Risk': 'Anfangsrisiko -> Angewendete Maßnahmen -> Restrisiko',
+ 'Stop-Work Trigger Registry': 'Register der Arbeitsstopp-Auslöser',
+ 'Regulatory Algorithm Validation': 'Validierung der regulatorischen Algorithmen',
+ 'These values come from a simulator or demonstration dataset - they are NOT real measurements. Measure on site before making any decision.': 'Diese '
+                                                                                                                                              'Werte '
+                                                                                                                                              'stammen '
+                                                                                                                                              'aus '
+                                                                                                                                              'einem '
+                                                                                                                                              'Simulator '
+                                                                                                                                              'oder '
+                                                                                                                                              'Demonstrationsdatensatz '
+                                                                                                                                              '- '
+                                                                                                                                              'sie '
+                                                                                                                                              'sind '
+                                                                                                                                              'KEINE '
+                                                                                                                                              'echten '
+                                                                                                                                              'Messwerte. '
+                                                                                                                                              'Messen '
+                                                                                                                                              'Sie '
+                                                                                                                                              'vor '
+                                                                                                                                              'Ort, '
+                                                                                                                                              'bevor '
+                                                                                                                                              'Sie '
+                                                                                                                                              'eine '
+                                                                                                                                              'Entscheidung '
+                                                                                                                                              'treffen.',
+ '<tr><th>Hazard</th><th>Likelihood</th><th>Severity</th><th>Score</th><th>Band</th><th>Note</th></tr>': '<tr><th>Gefährdung</th><th>Wahrscheinlichkeit</th><th>Schwere</th><th>Punktzahl</th><th>Stufe</th><th>Hinweis</th></tr>',
+ 'Overall score (worst hazard governs)': 'Gesamtpunktzahl (die schwerste Gefährdung ist maßgebend)',
+ '<tr><th>Module</th><th>Trigger condition</th><th>Threshold</th><th>Source constant</th></tr>': '<tr><th>Modul</th><th>Auslösebedingung</th><th>Schwellenwert</th><th>Quellkonstante</th></tr>',
+ '<tr><th>Formula</th><th>Cited standard(s)</th><th>Status</th><th>Caveat</th></tr>': '<tr><th>Formel</th><th>Zitierte '
+                                                                                      'Norm(en)</th><th>Status</th><th>Vorbehalt</th></tr>',
+ 'The live data feed is unavailable - enter measured values manually below before running the assessment.': 'Der '
+                                                                                                            'Live-Datenstrom '
+                                                                                                            'ist '
+                                                                                                            'nicht '
+                                                                                                            'verfügbar '
+                                                                                                            '- '
+                                                                                                            'geben '
+                                                                                                            'Sie '
+                                                                                                            'die '
+                                                                                                            'gemessenen '
+                                                                                                            'Werte '
+                                                                                                            'unten '
+                                                                                                            'manuell '
+                                                                                                            'ein, '
+                                                                                                            'bevor '
+                                                                                                            'Sie '
+                                                                                                            'die '
+                                                                                                            'Bewertung '
+                                                                                                            'durchführen.',
+ 'The configured production database (Postgres/Supabase) is unreachable. All writes are frozen - no data is being silently redirected to ephemeral local storage. Contact an administrator.': 'Die '
+                                                                                                                                                                                              'konfigurierte '
+                                                                                                                                                                                              'Produktionsdatenbank '
+                                                                                                                                                                                              '(Postgres/Supabase) '
+                                                                                                                                                                                              'ist '
+                                                                                                                                                                                              'nicht '
+                                                                                                                                                                                              'erreichbar. '
+                                                                                                                                                                                              'Alle '
+                                                                                                                                                                                              'Schreibvorgänge '
+                                                                                                                                                                                              'sind '
+                                                                                                                                                                                              'eingefroren '
+                                                                                                                                                                                              '- '
+                                                                                                                                                                                              'es '
+                                                                                                                                                                                              'werden '
+                                                                                                                                                                                              'keine '
+                                                                                                                                                                                              'Daten '
+                                                                                                                                                                                              'stillschweigend '
+                                                                                                                                                                                              'in '
+                                                                                                                                                                                              'einen '
+                                                                                                                                                                                              'flüchtigen '
+                                                                                                                                                                                              'lokalen '
+                                                                                                                                                                                              'Speicher '
+                                                                                                                                                                                              'umgeleitet. '
+                                                                                                                                                                                              'Wenden '
+                                                                                                                                                                                              'Sie '
+                                                                                                                                                                                              'sich '
+                                                                                                                                                                                              'an '
+                                                                                                                                                                                              'einen '
+                                                                                                                                                                                              'Administrator.',
+ 'Free, legally accessible resources. MAKU reproduces no copyrighted content - these links go to the official sources.': 'Kostenlose, '
+                                                                                                                         'legal '
+                                                                                                                         'zugängliche '
+                                                                                                                         'Ressourcen. '
+                                                                                                                         'MAKU '
+                                                                                                                         'gibt '
+                                                                                                                         'keine '
+                                                                                                                         'urheberrechtlich '
+                                                                                                                         'geschützten '
+                                                                                                                         'Inhalte '
+                                                                                                                         'wieder '
+                                                                                                                         '- '
+                                                                                                                         'diese '
+                                                                                                                         'Links '
+                                                                                                                         'führen '
+                                                                                                                         'zu '
+                                                                                                                         'den '
+                                                                                                                         'offiziellen '
+                                                                                                                         'Quellen.',
+ "For copyrighted texts (e.g. Brauer's *Safety and Health for Engineers*), purchase them or check your institutional library - see the Further Reading section of the official report.": 'Urheberrechtlich '
+                                                                                                                                                                                         'geschützte '
+                                                                                                                                                                                         'Texte '
+                                                                                                                                                                                         '(z. '
+                                                                                                                                                                                         'B. '
+                                                                                                                                                                                         '*Safety '
+                                                                                                                                                                                         'and '
+                                                                                                                                                                                         'Health '
+                                                                                                                                                                                         'for '
+                                                                                                                                                                                         'Engineers* '
+                                                                                                                                                                                         'von '
+                                                                                                                                                                                         'Brauer) '
+                                                                                                                                                                                         'kaufen '
+                                                                                                                                                                                         'Sie '
+                                                                                                                                                                                         'bitte '
+                                                                                                                                                                                         'oder '
+                                                                                                                                                                                         'sehen '
+                                                                                                                                                                                         'in '
+                                                                                                                                                                                         'Ihrer '
+                                                                                                                                                                                         'Institutsbibliothek '
+                                                                                                                                                                                         'nach '
+                                                                                                                                                                                         '- '
+                                                                                                                                                                                         'siehe '
+                                                                                                                                                                                         'Abschnitt '
+                                                                                                                                                                                         'Weiterführende '
+                                                                                                                                                                                         'Literatur '
+                                                                                                                                                                                         'im '
+                                                                                                                                                                                         'offiziellen '
+                                                                                                                                                                                         'Bericht.',
+ '🔎 Live legislation search (extra API cost)': '🔎 Live-Gesetzessuche (zusätzliche API-Kosten)',
+ 'Upload a previous log (CSV) to merge': 'Früheres Protokoll (CSV) zum Zusammenführen hochladen',
+ '📄 Download PDF': '📄 PDF herunterladen',
+ '🌐 Download HTML': '🌐 HTML herunterladen',
+ 'Band': 'Stufe',
+ 'Governing hazard': 'Maßgebende Gefährdung',
+ 'Initial risk': 'Anfangsrisiko',
+ 'Residual risk': 'Restrisiko',
+ 'No controls selected yet - residual risk equals initial risk.': 'Noch keine Maßnahmen ausgewählt - das '
+                                                                  'Restrisiko entspricht dem Anfangsrisiko.',
+ 'The exact numeric thresholds that force a mandatory stop-work condition (safety_override), with the named source constant in code each threshold comes from.': 'Die '
+                                                                                                                                                                 'genauen '
+                                                                                                                                                                 'Zahlenschwellen, '
+                                                                                                                                                                 'die '
+                                                                                                                                                                 'einen '
+                                                                                                                                                                 'verpflichtenden '
+                                                                                                                                                                 'Arbeitsstopp '
+                                                                                                                                                                 'erzwingen '
+                                                                                                                                                                 '(safety_override), '
+                                                                                                                                                                 'mit '
+                                                                                                                                                                 'der '
+                                                                                                                                                                 'benannten '
+                                                                                                                                                                 'Quellkonstante '
+                                                                                                                                                                 'im '
+                                                                                                                                                                 'Code, '
+                                                                                                                                                                 'aus '
+                                                                                                                                                                 'der '
+                                                                                                                                                                 'jeder '
+                                                                                                                                                                 'Schwellenwert '
+                                                                                                                                                                 'stammt.',
+ 'Every scoring formula mapped against its claimed standard, with an honest status: direct implementation, adapted/approximated, or illustrative (not standards-derived).': 'Jede '
+                                                                                                                                                                            'Bewertungsformel '
+                                                                                                                                                                            'gegenüber '
+                                                                                                                                                                            'der '
+                                                                                                                                                                            'angegebenen '
+                                                                                                                                                                            'Norm, '
+                                                                                                                                                                            'mit '
+                                                                                                                                                                            'ehrlichem '
+                                                                                                                                                                            'Status: '
+                                                                                                                                                                            'direkte '
+                                                                                                                                                                            'Umsetzung, '
+                                                                                                                                                                            'angepasst/angenähert '
+                                                                                                                                                                            'oder '
+                                                                                                                                                                            'illustrativ '
+                                                                                                                                                                            '(nicht '
+                                                                                                                                                                            'aus '
+                                                                                                                                                                            'Normen '
+                                                                                                                                                                            'abgeleitet).',
+ '**MAKU is temporarily unavailable.** The production database is not answering or is not configured correctly. No assessment can be saved, and nothing is being saved anywhere else. The administrator has been alerted through the server log. Please try again in a few minutes.': '**MAKU '
+                                                                                                                                                                                                                                                                                      'ist '
+                                                                                                                                                                                                                                                                                      'vorübergehend '
+                                                                                                                                                                                                                                                                                      'nicht '
+                                                                                                                                                                                                                                                                                      'verfügbar.** '
+                                                                                                                                                                                                                                                                                      'Die '
+                                                                                                                                                                                                                                                                                      'Produktionsdatenbank '
+                                                                                                                                                                                                                                                                                      'antwortet '
+                                                                                                                                                                                                                                                                                      'nicht '
+                                                                                                                                                                                                                                                                                      'oder '
+                                                                                                                                                                                                                                                                                      'ist '
+                                                                                                                                                                                                                                                                                      'nicht '
+                                                                                                                                                                                                                                                                                      'richtig '
+                                                                                                                                                                                                                                                                                      'konfiguriert. '
+                                                                                                                                                                                                                                                                                      'Es '
+                                                                                                                                                                                                                                                                                      'kann '
+                                                                                                                                                                                                                                                                                      'keine '
+                                                                                                                                                                                                                                                                                      'Bewertung '
+                                                                                                                                                                                                                                                                                      'gespeichert '
+                                                                                                                                                                                                                                                                                      'werden, '
+                                                                                                                                                                                                                                                                                      'und '
+                                                                                                                                                                                                                                                                                      'nichts '
+                                                                                                                                                                                                                                                                                      'wird '
+                                                                                                                                                                                                                                                                                      'anderswo '
+                                                                                                                                                                                                                                                                                      'gespeichert. '
+                                                                                                                                                                                                                                                                                      'Der '
+                                                                                                                                                                                                                                                                                      'Administrator '
+                                                                                                                                                                                                                                                                                      'wurde '
+                                                                                                                                                                                                                                                                                      'über '
+                                                                                                                                                                                                                                                                                      'das '
+                                                                                                                                                                                                                                                                                      'Serverprotokoll '
+                                                                                                                                                                                                                                                                                      'benachrichtigt. '
+                                                                                                                                                                                                                                                                                      'Bitte '
+                                                                                                                                                                                                                                                                                      'versuchen '
+                                                                                                                                                                                                                                                                                      'Sie '
+                                                                                                                                                                                                                                                                                      'es '
+                                                                                                                                                                                                                                                                                      'in '
+                                                                                                                                                                                                                                                                                      'einigen '
+                                                                                                                                                                                                                                                                                      'Minuten '
+                                                                                                                                                                                                                                                                                      'erneut.',
+ 'Demo - data is not kept.': 'Demo - Daten werden nicht gespeichert.',
+ 'HSE Virtual Library': 'Virtuelle HSE-Bibliothek',
+ 'Lets Claude search the web live to check applicable legislation, on top of the verified references below. Uses your existing API key.': 'Ermöglicht '
+                                                                                                                                          'Claude '
+                                                                                                                                          'eine '
+                                                                                                                                          'Live-Websuche '
+                                                                                                                                          'zur '
+                                                                                                                                          'Prüfung '
+                                                                                                                                          'der '
+                                                                                                                                          'geltenden '
+                                                                                                                                          'Gesetzgebung, '
+                                                                                                                                          'zusätzlich '
+                                                                                                                                          'zu '
+                                                                                                                                          'den '
+                                                                                                                                          'unten '
+                                                                                                                                          'aufgeführten '
+                                                                                                                                          'geprüften '
+                                                                                                                                          'Referenzen. '
+                                                                                                                                          'Verwendet '
+                                                                                                                                          'Ihren '
+                                                                                                                                          'vorhandenen '
+                                                                                                                                          'API-Schlüssel.',
+ 'Trend Analysis & Monthly Report': 'Trendanalyse & Monatsbericht',
+ "This session's assessment log only (Streamlit Cloud has no persistent database). Download the CSV periodically and re-upload it in a future session to build a multi-month history.": 'Nur '
+                                                                                                                                                                                        'das '
+                                                                                                                                                                                        'Bewertungsprotokoll '
+                                                                                                                                                                                        'dieser '
+                                                                                                                                                                                        'Sitzung '
+                                                                                                                                                                                        '(Streamlit '
+                                                                                                                                                                                        'Cloud '
+                                                                                                                                                                                        'hat '
+                                                                                                                                                                                        'keine '
+                                                                                                                                                                                        'dauerhafte '
+                                                                                                                                                                                        'Datenbank). '
+                                                                                                                                                                                        'Laden '
+                                                                                                                                                                                        'Sie '
+                                                                                                                                                                                        'die '
+                                                                                                                                                                                        'CSV '
+                                                                                                                                                                                        'regelmäßig '
+                                                                                                                                                                                        'herunter '
+                                                                                                                                                                                        'und '
+                                                                                                                                                                                        'in '
+                                                                                                                                                                                        'einer '
+                                                                                                                                                                                        'späteren '
+                                                                                                                                                                                        'Sitzung '
+                                                                                                                                                                                        'wieder '
+                                                                                                                                                                                        'hoch, '
+                                                                                                                                                                                        'um '
+                                                                                                                                                                                        'einen '
+                                                                                                                                                                                        'Verlauf '
+                                                                                                                                                                                        'über '
+                                                                                                                                                                                        'mehrere '
+                                                                                                                                                                                        'Monate '
+                                                                                                                                                                                        'aufzubauen.',
+ 'No assessments logged yet this session - run an assessment on any module to start building the log.': 'In '
+                                                                                                        'dieser '
+                                                                                                        'Sitzung '
+                                                                                                        'wurden '
+                                                                                                        'noch '
+                                                                                                        'keine '
+                                                                                                        'Bewertungen '
+                                                                                                        'protokolliert '
+                                                                                                        '- '
+                                                                                                        'führen '
+                                                                                                        'Sie '
+                                                                                                        'in '
+                                                                                                        'einem '
+                                                                                                        'beliebigen '
+                                                                                                        'Modul '
+                                                                                                        'eine '
+                                                                                                        'Bewertung '
+                                                                                                        'durch, '
+                                                                                                        'um '
+                                                                                                        'das '
+                                                                                                        'Protokoll '
+                                                                                                        'zu '
+                                                                                                        'beginnen.',
+ 'assessment(s) logged this session': 'Bewertung(en) in dieser Sitzung protokolliert',
+ '⬇️ Download log (CSV)': '⬇️ Protokoll herunterladen (CSV)',
+ '📊 Monthly Excel Report': '📊 Monatlicher Excel-Bericht',
+ 'Monthly summary': 'Monatliche Zusammenfassung',
+ "The selected controls don't address any assessed hazard, so no reduction is credited.": 'Die ausgewählten '
+                                                                                          'Maßnahmen '
+                                                                                          'betreffen keine '
+                                                                                          'bewertete '
+                                                                                          'Gefährdung, daher '
+                                                                                          'wird keine '
+                                                                                          'Reduzierung '
+                                                                                          'angerechnet.',
+ 'No accessible organization - the log is not available.': 'Keine zugängliche Organisation - das Protokoll '
+                                                           'ist nicht verfügbar.',
+ "Method {version}: a control only reduces the hazards it addresses. Elimination (stop work, de-energize, evacuate) → likelihood 'rare'; engineering, administrative, PPE → −1 each. Severity is never reduced.": 'Methode '
+                                                                                                                                                                                                                  '{version}: '
+                                                                                                                                                                                                                  'Eine '
+                                                                                                                                                                                                                  'Maßnahme '
+                                                                                                                                                                                                                  'verringert '
+                                                                                                                                                                                                                  'nur '
+                                                                                                                                                                                                                  'die '
+                                                                                                                                                                                                                  'Gefährdungen, '
+                                                                                                                                                                                                                  'auf '
+                                                                                                                                                                                                                  'die '
+                                                                                                                                                                                                                  'sie '
+                                                                                                                                                                                                                  'abzielt. '
+                                                                                                                                                                                                                  'Beseitigung '
+                                                                                                                                                                                                                  '(Arbeitsstopp, '
+                                                                                                                                                                                                                  'Freischalten, '
+                                                                                                                                                                                                                  'Evakuierung) '
+                                                                                                                                                                                                                  '→ '
+                                                                                                                                                                                                                  'Wahrscheinlichkeit '
+                                                                                                                                                                                                                  '„selten“; '
+                                                                                                                                                                                                                  'technische, '
+                                                                                                                                                                                                                  'organisatorische '
+                                                                                                                                                                                                                  'Maßnahmen, '
+                                                                                                                                                                                                                  'PSA '
+                                                                                                                                                                                                                  '→ '
+                                                                                                                                                                                                                  'je '
+                                                                                                                                                                                                                  '−1. '
+                                                                                                                                                                                                                  'Die '
+                                                                                                                                                                                                                  'Schwere '
+                                                                                                                                                                                                                  'wird '
+                                                                                                                                                                                                                  'nie '
+                                                                                                                                                                                                                  'verringert.',
+ 'No effect on the assessed hazards: ': 'Ohne Wirkung auf die bewerteten Gefährdungen: ',
+ 'Search books on this topic (Google Books)': 'Bücher zu diesem Thema suchen (Google Books)',
+ 'Import NOT saved - the database is unavailable.': 'Import NICHT gespeichert - die Datenbank ist nicht '
+                                                    'verfügbar.',
+ 'Your role in this organization is read-only: import is not allowed.': 'Ihre Rolle in dieser Organisation '
+                                                                        'ist nur lesend: Import ist nicht '
+                                                                        'erlaubt.',
+ 'Merge failed: the file could not be read.': 'Zusammenführen fehlgeschlagen: Die Datei konnte nicht gelesen '
+                                              'werden.',
+ 'Share PDF': 'PDF teilen',
+ 'Freshness': 'Aktualität',
+ 'refreshed at least every {seconds}s while this page is open': 'mindestens alle {seconds}s aktualisiert, '
+                                                                'solange diese Seite geöffnet ist',
+ '{count} new row(s) merged.': '{count} neue Zeile(n) zusammengeführt.',
+ 'Merge failed': 'Zusammenführen fehlgeschlagen',
+ "MAKU HSE Decision-Support System — Results are intended for risk screening and decision support and do not replace a competent person's assessment, engineering analysis, statutory requirement, manufacturer instruction or formal specialist study.": 'MAKU '
+                                                                                                                                                                                                                                                          'HSE-Entscheidungsunterstützungssystem '
+                                                                                                                                                                                                                                                          '— '
+                                                                                                                                                                                                                                                          'Die '
+                                                                                                                                                                                                                                                          'Ergebnisse '
+                                                                                                                                                                                                                                                          'dienen '
+                                                                                                                                                                                                                                                          'der '
+                                                                                                                                                                                                                                                          'Risikovorprüfung '
+                                                                                                                                                                                                                                                          'und '
+                                                                                                                                                                                                                                                          'Entscheidungsunterstützung '
+                                                                                                                                                                                                                                                          'und '
+                                                                                                                                                                                                                                                          'ersetzen '
+                                                                                                                                                                                                                                                          'nicht '
+                                                                                                                                                                                                                                                          'die '
+                                                                                                                                                                                                                                                          'Beurteilung '
+                                                                                                                                                                                                                                                          'durch '
+                                                                                                                                                                                                                                                          'eine '
+                                                                                                                                                                                                                                                          'fachkundige '
+                                                                                                                                                                                                                                                          'Person, '
+                                                                                                                                                                                                                                                          'eine '
+                                                                                                                                                                                                                                                          'ingenieurtechnische '
+                                                                                                                                                                                                                                                          'Analyse, '
+                                                                                                                                                                                                                                                          'gesetzliche '
+                                                                                                                                                                                                                                                          'Anforderungen, '
+                                                                                                                                                                                                                                                          'Herstellerangaben '
+                                                                                                                                                                                                                                                          'oder '
+                                                                                                                                                                                                                                                          'ein '
+                                                                                                                                                                                                                                                          'formelles '
+                                                                                                                                                                                                                                                          'Fachgutachten.',
+ 'AI briefings (optional)': 'KI-Briefings (optional)',
+ 'Send the assessment results for this session (risk scores, module, site name, and anonymised worker-strain summaries) to Anthropic, PBC to generate a written AI briefing. No name, email or GPS coordinates are sent. Without consent you still get the full rule-based briefing.': 'Die '
+                                                                                                                                                                                                                                                                                       'Bewertungsergebnisse '
+                                                                                                                                                                                                                                                                                       'dieser '
+                                                                                                                                                                                                                                                                                       'Sitzung '
+                                                                                                                                                                                                                                                                                       '(Risikopunktzahlen, '
+                                                                                                                                                                                                                                                                                       'Modul, '
+                                                                                                                                                                                                                                                                                       'Standortname '
+                                                                                                                                                                                                                                                                                       'und '
+                                                                                                                                                                                                                                                                                       'anonymisierte '
+                                                                                                                                                                                                                                                                                       'Zusammenfassungen '
+                                                                                                                                                                                                                                                                                       'der '
+                                                                                                                                                                                                                                                                                       'Belastung '
+                                                                                                                                                                                                                                                                                       'der '
+                                                                                                                                                                                                                                                                                       'Beschäftigten) '
+                                                                                                                                                                                                                                                                                       'an '
+                                                                                                                                                                                                                                                                                       'Anthropic, '
+                                                                                                                                                                                                                                                                                       'PBC '
+                                                                                                                                                                                                                                                                                       'senden, '
+                                                                                                                                                                                                                                                                                       'um '
+                                                                                                                                                                                                                                                                                       'ein '
+                                                                                                                                                                                                                                                                                       'schriftliches '
+                                                                                                                                                                                                                                                                                       'KI-Briefing '
+                                                                                                                                                                                                                                                                                       'zu '
+                                                                                                                                                                                                                                                                                       'erstellen. '
+                                                                                                                                                                                                                                                                                       'Es '
+                                                                                                                                                                                                                                                                                       'werden '
+                                                                                                                                                                                                                                                                                       'kein '
+                                                                                                                                                                                                                                                                                       'Name, '
+                                                                                                                                                                                                                                                                                       'keine '
+                                                                                                                                                                                                                                                                                       'E-Mail '
+                                                                                                                                                                                                                                                                                       'und '
+                                                                                                                                                                                                                                                                                       'keine '
+                                                                                                                                                                                                                                                                                       'GPS-Koordinaten '
+                                                                                                                                                                                                                                                                                       'gesendet. '
+                                                                                                                                                                                                                                                                                       'Ohne '
+                                                                                                                                                                                                                                                                                       'Einwilligung '
+                                                                                                                                                                                                                                                                                       'erhalten '
+                                                                                                                                                                                                                                                                                       'Sie '
+                                                                                                                                                                                                                                                                                       'weiterhin '
+                                                                                                                                                                                                                                                                                       'das '
+                                                                                                                                                                                                                                                                                       'vollständige '
+                                                                                                                                                                                                                                                                                       'regelbasierte '
+                                                                                                                                                                                                                                                                                       'Briefing.',
+ 'Location (optional)': 'Standort (optional)',
+ "Use this device's GPS position (or, if GPS is denied, an approximate location from your IP address) to pick the nearest site, local weather and the applicable country regulations. Location is used for the current session only and is not stored.": 'Die '
+                                                                                                                                                                                                                                                         'GPS-Position '
+                                                                                                                                                                                                                                                         'dieses '
+                                                                                                                                                                                                                                                         'Geräts '
+                                                                                                                                                                                                                                                         '(oder, '
+                                                                                                                                                                                                                                                         'wenn '
+                                                                                                                                                                                                                                                         'GPS '
+                                                                                                                                                                                                                                                         'verweigert '
+                                                                                                                                                                                                                                                         'wird, '
+                                                                                                                                                                                                                                                         'einen '
+                                                                                                                                                                                                                                                         'ungefähren '
+                                                                                                                                                                                                                                                         'Standort '
+                                                                                                                                                                                                                                                         'aus '
+                                                                                                                                                                                                                                                         'Ihrer '
+                                                                                                                                                                                                                                                         'IP-Adresse) '
+                                                                                                                                                                                                                                                         'verwenden, '
+                                                                                                                                                                                                                                                         'um '
+                                                                                                                                                                                                                                                         'den '
+                                                                                                                                                                                                                                                         'nächstgelegenen '
+                                                                                                                                                                                                                                                         'Standort, '
+                                                                                                                                                                                                                                                         'das '
+                                                                                                                                                                                                                                                         'lokale '
+                                                                                                                                                                                                                                                         'Wetter '
+                                                                                                                                                                                                                                                         'und '
+                                                                                                                                                                                                                                                         'die '
+                                                                                                                                                                                                                                                         'geltenden '
+                                                                                                                                                                                                                                                         'Landesvorschriften '
+                                                                                                                                                                                                                                                         'auszuwählen. '
+                                                                                                                                                                                                                                                         'Der '
+                                                                                                                                                                                                                                                         'Standort '
+                                                                                                                                                                                                                                                         'wird '
+                                                                                                                                                                                                                                                         'nur '
+                                                                                                                                                                                                                                                         'für '
+                                                                                                                                                                                                                                                         'die '
+                                                                                                                                                                                                                                                         'aktuelle '
+                                                                                                                                                                                                                                                         'Sitzung '
+                                                                                                                                                                                                                                                         'verwendet '
+                                                                                                                                                                                                                                                         'und '
+                                                                                                                                                                                                                                                         'nicht '
+                                                                                                                                                                                                                                                         'gespeichert.',
+ 'Work clothes (baseline)': 'Arbeitskleidung (Referenz)',
+ 'SMS polypropylene coveralls': 'SMS-Polypropylen-Overall',
+ 'Polyolefin coveralls': 'Polyolefin-Overall',
+ 'Double-layer woven coveralls': 'Zweilagiger gewebter Overall',
+ 'Vapor-barrier coveralls (limited use)': 'Dampfsperren-Overall (begrenzte Verwendung)',
+ '**Nothing was saved. Please try again in a few minutes.**': '**Es wurde nichts gespeichert. Bitte '
+                                                              'versuchen Sie es in einigen Minuten erneut.**',
+ 'Assessment NOT saved - the database is unavailable.': 'Bewertung NICHT gespeichert - die Datenbank ist '
+                                                        'nicht verfügbar.',
+ 'Commonly-cited approximation of the ACGIH TLV very_heavy/acclimatized figures - verify against the current ACGIH TLV booklet before relying on this for a real compliance decision.': 'Häufig '
+                                                                                                                                                                                        'zitierte '
+                                                                                                                                                                                        'Näherung '
+                                                                                                                                                                                        'der '
+                                                                                                                                                                                        'ACGIH-TLV-Werte '
+                                                                                                                                                                                        'für '
+                                                                                                                                                                                        'sehr '
+                                                                                                                                                                                        'schwere '
+                                                                                                                                                                                        'Arbeit/akklimatisiert '
+                                                                                                                                                                                        '- '
+                                                                                                                                                                                        'prüfen '
+                                                                                                                                                                                        'Sie '
+                                                                                                                                                                                        'sie '
+                                                                                                                                                                                        'anhand '
+                                                                                                                                                                                        'der '
+                                                                                                                                                                                        'aktuellen '
+                                                                                                                                                                                        'ACGIH-TLV-Broschüre, '
+                                                                                                                                                                                        'bevor '
+                                                                                                                                                                                        'Sie '
+                                                                                                                                                                                        'sich '
+                                                                                                                                                                                        'bei '
+                                                                                                                                                                                        'einer '
+                                                                                                                                                                                        'echten '
+                                                                                                                                                                                        'Compliance-Entscheidung '
+                                                                                                                                                                                        'darauf '
+                                                                                                                                                                                        'stützen.',
+ 'Invalid input values:': 'Ungültige Eingabewerte:',
+ 'Recommended ratio': 'Empfohlenes Verhältnis',
+ 'STOP WORK': 'ARBEIT STOPPEN',
+ "Supplements (never replaces) this module's own risk assessment above.": 'Ergänzt (ersetzt nie) die eigene '
+                                                                          'Risikobewertung dieses Moduls '
+                                                                          'oben.',
+ 'WBGT effective': 'Effektiver WBGT',
+ 'streamlit-js-eval is not installed - geolocation is unavailable. Add it to requirements.txt to enable this section.': 'streamlit-js-eval '
+                                                                                                                        'ist '
+                                                                                                                        'nicht '
+                                                                                                                        'installiert '
+                                                                                                                        '- '
+                                                                                                                        'die '
+                                                                                                                        'Standortbestimmung '
+                                                                                                                        'ist '
+                                                                                                                        'nicht '
+                                                                                                                        'verfügbar. '
+                                                                                                                        'Fügen '
+                                                                                                                        'Sie '
+                                                                                                                        'es '
+                                                                                                                        'zu '
+                                                                                                                        'requirements.txt '
+                                                                                                                        'hinzu, '
+                                                                                                                        'um '
+                                                                                                                        'diesen '
+                                                                                                                        'Abschnitt '
+                                                                                                                        'zu '
+                                                                                                                        'aktivieren.',
+ '⚠️ STOP WORK: no compliant work/rest ratio exists for this workload/clothing/acclimatization combination, even at 25/75.': '⚠️ '
+                                                                                                                             'ARBEIT '
+                                                                                                                             'STOPPEN: '
+                                                                                                                             'Für '
+                                                                                                                             'diese '
+                                                                                                                             'Kombination '
+                                                                                                                             'aus '
+                                                                                                                             'Arbeitsbelastung/Kleidung/Akklimatisierung '
+                                                                                                                             'gibt '
+                                                                                                                             'es '
+                                                                                                                             'kein '
+                                                                                                                             'konformes '
+                                                                                                                             'Arbeits-/Ruheverhältnis, '
+                                                                                                                             'nicht '
+                                                                                                                             'einmal '
+                                                                                                                             'bei '
+                                                                                                                             '25/75.',
+ '⚠️ STOP WORK: vapor-barrier PPE requires direct physiological monitoring, not a WBGT table lookup alone.': '⚠️ '
+                                                                                                             'ARBEIT '
+                                                                                                             'STOPPEN: '
+                                                                                                             'Dampfsperren-PSA '
+                                                                                                             'erfordert '
+                                                                                                             'eine '
+                                                                                                             'direkte '
+                                                                                                             'physiologische '
+                                                                                                             'Überwachung, '
+                                                                                                             'nicht '
+                                                                                                             'nur '
+                                                                                                             'das '
+                                                                                                             'Nachschlagen '
+                                                                                                             'in '
+                                                                                                             'einer '
+                                                                                                             'WBGT-Tabelle.'}

@@ -46,6 +46,7 @@ from html import escape
 from fpdf import FPDF
 
 from i18n import t
+from translations import inline as _tx
 from regulatory_references import (
     get_references,
     get_further_reading,
@@ -318,7 +319,7 @@ def render_hse_disclaimer(st_module, lang: str = "fr", compact: bool = False) ->
     with st_module.container(border=True):
         st_module.markdown(f"⚠️ **{HSE_DISCLAIMER_TEXT}**")
         if lang != "en":
-            st_module.caption(HSE_DISCLAIMER_TEXT_FR if lang == "fr" else HSE_DISCLAIMER_TEXT)
+            st_module.caption(_tx(HSE_DISCLAIMER_TEXT_FR, HSE_DISCLAIMER_TEXT, lang))
 
 
 # ---------------------------------------------------------------------------
@@ -364,7 +365,7 @@ def render_regulatory_category_legend(st_module, lang: str = "fr") -> None:
     they've seen elsewhere on the screen means without hunting for it."""
     from regulatory_country_thresholds import THRESHOLD_CATEGORY_META
 
-    title = "Légende des seuils réglementaires" if lang == "fr" else "Regulatory threshold legend"
+    title = _tx('Légende des seuils réglementaires', 'Regulatory threshold legend', lang)
     with st_module.expander(f"ℹ️ {title}"):
         for meta in THRESHOLD_CATEGORY_META.values():
             st_module.markdown(
@@ -478,7 +479,7 @@ font-weight:600;margin:16px 0}}
         pdf_bytes = _build_report_pdf(result, narrative, controls, references, bibliography, generated_at, lang,
                                        evidence=evidence, photos=site_photos)
         pdf_clicked = st_module.download_button(
-            "📄 Télécharger le PDF" if lang == "fr" else "📄 Download PDF",
+            _tx('📄 Télécharger le PDF', '📄 Download PDF', lang),
             data=pdf_bytes,
             file_name="maku_official_hse_report.pdf",
             mime="application/pdf",
@@ -488,7 +489,7 @@ font-weight:600;margin:16px 0}}
             from mobile_bridge import in_mobile_shell, share_file_via_shell
             if in_mobile_shell():
                 nonce = st_module.session_state.get("_share_pdf_nonce", 0)
-                if st_module.button("📲 " + ("Partager le PDF" if lang == "fr" else "Share PDF"),
+                if st_module.button("📲 " + (_tx('Partager le PDF', 'Share PDF', lang)),
                                     key=f"share_pdf_btn_{nonce}", width="stretch"):
                     st_module.session_state["_share_pdf_nonce"] = nonce + 1
                     st_module.session_state["_share_pdf_pending"] = nonce + 1
@@ -503,7 +504,7 @@ font-weight:600;margin:16px 0}}
             pass
     with col_html:
         html_clicked = st_module.download_button(
-            "🌐 Télécharger le HTML" if lang == "fr" else "🌐 Download HTML",
+            _tx('🌐 Télécharger le HTML', '🌐 Download HTML', lang),
             data=report_html,
             file_name="maku_official_hse_report.html",
             mime="text/html",
@@ -564,9 +565,8 @@ def render_risk_matrix_breakdown(st_module, result: dict | None, lang: str = "fr
     if not risk_matrix or not risk_matrix.get("hazards"):
         return
 
-    heading = "Matrice de risque (transparence du calcul)" if lang == "fr" else "Risk Matrix (calculation transparency)"
-    formula_label = "Formule : Score = Probabilité (1-5) x Gravité (1-5)" if lang == "fr" \
-        else "Formula: Score = Likelihood (1-5) x Severity (1-5)"
+    heading = _tx('Matrice de risque (transparence du calcul)', 'Risk Matrix (calculation transparency)', lang)
+    formula_label = _tx('Formule : Score = Probabilité (1-5) x Gravité (1-5)', 'Formula: Score = Likelihood (1-5) x Severity (1-5)', lang)
 
     with st_module.expander(heading, expanded=False):
         st_module.caption(formula_label)
@@ -588,9 +588,7 @@ def render_risk_matrix_breakdown(st_module, result: dict | None, lang: str = "fr
             for h in risk_matrix.get("hazards", [])
         )
         header = (
-            "<tr><th>Aléa</th><th>Probabilité</th><th>Gravité</th><th>Score</th><th>Bande</th><th>Note</th></tr>"
-            if lang == "fr" else
-            "<tr><th>Hazard</th><th>Likelihood</th><th>Severity</th><th>Score</th><th>Band</th><th>Note</th></tr>"
+            _tx('<tr><th>Aléa</th><th>Probabilité</th><th>Gravité</th><th>Score</th><th>Bande</th><th>Note</th></tr>', '<tr><th>Hazard</th><th>Likelihood</th><th>Severity</th><th>Score</th><th>Band</th><th>Note</th></tr>', lang)
         )
         table_html = (
             "<table style='width:100%;border-collapse:collapse;margin-top:8px'>"
@@ -600,12 +598,12 @@ def render_risk_matrix_breakdown(st_module, result: dict | None, lang: str = "fr
         )
         st_module.markdown(table_html, unsafe_allow_html=True)
 
-        overall_label = "Score global (pire aléa)" if lang == "fr" else "Overall score (worst hazard governs)"
+        overall_label = _tx('Score global (pire aléa)', 'Overall score (worst hazard governs)', lang)
         col_score, col_band, col_gov = st_module.columns(3)
         col_score.metric(overall_label, f"{risk_matrix.get('overall_score', 0)} / 25")
-        col_band.metric("Bande" if lang == "fr" else "Band", str(risk_matrix.get("overall_band", "")))
+        col_band.metric(_tx('Bande', 'Band', lang), str(risk_matrix.get("overall_band", "")))
         col_gov.metric(
-            "Aléa dominant" if lang == "fr" else "Governing hazard",
+            _tx('Aléa dominant', 'Governing hazard', lang),
             str(risk_matrix.get("governing_hazard", "-")),
         )
 
@@ -629,11 +627,9 @@ def render_applied_controls_selector(st_module, controls: list, lang: str = "fr"
     controls = controls or []
     if not controls:
         return []
-    label = "Contrôles appliqués sur site" if lang == "fr" else "Controls applied on site"
+    label = _tx('Contrôles appliqués sur site', 'Controls applied on site', lang)
     help_text = (
-        "Sélectionnez les mesures ci-dessus réellement mises en œuvre pour calculer le risque résiduel."
-        if lang == "fr" else
-        "Select which of the controls above have actually been implemented, to calculate residual risk."
+        _tx('Sélectionnez les mesures ci-dessus réellement mises en œuvre pour calculer le risque résiduel.', 'Select which of the controls above have actually been implemented, to calculate residual risk.', lang)
     )
     from translations import engine as _engine_text
     return st_module.multiselect(
@@ -653,13 +649,12 @@ def render_residual_risk_comparison(st_module, initial_matrix: dict | None, resi
     missing/empty."""
     if not initial_matrix or not initial_matrix.get("hazards") or not residual_matrix:
         return
-    heading = "Risque initial -> Contrôles appliqués -> Risque résiduel" if lang == "fr" \
-        else "Initial Risk -> Applied Controls -> Residual Risk"
+    heading = _tx('Risque initial -> Contrôles appliqués -> Risque résiduel', 'Initial Risk -> Applied Controls -> Residual Risk', lang)
     st_module.markdown(f"#### {heading}")
 
     col_initial, col_arrow, col_residual = st_module.columns([5, 1, 5])
     with col_initial:
-        st_module.caption("Risque initial" if lang == "fr" else "Initial risk")
+        st_module.caption(_tx('Risque initial', 'Initial risk', lang))
         st_module.metric("Score", f"{initial_matrix.get('overall_score', 0)} / 25",
                           help=str(initial_matrix.get("overall_band", "")))
         st_module.write(f"**{initial_matrix.get('overall_band', '')}**")
@@ -667,7 +662,7 @@ def render_residual_risk_comparison(st_module, initial_matrix: dict | None, resi
         st_module.markdown("<div style='text-align:center;font-size:1.6em;padding-top:22px'>&rarr;</div>",
                             unsafe_allow_html=True)
     with col_residual:
-        st_module.caption("Risque résiduel" if lang == "fr" else "Residual risk")
+        st_module.caption(_tx('Risque résiduel', 'Residual risk', lang))
         delta = residual_matrix.get("overall_score", 0) - initial_matrix.get("overall_score", 0)
         st_module.metric("Score", f"{residual_matrix.get('overall_score', 0)} / 25",
                           delta=delta, delta_color="inverse",
@@ -683,26 +678,20 @@ def render_residual_risk_comparison(st_module, initial_matrix: dict | None, resi
             st_module.caption(f"✓ {hazard}: {', '.join(ids)}")
         if not credited:
             st_module.caption(
-                "Les contrôles sélectionnés ne visent aucun des aléas évalués : aucun crédit de réduction."
-                if lang == "fr" else
-                "The selected controls don't address any assessed hazard, so no reduction is credited.")
+                _tx('Les contrôles sélectionnés ne visent aucun des aléas évalués : aucun crédit de réduction.', "The selected controls don't address any assessed hazard, so no reduction is credited.", lang))
         st_module.caption(
-            (f"Méthode {version} : un contrôle ne réduit que les aléas qu'il cible. Élimination (arrêt, "
-             "consignation, évacuation) → probabilité « rare » ; ingénierie, mesures administratives, EPI → "
-             "−1 chacun. La gravité n'est jamais réduite.")
-            if lang == "fr" else
-            (f"Method {version}: a control only reduces the hazards it addresses. Elimination (stop work, "
-             "de-energize, evacuate) → likelihood 'rare'; engineering, administrative, PPE → −1 each. "
-             "Severity is never reduced.")
+            _tx("Méthode {version} : un contrôle ne réduit que les aléas qu'il cible. Élimination (arrêt, "
+                "consignation, évacuation) → probabilité « rare » ; ingénierie, mesures administratives, EPI → "
+                "−1 chacun. La gravité n'est jamais réduite.",
+                "Method {version}: a control only reduces the hazards it addresses. Elimination (stop work, "
+                "de-energize, evacuate) → likelihood 'rare'; engineering, administrative, PPE → −1 each. "
+                "Severity is never reduced.", lang).format(version=version)
         )
         if uncredited:
-            st_module.caption(("Sans effet sur les aléas évalués : " if lang == "fr" else
-                               "No effect on the assessed hazards: ") + ", ".join(uncredited))
+            st_module.caption((_tx('Sans effet sur les aléas évalués : ', 'No effect on the assessed hazards: ', lang)) + ", ".join(uncredited))
     else:
         st_module.caption(
-            "Aucun contrôle sélectionné - le risque résiduel est identique au risque initial."
-            if lang == "fr" else
-            "No controls selected yet - residual risk equals initial risk."
+            _tx('Aucun contrôle sélectionné - le risque résiduel est identique au risque initial.', 'No controls selected yet - residual risk equals initial risk.', lang)
         )
 
 
@@ -751,14 +740,10 @@ def render_stop_work_trigger_registry(st_module, triggers: list[dict], lang: str
     risk_engine.py's source. No-ops gracefully on an empty/None list."""
     if not triggers:
         return
-    heading = "Registre des seuils d'arrêt de travail" if lang == "fr" else "Stop-Work Trigger Registry"
+    heading = _tx("Registre des seuils d'arrêt de travail", 'Stop-Work Trigger Registry', lang)
     with st_module.expander(heading, expanded=expanded):
         st_module.caption(
-            "Seuils numériques exacts qui déclenchent un arrêt de travail obligatoire (safety_override), "
-            "avec la constante nommée du code d'où provient chaque seuil."
-            if lang == "fr" else
-            "The exact numeric thresholds that force a mandatory stop-work condition (safety_override), "
-            "with the named source constant in code each threshold comes from."
+            _tx("Seuils numériques exacts qui déclenchent un arrêt de travail obligatoire (safety_override), avec la constante nommée du code d'où provient chaque seuil.", 'The exact numeric thresholds that force a mandatory stop-work condition (safety_override), with the named source constant in code each threshold comes from.', lang)
         )
         rows = "".join(
             f"<tr><td><strong>{escape(str(tr.get('module', '')))}</strong></td>"
@@ -770,9 +755,7 @@ def render_stop_work_trigger_registry(st_module, triggers: list[dict], lang: str
             for tr in triggers
         )
         header = (
-            "<tr><th>Module</th><th>Déclencheur</th><th>Seuil</th><th>Constante source</th></tr>"
-            if lang == "fr" else
-            "<tr><th>Module</th><th>Trigger condition</th><th>Threshold</th><th>Source constant</th></tr>"
+            _tx('<tr><th>Module</th><th>Déclencheur</th><th>Seuil</th><th>Constante source</th></tr>', '<tr><th>Module</th><th>Trigger condition</th><th>Threshold</th><th>Source constant</th></tr>', lang)
         )
         table_html = (
             "<table style='width:100%;border-collapse:collapse;margin-top:6px;font-size:0.9em'>"
@@ -794,8 +777,7 @@ def render_formula_standards_map(st_module, formulas: list[dict], lang: str = "f
     gracefully on an empty/None list."""
     if not formulas:
         return
-    heading = "Validation des formules par rapport aux normes" if lang == "fr" \
-        else "Regulatory Algorithm Validation"
+    heading = _tx('Validation des formules par rapport aux normes', 'Regulatory Algorithm Validation', lang)
     status_colors = {
         "Direct implementation": "#2e7d32",
         "Adapted / approximated": "#f2b705",
@@ -803,11 +785,7 @@ def render_formula_standards_map(st_module, formulas: list[dict], lang: str = "f
     }
     with st_module.expander(heading, expanded=expanded):
         st_module.caption(
-            "Chaque formule de notation est mise en correspondance avec la norme revendiquée, avec un statut "
-            "honnête : mise en œuvre directe, adaptée/approximée, ou illustrative (non dérivée d'une norme)."
-            if lang == "fr" else
-            "Every scoring formula mapped against its claimed standard, with an honest status: direct "
-            "implementation, adapted/approximated, or illustrative (not standards-derived)."
+            _tx("Chaque formule de notation est mise en correspondance avec la norme revendiquée, avec un statut honnête : mise en œuvre directe, adaptée/approximée, ou illustrative (non dérivée d'une norme).", 'Every scoring formula mapped against its claimed standard, with an honest status: direct implementation, adapted/approximated, or illustrative (not standards-derived).', lang)
         )
         rows = "".join(
             f"<tr><td style='font-family:monospace;font-size:0.82em'>{escape(str(f.get('function', '')))}</td>"
@@ -819,9 +797,7 @@ def render_formula_standards_map(st_module, formulas: list[dict], lang: str = "f
             for f in formulas
         )
         header = (
-            "<tr><th>Formule</th><th>Norme(s) revendiquée(s)</th><th>Statut</th><th>Remarque</th></tr>"
-            if lang == "fr" else
-            "<tr><th>Formula</th><th>Cited standard(s)</th><th>Status</th><th>Caveat</th></tr>"
+            _tx('<tr><th>Formule</th><th>Norme(s) revendiquée(s)</th><th>Statut</th><th>Remarque</th></tr>', '<tr><th>Formula</th><th>Cited standard(s)</th><th>Status</th><th>Caveat</th></tr>', lang)
         )
         table_html = (
             "<table style='width:100%;border-collapse:collapse;margin-top:6px;font-size:0.9em'>"
@@ -884,9 +860,9 @@ def render_feed_ok_banner(st_module, lang: str, source: str, fetched_at, cache_t
     ]
     if cache_ttl_seconds:
         lines.append(
-            f"{'Fraîcheur' if lang == 'fr' else 'Freshness'}: "
-            + (f"actualisé au moins toutes les {cache_ttl_seconds}s" if lang == "fr"
-               else f"refreshed at least every {cache_ttl_seconds}s while this page is open")
+            f"{_tx('Fraîcheur', 'Freshness', lang)}: "
+            + _tx("actualisé au moins toutes les {seconds}s",
+                  "refreshed at least every {seconds}s while this page is open", lang).format(seconds=cache_ttl_seconds)
         )
     st_module.success("  \n".join(lines))
 
@@ -906,11 +882,7 @@ def render_simulated_data_banner(st_module, lang: str, source: str = "") -> None
     st.error PLUS a full-width red block so it cannot be mistaken for the
     green LIVE banner even in high-contrast mode or on a small screen."""
     explanation = (
-        "Ces valeurs proviennent d'un simulateur ou d'un jeu de données de démonstration - "
-        "elles ne sont PAS des mesures réelles. Mesurez sur site avant toute décision."
-        if lang == "fr" else
-        "These values come from a simulator or demonstration dataset - they are NOT real "
-        "measurements. Measure on site before making any decision."
+        _tx("Ces valeurs proviennent d'un simulateur ou d'un jeu de données de démonstration - elles ne sont PAS des mesures réelles. Mesurez sur site avant toute décision.", 'These values come from a simulator or demonstration dataset - they are NOT real measurements. Measure on site before making any decision.', lang)
     )
     st_module.markdown(
         "<div role='alert' style='background:#b00020;color:#ffffff;padding:14px 16px;border-radius:8px;"
@@ -965,10 +937,7 @@ def render_data_unavailable_banner(st_module, lang: str, error_message: str, sou
     prefix = f"{source_label}: " if source_label else ""
     st_module.error(f"🛑 {prefix}{DATA_UNAVAILABLE_MESSAGE}")
     st_module.caption(
-        "Le flux de données en direct est indisponible - entrez les valeurs mesurées manuellement "
-        "ci-dessous avant de lancer l'évaluation." if lang == "fr" else
-        "The live data feed is unavailable - enter measured values manually below before running "
-        "the assessment."
+        _tx("Le flux de données en direct est indisponible - entrez les valeurs mesurées manuellement ci-dessous avant de lancer l'évaluation.", 'The live data feed is unavailable - enter measured values manually below before running the assessment.', lang)
     )
     if debug_details_enabled():
         with st_module.expander("Technical details" if lang == "en" else "Détails techniques"):
@@ -989,12 +958,7 @@ def render_db_fatal_banner(st_module, backend_status: dict, lang: str = "fr") ->
         return
     st_module.error(f"🛑 {backend_status.get('fatal_message') or 'CRITICAL DATABASE ERROR'}")
     st_module.caption(
-        "La base de données de production configurée (Postgres/Supabase) est injoignable. "
-        "Toutes les écritures sont gelées - aucune donnée n'est redirigée silencieusement vers un "
-        "stockage local éphémère. Contactez un administrateur." if lang == "fr" else
-        "The configured production database (Postgres/Supabase) is unreachable. All writes are "
-        "frozen - no data is being silently redirected to ephemeral local storage. Contact an "
-        "administrator."
+        _tx("La base de données de production configurée (Postgres/Supabase) est injoignable. Toutes les écritures sont gelées - aucune donnée n'est redirigée silencieusement vers un stockage local éphémère. Contactez un administrateur.", 'The configured production database (Postgres/Supabase) is unreachable. All writes are frozen - no data is being silently redirected to ephemeral local storage. Contact an administrator.', lang)
     )
 
 
@@ -1012,20 +976,12 @@ def render_database_gate(st_module, analytics_module, lang: str = "fr") -> dict:
     if status.get("fatal"):
         st_module.error(f"🛑 {status.get('fatal_message') or 'CRITICAL DATABASE ERROR'}")
         st_module.markdown(
-            "**MAKU est temporairement indisponible.** La base de données de production ne répond pas ou "
-            "n'est pas configurée correctement. Aucune évaluation ne peut être enregistrée, et rien n'est "
-            "enregistré ailleurs. L'administrateur a été alerté via le journal du serveur. "
-            "Réessayez dans quelques minutes."
-            if lang == "fr" else
-            "**MAKU is temporarily unavailable.** The production database is not answering or is not "
-            "configured correctly. No assessment can be saved, and nothing is being saved anywhere else. "
-            "The administrator has been alerted through the server log. Please try again in a few minutes."
+            _tx("**MAKU est temporairement indisponible.** La base de données de production ne répond pas ou n'est pas configurée correctement. Aucune évaluation ne peut être enregistrée, et rien n'est enregistré ailleurs. L'administrateur a été alerté via le journal du serveur. Réessayez dans quelques minutes.", '**MAKU is temporarily unavailable.** The production database is not answering or is not configured correctly. No assessment can be saved, and nothing is being saved anywhere else. The administrator has been alerted through the server log. Please try again in a few minutes.', lang)
         )
         st_module.stop()
     if status.get("environment") == "demo":
         st_module.sidebar.warning(
-            "Démo - les données ne sont pas conservées." if lang == "fr"
-            else "Demo - data is not kept.", icon="🧪")
+            _tx('Démo - les données ne sont pas conservées.', 'Demo - data is not kept.', lang), icon="🧪")
     return status
 
 # ---------------------------------------------------------------------------
@@ -1038,14 +994,10 @@ def render_virtual_library(st_module, lang: str, module: str = "") -> None:
     caches, or displays reproduced book/publication content. See
     regulatory_references.py for the copyright/accuracy rationale."""
     st_module.markdown(
-        "### 📚 " + ("Bibliothèque HSE" if lang == "fr" else "HSE Virtual Library")
+        "### 📚 " + (_tx('Bibliothèque HSE', 'HSE Virtual Library', lang))
     )
     st_module.caption(
-        "Ressources gratuites et légalement accessibles. MAKU ne reproduit aucun "
-        "contenu protégé - ces liens mènent aux sources officielles."
-        if lang == "fr" else
-        "Free, legally accessible resources. MAKU reproduces no copyrighted "
-        "content - these links go to the official sources."
+        _tx('Ressources gratuites et légalement accessibles. MAKU ne reproduit aucun contenu protégé - ces liens mènent aux sources officielles.', 'Free, legally accessible resources. MAKU reproduces no copyrighted content - these links go to the official sources.', lang)
     )
     for entry in get_free_library():
         st_module.markdown(f"**{entry['body']}**  \n{entry['description']}  \n{entry['url']}")
@@ -1054,17 +1006,11 @@ def render_virtual_library(st_module, lang: str, module: str = "") -> None:
         topic = get_library_topic(module)
         books_url = google_books_search_url(topic)
         st_module.markdown(
-            f"🔎 [{'Rechercher des ouvrages sur ce sujet (Google Books)' if lang == 'fr' else 'Search books on this topic (Google Books)'}]({books_url})"
+            f"🔎 [{_tx('Rechercher des ouvrages sur ce sujet (Google Books)', 'Search books on this topic (Google Books)', lang)}]({books_url})"
         )
 
     st_module.caption(
-        "Pour les ouvrages sous droits d'auteur (ex. Brauer, *Safety and Health "
-        "for Engineers*), achetez-les ou consultez votre bibliothèque "
-        "institutionnelle - voir la section Further Reading du rapport officiel."
-        if lang == "fr" else
-        "For copyrighted texts (e.g. Brauer's *Safety and Health for "
-        "Engineers*), purchase them or check your institutional library - see "
-        "the Further Reading section of the official report."
+        _tx("Pour les ouvrages sous droits d'auteur (ex. Brauer, *Safety and Health for Engineers*), achetez-les ou consultez votre bibliothèque institutionnelle - voir la section Further Reading du rapport officiel.", "For copyrighted texts (e.g. Brauer's *Safety and Health for Engineers*), purchase them or check your institutional library - see the Further Reading section of the official report.", lang)
     )
 
 
@@ -1074,18 +1020,11 @@ def render_web_search_toggle(st_module, lang: str, module_key: str) -> bool:
     Reuses the same Anthropic API key already entered - no separate search
     API key needed."""
     return st_module.sidebar.checkbox(
-        "🔎 Recherche légale en direct (coût API supplémentaire)"
-        if lang == "fr" else
-        "🔎 Live legislation search (extra API cost)",
+        _tx('🔎 Recherche légale en direct (coût API supplémentaire)', '🔎 Live legislation search (extra API cost)', lang),
         key=f"web_search_{module_key}",
         value=False,
         help=(
-            "Autorise Claude à effectuer une recherche web en direct pour "
-            "vérifier la réglementation applicable, en plus des références "
-            "vérifiées ci-dessous. Utilise votre clé API existante."
-            if lang == "fr" else
-            "Lets Claude search the web live to check applicable legislation, "
-            "on top of the verified references below. Uses your existing API key."
+            _tx('Autorise Claude à effectuer une recherche web en direct pour vérifier la réglementation applicable, en plus des références vérifiées ci-dessous. Utilise votre clé API existante.', 'Lets Claude search the web live to check applicable legislation, on top of the verified references below. Uses your existing API key.', lang)
         ),
     )
 
@@ -1102,24 +1041,16 @@ def render_analytics_section(st_module, lang: str) -> None:
     from analytics import get_log_dataframe, monthly_summary, build_monthly_excel, merge_uploaded_csv
 
     st_module.markdown(
-        "### 📊 " + ("Analyse des Tendances & Rapport Mensuel" if lang == "fr" else "Trend Analysis & Monthly Report")
+        "### 📊 " + (_tx('Analyse des Tendances & Rapport Mensuel', 'Trend Analysis & Monthly Report', lang))
     )
     import db as _db
     if not _db.strict_persistence():
         st_module.caption(
-            "Journal des évaluations de cette session uniquement (pas de base de "
-            "données persistante sur Streamlit Cloud). Téléchargez le CSV "
-            "régulièrement et réimportez-le lors d'une session future pour "
-            "construire un historique multi-mois."
-            if lang == "fr" else
-            "This session's assessment log only (Streamlit Cloud has no "
-            "persistent database). Download the CSV periodically and re-upload "
-            "it in a future session to build a multi-month history."
+            _tx("Journal des évaluations de cette session uniquement (pas de base de données persistante sur Streamlit Cloud). Téléchargez le CSV régulièrement et réimportez-le lors d'une session future pour construire un historique multi-mois.", "This session's assessment log only (Streamlit Cloud has no persistent database). Download the CSV periodically and re-upload it in a future session to build a multi-month history.", lang)
         )
 
     uploaded = st_module.file_uploader(
-        "Importer un journal précédent (CSV) pour fusionner" if lang == "fr"
-        else "Upload a previous log (CSV) to merge",
+        _tx('Importer un journal précédent (CSV) pour fusionner', 'Upload a previous log (CSV) to merge', lang),
         type=["csv"],
         key="analytics_csv_upload",
     )
@@ -1127,43 +1058,33 @@ def render_analytics_section(st_module, lang: str) -> None:
         try:
             added = merge_uploaded_csv(st_module, uploaded)
             st_module.success(
-                (f"{added} nouvelle(s) ligne(s) fusionnée(s)." if lang == "fr"
-                 else f"{added} new row(s) merged.")
+                _tx("{count} nouvelle(s) ligne(s) fusionnée(s).", "{count} new row(s) merged.", lang).format(count=added)
             )
         except RuntimeError as exc:   # analytics.PersistenceError: never reported as merged
             if exc.__class__.__name__ != "PersistenceError":
                 raise
-            st_module.error("Import NON enregistré - base de données indisponible." if lang == "fr"
-                            else "Import NOT saved - the database is unavailable.")
+            st_module.error(_tx('Import NON enregistré - base de données indisponible.', 'Import NOT saved - the database is unavailable.', lang))
         except PermissionError:
-            st_module.error("Votre rôle est en lecture seule dans cette organisation : import impossible."
-                            if lang == "fr" else
-                            "Your role in this organization is read-only: import is not allowed.")
+            st_module.error(_tx('Votre rôle est en lecture seule dans cette organisation : import impossible.', 'Your role in this organization is read-only: import is not allowed.', lang))
         except ValueError as exc:   # our own validation messages (missing columns, too many rows)
-            st_module.error(f"{'Échec de la fusion' if lang == 'fr' else 'Merge failed'}: {exc}")
+            st_module.error(f"{_tx('Échec de la fusion', 'Merge failed', lang)}: {exc}")
         except Exception:  # noqa: BLE001 - never show raw technical errors to users
             logging.getLogger("maku.ui").exception("CSV merge failed")
-            st_module.error("Échec de la fusion : fichier illisible." if lang == "fr"
-                            else "Merge failed: the file could not be read.")
+            st_module.error(_tx('Échec de la fusion : fichier illisible.', 'Merge failed: the file could not be read.', lang))
 
     try:
         df = get_log_dataframe(st_module)
     except PermissionError:   # tenancy.TenantAccessDenied: no organization, or access removed
-        st_module.info("Aucune organisation accessible - journal indisponible." if lang == "fr"
-                       else "No accessible organization - the log is not available.")
+        st_module.info(_tx('Aucune organisation accessible - journal indisponible.', 'No accessible organization - the log is not available.', lang))
         return
 
     if df.empty:
         st_module.info(
-            "Aucune évaluation enregistrée pour l'instant cette session - "
-            "lancez une évaluation sur n'importe quel module pour commencer."
-            if lang == "fr" else
-            "No assessments logged yet this session - run an assessment on "
-            "any module to start building the log."
+            _tx("Aucune évaluation enregistrée pour l'instant cette session - lancez une évaluation sur n'importe quel module pour commencer.", 'No assessments logged yet this session - run an assessment on any module to start building the log.', lang)
         )
         return
 
-    st_module.caption(f"{len(df)} " + ("évaluation(s) enregistrée(s) cette session" if lang == "fr" else "assessment(s) logged this session"))
+    st_module.caption(f"{len(df)} " + (_tx('évaluation(s) enregistrée(s) cette session', 'assessment(s) logged this session', lang)))
 
     chart_data = df.groupby("module").size()
     st_module.bar_chart(chart_data)
@@ -1171,7 +1092,7 @@ def render_analytics_section(st_module, lang: str) -> None:
     col_csv, col_xlsx = st_module.columns(2)
     with col_csv:
         st_module.download_button(
-            "⬇️ Télécharger le journal (CSV)" if lang == "fr" else "⬇️ Download log (CSV)",
+            _tx('⬇️ Télécharger le journal (CSV)', '⬇️ Download log (CSV)', lang),
             data=df.to_csv(index=False).encode("utf-8"),
             file_name="maku_assessment_log.csv",
             mime="text/csv",
@@ -1179,14 +1100,14 @@ def render_analytics_section(st_module, lang: str) -> None:
         )
     with col_xlsx:
         st_module.download_button(
-            "📊 Rapport Excel Mensuel" if lang == "fr" else "📊 Monthly Excel Report",
+            _tx('📊 Rapport Excel Mensuel', '📊 Monthly Excel Report', lang),
             data=build_monthly_excel(df),
             file_name="maku_monthly_trend_report.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             width='stretch',
         )
 
-    with st_module.expander("Résumé mensuel" if lang == "fr" else "Monthly summary"):
+    with st_module.expander(_tx('Résumé mensuel', 'Monthly summary', lang)):
         st_module.dataframe(monthly_summary(df), width='stretch')
 
 

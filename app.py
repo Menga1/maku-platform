@@ -56,7 +56,7 @@ import analytics
 import push
 from maku_core import InputError, residual_risk_for, run_assessment
 from i18n import t, language_selector, LANGUAGES
-from translations import engine as engine_text, drivers_table
+from translations import engine as engine_text, drivers_table, inline as _tx
 from risk_engine import (
     calculate_solar_albedo_heat_risk,
     calculate_marine_humidex_risk,
@@ -290,15 +290,12 @@ def _render_ai_layer_sidebar(lang: str) -> str:
     st.sidebar.subheader(t("ai_layer_header", lang))
     if not has_consent(CONSENT_AI):
         st.sidebar.caption(
-            "🔒 Briefings IA désactivés (vos choix de confidentialité). Activez-les dans « Mon compte »."
-            if lang == "fr" else
-            "🔒 AI briefings are off (your privacy choices). Turn them on under 'My account'."
+            _tx('🔒 Briefings IA désactivés (vos choix de confidentialité). Activez-les dans « Mon compte ».', "🔒 AI briefings are off (your privacy choices). Turn them on under 'My account'.", lang)
         )
         return None
     if server_key:
         st.sidebar.caption(
-            "🔑 " + ("Clé API configurée par le serveur (aucune saisie requise)." if lang == "fr"
-                     else "Server-configured API key in use (no entry required).")
+            "🔑 " + (_tx('Clé API configurée par le serveur (aucune saisie requise).', 'Server-configured API key in use (no entry required).', lang))
         )
         return server_key
     return st.sidebar.text_input(
@@ -346,12 +343,9 @@ def render_sensor_equipment_input(lang: str) -> str:
     section (see analytics.build_evidence_traceability()). Optional -
     left blank, the report honestly states 'Not specified / simulated
     input' rather than fabricating a device name."""
-    label = "Équipement de mesure / Modèle du capteur (optionnel)" if lang == "fr" \
-        else "Measuring equipment / Sensor model (optional)"
+    label = _tx('Équipement de mesure / Modèle du capteur (optionnel)', 'Measuring equipment / Sensor model (optional)', lang)
     help_text = (
-        "Ex. : Kestrel 5400 Heat Stress Tracker, thermomètre à globe noir, sonomètre de classe 2..."
-        if lang == "fr" else
-        "e.g. Kestrel 5400 Heat Stress Tracker, black-globe thermometer, Class 2 sound level meter..."
+        _tx('Ex. : Kestrel 5400 Heat Stress Tracker, thermomètre à globe noir, sonomètre de classe 2...', 'e.g. Kestrel 5400 Heat Stress Tracker, black-globe thermometer, Class 2 sound level meter...', lang)
     )
     if "sensor_equipment_model" not in st.session_state:
         st.session_state["sensor_equipment_model"] = ""
@@ -459,9 +453,7 @@ def _render_acgih_reference_panel(lang: str, ambient_temp: float, relative_humid
         st.markdown("---")
         st.subheader(t("advanced_heat_panel_title", lang))
         st.caption(
-            "Supplements (never replaces) this module's own risk assessment above."
-            if lang != "fr" else
-            "Complète (ne remplace jamais) l'évaluation de risque propre à ce module ci-dessus."
+            _tx("Complète (ne remplace jamais) l'évaluation de risque propre à ce module ci-dessus.", "Supplements (never replaces) this module's own risk assessment above.", lang)
         )
         _adv_workload_options = ["light", "moderate", "heavy", "very_heavy"]
         _clothing_labels_en = {
@@ -478,7 +470,7 @@ def _render_acgih_reference_panel(lang: str, ambient_temp: float, relative_humid
             "double_layer_woven_coveralls": "Combinaison tissée double couche",
             "vapor_barrier_coveralls": "Combinaison barrière de vapeur (usage limité)",
         }
-        _clothing_labels = _clothing_labels_fr if lang == "fr" else _clothing_labels_en
+        _clothing_labels = {k: _tx(_clothing_labels_fr[k], v, lang) for k, v in _clothing_labels_en.items()}
 
         adv_col1, adv_col2, adv_col3 = st.columns(3)
         with adv_col1:
@@ -518,39 +510,26 @@ def _render_acgih_reference_panel(lang: str, ambient_temp: float, relative_humid
         )
 
         adv_c1, adv_c2, adv_c3 = st.columns(3)
-        adv_c1.metric("WBGT effective" if lang != "fr" else "WBGT effectif", f"{adv_result['effective_wbgt_c']} °C")
+        adv_c1.metric(_tx('WBGT effectif', 'WBGT effective', lang), f"{adv_result['effective_wbgt_c']} °C")
         adv_c2.metric(
-            "Recommended ratio" if lang != "fr" else "Cycle recommandé",
-            adv_result["recommended_work_rest_ratio"] or ("STOP WORK" if lang != "fr" else "ARRÊT"),
+            _tx('Cycle recommandé', 'Recommended ratio', lang),
+            adv_result["recommended_work_rest_ratio"] or (_tx('ARRÊT', 'STOP WORK', lang)),
         )
-        adv_c3.metric("Band" if lang != "fr" else "Bande", engine_text(adv_result["risk_band"], lang))
+        adv_c3.metric(_tx('Bande', 'Band', lang), engine_text(adv_result["risk_band"], lang))
 
         if adv_result["safety_override"]:
             if adv_result["requires_physiological_monitoring"]:
                 msg = (
-                    "⚠️ STOP WORK: vapor-barrier PPE requires direct physiological monitoring, "
-                    "not a WBGT table lookup alone."
-                    if lang != "fr" else
-                    "⚠️ ARRÊT DE TRAVAIL : l'EPI barrière de vapeur nécessite un suivi physiologique "
-                    "direct, pas seulement une lecture WBGT."
+                    _tx("⚠️ ARRÊT DE TRAVAIL : l'EPI barrière de vapeur nécessite un suivi physiologique direct, pas seulement une lecture WBGT.", '⚠️ STOP WORK: vapor-barrier PPE requires direct physiological monitoring, not a WBGT table lookup alone.', lang)
                 )
             else:
                 msg = (
-                    "⚠️ STOP WORK: no compliant work/rest ratio exists for this workload/clothing/"
-                    "acclimatization combination, even at 25/75."
-                    if lang != "fr" else
-                    "⚠️ ARRÊT DE TRAVAIL : aucun cycle travail/repos conforme n'existe pour cette "
-                    "combinaison charge/vêtement/acclimatation, même à 25/75."
+                    _tx("⚠️ ARRÊT DE TRAVAIL : aucun cycle travail/repos conforme n'existe pour cette combinaison charge/vêtement/acclimatation, même à 25/75.", '⚠️ STOP WORK: no compliant work/rest ratio exists for this workload/clothing/acclimatization combination, even at 25/75.', lang)
                 )
             st.error(msg)
 
         st.caption(
-            "Commonly-cited approximation of the ACGIH TLV very_heavy/acclimatized figures - "
-            "verify against the current ACGIH TLV booklet before relying on this for a real "
-            "compliance decision."
-            if lang != "fr" else
-            "Approximation courante des valeurs ACGIH TLV très-intense/acclimaté - à vérifier "
-            "dans l'édition actuelle du manuel ACGIH TLV avant toute décision de conformité réelle."
+            _tx("Approximation courante des valeurs ACGIH TLV très-intense/acclimaté - à vérifier dans l'édition actuelle du manuel ACGIH TLV avant toute décision de conformité réelle.", 'Commonly-cited approximation of the ACGIH TLV very_heavy/acclimatized figures - verify against the current ACGIH TLV booklet before relying on this for a real compliance decision.', lang)
         )
         render_risk_matrix_breakdown(st, adv_result, lang)
 
@@ -805,9 +784,7 @@ def render_ai_narrative(
         logging.getLogger("maku.app").exception("AI narrative rendering failed")
         offline_narrative = generate_narrative(result, controls, api_key="", lang=lang)
         st.warning(
-            "Couche IA temporairement indisponible - résumé hors-ligne affiché ci-dessous."
-            if lang == "fr" else
-            "AI advisory layer temporarily unavailable - showing the offline summary below."
+            _tx('Couche IA temporairement indisponible - résumé hors-ligne affiché ci-dessous.', 'AI advisory layer temporarily unavailable - showing the offline summary below.', lang)
         )
         st.write(offline_narrative)
         st.session_state["latest_ai_narrative"] = offline_narrative
@@ -1037,7 +1014,7 @@ def render_org_context_selector(lang: str) -> None:
     db_up = analytics._db_ok()
     orgs = tenancy.accessible_organizations(principal) if db_up else []
     current = get_org_context(st)
-    new_org_option = "+ Nouvelle organisation..." if fr else "+ New organization..."
+    new_org_option = _tx('+ Nouvelle organisation...', '+ New organization...', lang)
     with st.sidebar.expander(f"🏢 {t('org_context_label', lang)}", expanded=False):
         if orgs:
             names = [o["name"] for o in orgs]
@@ -1046,7 +1023,7 @@ def render_org_context_selector(lang: str) -> None:
             picked = st.selectbox(t("org_context_org_label", lang), options=options, index=default_index,
                                   key="org_context_org_select")
             if picked == new_org_option:
-                organization = st.text_input("Nom de la nouvelle organisation" if fr else "New organization name",
+                organization = st.text_input(_tx('Nom de la nouvelle organisation', 'New organization name', lang),
                                              value="", key="org_context_org_new_widget").strip() \
                     or current["organization"]
             else:
@@ -1063,27 +1040,22 @@ def render_org_context_selector(lang: str) -> None:
         try:
             ctx = set_org_context(st, organization=organization, project=project, site=site)
         except tenancy.TenantAccessDenied:
-            st.error("Accès refusé à cette organisation." if fr else "Access to this organization is denied.")
+            st.error(_tx('Accès refusé à cette organisation.', 'Access to this organization is denied.', lang))
             ctx = set_org_context(st, project=project, site=site)
         role = ctx.get("role")
         if role:
-            role_label = {"platform_admin": "Platform administrator" if not fr else "Administrateur plateforme",
-                          "org_admin": "Organization admin" if not fr else "Admin de l'organisation",
-                          "supervisor": "Supervisor" if not fr else "Superviseur",
-                          "viewer": "Viewer (read-only)" if not fr else "Lecteur (lecture seule)"}.get(role, role)
-            st.caption(("Votre rôle : " if fr else "Your role: ") + role_label)
+            role_label = {"platform_admin": _tx('Administrateur plateforme', 'Platform administrator', lang),
+                          "org_admin": _tx("Admin de l'organisation", 'Organization admin', lang),
+                          "supervisor": _tx('Superviseur', 'Supervisor', lang),
+                          "viewer": _tx('Lecteur (lecture seule)', 'Viewer (read-only)', lang)}.get(role, role)
+            st.caption((_tx('Votre rôle : ', 'Your role: ', lang)) + role_label)
 
     if db_up and ctx.get("organization_id") is None:
         st.warning(
-            "Votre compte n'est membre d'aucune organisation. Demandez à votre administrateur MAKU de vous "
-            "ajouter à votre organisation. La page « Mon compte » reste disponible."
-            if fr else
-            "Your account is not a member of any organization yet. Ask your MAKU administrator to add you to "
-            "your organization. The My account page is still available.")
+            _tx("Votre compte n'est membre d'aucune organisation. Demandez à votre administrateur MAKU de vous ajouter à votre organisation. La page « Mon compte » reste disponible.", 'Your account is not a member of any organization yet. Ask your MAKU administrator to add you to your organization. The My account page is still available.', lang))
         st.stop()
     if ctx.get("role") == "viewer":
-        st.sidebar.info("Lecture seule : les évaluations ne sont pas enregistrées." if fr
-                        else "Read-only: assessments are not saved.")
+        st.sidebar.info(_tx('Lecture seule : les évaluations ne sont pas enregistrées.', 'Read-only: assessments are not saved.', lang))
 
 
 def assess(module_key: str, regulatory_profile: dict | None = None, **inputs) -> dict:
@@ -1094,8 +1066,7 @@ def assess(module_key: str, regulatory_profile: dict | None = None, **inputs) ->
     try:
         return run_assessment(module_key, inputs, regulatory_profile=regulatory_profile)["result"]
     except InputError as exc:
-        st.error("Valeurs d'entrée invalides :" if st.session_state.get("lang", "fr") == "fr"
-                 else "Invalid input values:")
+        st.error(_tx("Valeurs d'entrée invalides :", 'Invalid input values:', st.session_state.get("lang", "fr")))
         for problem in exc.problems:
             st.markdown(f"- {problem}")
         st.stop()
@@ -1110,9 +1081,7 @@ def save_assessment(result: dict) -> bool:
         log_assessment(st, result)
     except analytics.PersistenceError:
         # Never reported as saved (audit mandate C3).
-        st.error("🛑 " + ("Évaluation NON enregistrée - base de données indisponible."
-                         if st.session_state.get("lang", "fr") == "fr" else
-                         "Assessment NOT saved - the database is unavailable."))
+        st.error("🛑 " + (_tx('Évaluation NON enregistrée - base de données indisponible.', 'Assessment NOT saved - the database is unavailable.', st.session_state.get("lang", "fr"))))
         return False
     return True
 
@@ -1296,13 +1265,9 @@ def render_multi_site_heat_overview(lang: str) -> None:
     "computing risk indexes across multiple sub-zones/sites
     simultaneously". Pure display; this never feeds a value back into any
     individual module's own risk_band."""
-    with st.expander("⚡ " + ("Vue Multi-Sites (calcul vectorisé)" if lang == "fr" else "Multi-Site Overview (vectorized batch)")):
+    with st.expander("⚡ " + (_tx('Vue Multi-Sites (calcul vectorisé)', 'Multi-Site Overview (vectorized batch)', lang))):
         st.caption(
-            "Un seul calcul NumPy/Pandas vectorisé pour tous les sites, au lieu d'un "
-            "appel par site - optimisation de performance."
-            if lang == "fr" else
-            "One vectorized NumPy/Pandas batch calculation across every site, instead of "
-            "one function call per site - a performance optimization."
+            _tx("Un seul calcul NumPy/Pandas vectorisé pour tous les sites, au lieu d'un appel par site - optimisation de performance.", 'One vectorized NumPy/Pandas batch calculation across every site, instead of one function call per site - a performance optimization.', lang)
         )
         rows = []
         for site_id, coords in SITE_COORDINATES.items():
@@ -1351,11 +1316,7 @@ def render_field_inspection_section(lang: str) -> None:
 
     if not has_consent(CONSENT_LOCATION):
         st.info(
-            "📍 La localisation est désactivée (vos choix de confidentialité). Activez-la dans « Mon compte » "
-            "pour utiliser le GPS et la détection automatique du pays."
-            if lang == "fr" else
-            "📍 Location is off (your privacy choices). Turn it on under 'My account' to use GPS and "
-            "automatic country detection."
+            _tx('📍 La localisation est désactivée (vos choix de confidentialité). Activez-la dans « Mon compte » pour utiliser le GPS et la détection automatique du pays.', "📍 Location is off (your privacy choices). Turn it on under 'My account' to use GPS and automatic country detection.", lang)
         )
         return
 
@@ -1365,11 +1326,7 @@ def render_field_inspection_section(lang: str) -> None:
 
     if not GEOLOCATION_AVAILABLE:
         st.info(
-            "streamlit-js-eval is not installed - geolocation is unavailable. "
-            "Add it to requirements.txt to enable this section."
-            if lang != "fr" else
-            "streamlit-js-eval n'est pas installé - la géolocalisation est "
-            "indisponible. Ajoutez-le à requirements.txt pour activer cette section."
+            _tx("streamlit-js-eval n'est pas installé - la géolocalisation est indisponible. Ajoutez-le à requirements.txt pour activer cette section.", 'streamlit-js-eval is not installed - geolocation is unavailable. Add it to requirements.txt to enable this section.', lang)
         )
         _render_ip_geolocation_fallback(lang, key_suffix="no_lib")
         return
@@ -1432,12 +1389,12 @@ def _render_native_field_inspection(lang: str) -> None:
     fr = lang == "fr"
     col_gps, col_photo = st.columns(2)
     with col_gps:
-        if st.button("📍 " + ("Position GPS du téléphone" if fr else "Use phone GPS"), key="native_gps_btn",
+        if st.button("📍 " + (_tx('Position GPS du téléphone', 'Use phone GPS', lang)), key="native_gps_btn",
                      width="stretch"):
             st.session_state["native_gps_nonce"] = st.session_state.get("native_gps_nonce", 0) + 1
             st.session_state.pop("field_gps_last_result", None)
     with col_photo:
-        if st.button("📷 " + ("Photo du site" if fr else "Take site photo"), key="native_photo_btn",
+        if st.button("📷 " + (_tx('Photo du site', 'Take site photo', lang)), key="native_photo_btn",
                      width="stretch"):
             st.session_state["native_photo_nonce"] = st.session_state.get("native_photo_nonce", 0) + 1
             st.session_state["native_photo_pending"] = True
@@ -1446,13 +1403,13 @@ def _render_native_field_inspection(lang: str) -> None:
     if st.session_state.get("native_photo_pending"):
         photo = request_native_photo(key=f"native_photo_{st.session_state['native_photo_nonce']}")
         if photo is None:
-            st.caption("📷 " + ("Appareil photo ouvert…" if fr else "Camera open…"))
+            st.caption("📷 " + (_tx('Appareil photo ouvert…', 'Camera open…', lang)))
         else:
             st.session_state["native_photo_pending"] = False
             if isinstance(photo, bytes):
                 _store_site_photo(photo)
             elif photo.get("error") not in ("cancelled",):
-                st.warning("Appareil photo indisponible." if fr else "Camera unavailable.")
+                st.warning(_tx('Appareil photo indisponible.', 'Camera unavailable.', lang))
     _render_site_photos(lang)
 
     # --- GPS ----------------------------------------------------------------
@@ -1505,12 +1462,12 @@ def _render_site_photos(lang: str) -> None:
     photos = st.session_state.get("site_photos") or []
     if not photos:
         return
-    st.caption(("Photos jointes au rapport PDF" if lang == "fr" else "Photos attached to the PDF report")
+    st.caption((_tx('Photos jointes au rapport PDF', 'Photos attached to the PDF report', lang))
                + f" ({len(photos)}/{MAX_SITE_PHOTOS})")
     cols = st.columns(min(len(photos), 3))
     for idx, photo in enumerate(photos):
         cols[idx % len(cols)].image(photo, width="stretch")
-    if st.button("🗑️ " + ("Retirer les photos" if lang == "fr" else "Remove photos"), key="clear_site_photos"):
+    if st.button("🗑️ " + (_tx('Retirer les photos', 'Remove photos', lang)), key="clear_site_photos"):
         st.session_state["site_photos"] = []
         st.rerun()
 
@@ -1523,13 +1480,11 @@ def render_push_opt_in(lang: str, where: str) -> None:
         return
     fr = lang == "fr"
     with st.container(border=True):
-        st.markdown("🔔 **" + ("Alertes d'arrêt de travail" if fr else "Stop-work alerts") + "**")
+        st.markdown("🔔 **" + (_tx("Alertes d'arrêt de travail", 'Stop-work alerts', lang)) + "**")
         st.caption(
-            "Recevez une notification quand une évaluation de votre organisation déclenche un dépassement "
-            "de sécurité." if fr else
-            "Get a notification when an assessment in your organisation triggers a safety override."
+            _tx('Recevez une notification quand une évaluation de votre organisation déclenche un dépassement de sécurité.', 'Get a notification when an assessment in your organisation triggers a safety override.', lang)
         )
-        if st.button("Activer sur ce téléphone" if fr else "Turn on for this phone", key=f"push_optin_{where}"):
+        if st.button(_tx('Activer sur ce téléphone', 'Turn on for this phone', lang), key=f"push_optin_{where}"):
             st.session_state["_push_nonce"] = st.session_state.get("_push_nonce", 0) + 1
     nonce = st.session_state.get("_push_nonce")
     if not nonce:
@@ -1543,15 +1498,13 @@ def render_push_opt_in(lang: str, where: str) -> None:
             push.register_device(st.session_state.get("_auth_username", ""), reply["token"],
                                  reply.get("platform") or shell_platform() or "", ctx.get("organization_id"))
             st.session_state["_push_registered"] = True
-            st.success("Alertes activées." if fr else "Alerts turned on.")
+            st.success(_tx('Alertes activées.', 'Alerts turned on.', lang))
         except PermissionError:
-            st.warning("Les alertes d'arrêt de travail sont envoyées aux membres de l'organisation uniquement."
-                       if fr else "Stop-work alerts go to members of the organization only.")
+            st.warning(_tx("Les alertes d'arrêt de travail sont envoyées aux membres de l'organisation uniquement.", 'Stop-work alerts go to members of the organization only.', lang))
         except Exception:  # noqa: BLE001
-            st.error("Impossible d'enregistrer cet appareil." if fr else "Could not register this device.")
+            st.error(_tx("Impossible d'enregistrer cet appareil.", 'Could not register this device.', lang))
     elif reply.get("error") == "denied":
-        st.info("Notifications refusées - activez-les dans les réglages du téléphone." if fr
-                else "Notifications are off - turn them on in the phone's Settings.")
+        st.info(_tx('Notifications refusées - activez-les dans les réglages du téléphone.', "Notifications are off - turn them on in the phone's Settings.", lang))
     st.session_state.pop("_push_nonce", None)
 
 
@@ -1664,8 +1617,7 @@ def render_daily_briefing_section(lang: str) -> None:
                 render_simulated_data_banner(st, lang, weather_summary.get("source", ""))
         except DataFeedError:
             weather_summary = {"note": "Live weather unavailable - verify conditions on site before the talk."}
-            st.warning("Météo en direct indisponible - vérifiez les conditions sur site."
-                       if lang == "fr" else "Live weather unavailable - verify conditions on site.")
+            st.warning(_tx('Météo en direct indisponible - vérifiez les conditions sur site.', 'Live weather unavailable - verify conditions on site.', lang))
         result = generate_daily_briefing(site_name, tasks, weather_summary, api_key or None, lang)
         st.session_state["daily_briefing_script"] = result["script"]
 
@@ -1820,9 +1772,7 @@ def render_worker_physiology_section(lang: str) -> list[dict]:
                         strain["primary_hazard"], module="Worker Physiology",
                         **get_org_context(st),
                     ):
-                        st.warning("Alerte affichée mais NON enregistrée dans le journal."
-                                   if lang == "fr" else
-                                   "Alert shown but NOT recorded in the alert log.")
+                        st.warning(_tx('Alerte affichée mais NON enregistrée dans le journal.', 'Alert shown but NOT recorded in the alert log.', lang))
             elif strain["status"] == "WARNING":
                 st.warning(f"{pseudonym}: {status_label}")
 
@@ -1967,13 +1917,9 @@ def render_dashboard():
         alert_log = None
     if alert_log is not None and not alert_log.empty:
         st.markdown("---")
-        st.markdown("### 🚨 " + ("Journal des Alertes de Site" if lang == "fr" else "Site Alert Log"))
+        st.markdown("### 🚨 " + (_tx('Journal des Alertes de Site', 'Site Alert Log', lang)))
         st.caption(
-            "Historique durable (SQLite) des alertes critiques/warning déclenchées par "
-            "tous les modules, y compris le suivi physiologique des travailleurs."
-            if lang == "fr" else
-            "Durable (SQLite) history of critical/warning alerts fired by every module, "
-            "including worker physiological strain."
+            _tx('Historique durable (SQLite) des alertes critiques/warning déclenchées par tous les modules, y compris le suivi physiologique des travailleurs.', 'Durable (SQLite) history of critical/warning alerts fired by every module, including worker physiological strain.', lang)
         )
         st.dataframe(alert_log, width="stretch")
 
@@ -2062,7 +2008,7 @@ def render_solar_farms():
     )
     render_extended_air_quality_panel(lang, lat=SOLAR_COORDS["lat"], lon=SOLAR_COORDS["lon"])
 
-    with st.expander("📡 " + ("Prévision météo 7 jours" if lang == "fr" else "7-Day Meteorology Forecast")):
+    with st.expander("📡 " + (_tx('Prévision météo 7 jours', '7-Day Meteorology Forecast', lang))):
         try:
             forecast = fetch_solar_forecast()
             render_meteorology_forecast(
@@ -2215,7 +2161,7 @@ def render_offshore_oil_gas():
         wind_speed_kmh=round(wind_speed * 1.852, 1) if wind_speed is not None else None,
     )
 
-    with st.expander("📡 " + ("Prévision météo 7 jours" if lang == "fr" else "7-Day Meteorology Forecast")):
+    with st.expander("📡 " + (_tx('Prévision météo 7 jours', '7-Day Meteorology Forecast', lang))):
         try:
             forecast = fetch_offshore_forecast()
             render_meteorology_forecast(
@@ -2489,21 +2435,21 @@ def render_high_rise():
 
     fr = lang == "fr"
     _terrain_labels = {
-        "open_sea": "Mer / côte - ASCE D (α 0.11)" if fr else "Open sea / coast - ASCE D (α 0.11)",
-        "open_country": "Terrain dégagé - ASCE C (α 0.15)" if fr else "Open country - ASCE C (α 0.15)",
-        "suburban": "Urbain / périurbain - ASCE B (α 0.25)" if fr else "Urban / suburban - ASCE B (α 0.25)",
-        "urban_centre": "Centre-ville très dense (α 0.33)" if fr else "Dense city centre (α 0.33)",
+        "open_sea": _tx('Mer / côte - ASCE D (α 0.11)', 'Open sea / coast - ASCE D (α 0.11)', lang),
+        "open_country": _tx('Terrain dégagé - ASCE C (α 0.15)', 'Open country - ASCE C (α 0.15)', lang),
+        "suburban": _tx('Urbain / périurbain - ASCE B (α 0.25)', 'Urban / suburban - ASCE B (α 0.25)', lang),
+        "urban_centre": _tx('Centre-ville très dense (α 0.33)', 'Dense city centre (α 0.33)', lang),
     }
     col1, col2, col3 = st.columns(3)
-    terrain = col1.selectbox("Rugosité du terrain" if fr else "Terrain roughness", list(WIND_TERRAIN_EXPONENTS),
+    terrain = col1.selectbox(_tx('Rugosité du terrain', 'Terrain roughness', lang), list(WIND_TERRAIN_EXPONENTS),
                              index=list(WIND_TERRAIN_EXPONENTS).index(DEFAULT_WIND_TERRAIN),
                              format_func=lambda v: _terrain_labels[v], key="hr_terrain")
-    floor_height_m = col2.number_input("Hauteur d'étage (m)" if fr else "Floor-to-floor height (m)",
+    floor_height_m = col2.number_input(_tx("Hauteur d'étage (m)", 'Floor-to-floor height (m)', lang),
                                        2.5, 6.0, DEFAULT_FLOOR_HEIGHT_M, 0.1, key="hr_floor_h")
-    use_measured = col3.checkbox("Vent mesuré à la hauteur de travail" if fr else "Wind measured at working height",
+    use_measured = col3.checkbox(_tx('Vent mesuré à la hauteur de travail', 'Wind measured at working height', lang),
                                  key="hr_use_measured")
     measured_hook_wind_knots = (
-        st.number_input("Vent mesuré au crochet / à l'étage (kn)" if fr else "Measured hook / floor wind (kn)",
+        st.number_input(_tx("Vent mesuré au crochet / à l'étage (kn)", 'Measured hook / floor wind (kn)', lang),
                         0.0, 100.0, 20.0, 0.5, key="hr_measured")
         if use_measured else None
     )
@@ -2645,30 +2591,23 @@ def render_data_centers():
             hot_aisle_temp = st.number_input(t("datacenter_hot_aisle_label", lang), 15.0, 60.0, 34.0, 0.5)
         with col2:
             electrical_load_kw = st.number_input(
-                t("datacenter_load_label", lang) + (" (contexte)" if lang == "fr" else " (context only)"),
+                t("datacenter_load_label", lang) + (_tx(' (contexte)', ' (context only)', lang)),
                 0.0, 5000.0, 400.0, 10.0,
-                help=("Enregistré pour le rapport uniquement - la charge n'entre pas dans le calcul d'arc électrique."
-                      if lang == "fr" else
-                      "Recorded for the report only - load is not used in the arc-flash calculation."),
+                help=(_tx("Enregistré pour le rapport uniquement - la charge n'entre pas dans le calcul d'arc électrique.", 'Recorded for the report only - load is not used in the arc-flash calculation.', lang)),
             )
 
     fr = lang == "fr"
-    st.subheader("⚡ " + ("Énergie incidente d'arc électrique" if fr else "Arc-flash incident energy"))
+    st.subheader("⚡ " + (_tx("Énergie incidente d'arc électrique", 'Arc-flash incident energy', lang)))
     st.caption(
-        "Source par ordre de préférence : (1) étiquette arc électrique de l'équipement, (2) calcul de "
-        "dépistage Lee à partir des données de défaut, (3) inconnue - aucune valeur n'est inventée."
-        if fr else
-        "Best source first: (1) the equipment's arc-flash label, (2) a Lee screening calculation from fault "
-        "data, (3) unknown - MAKU never invents a value."
+        _tx("Source par ordre de préférence : (1) étiquette arc électrique de l'équipement, (2) calcul de dépistage Lee à partir des données de défaut, (3) inconnue - aucune valeur n'est inventée.", "Best source first: (1) the equipment's arc-flash label, (2) a Lee screening calculation from fault data, (3) unknown - MAKU never invents a value.", lang)
     )
     arc_source = st.radio(
-        "Source" if fr else "Source",
+        _tx('Source', 'Source', lang),
         options=["label", "lee", "unknown"],
         format_func=lambda v: {
-            "label": "Étiquette de l'équipement" if fr else "Equipment arc-flash label",
-            "lee": "Calcul Lee (tension, courant de défaut, temps de coupure)" if fr
-                   else "Lee calculation (voltage, fault current, clearing time)",
-            "unknown": "Inconnue / pas encore étudiée" if fr else "Unknown / not yet studied",
+            "label": _tx("Étiquette de l'équipement", 'Equipment arc-flash label', lang),
+            "lee": _tx('Calcul Lee (tension, courant de défaut, temps de coupure)', 'Lee calculation (voltage, fault current, clearing time)', lang),
+            "unknown": _tx('Inconnue / pas encore étudiée', 'Unknown / not yet studied', lang),
         }[v],
         index=2,  # default "unknown": never pre-fill an incident-energy number
         horizontal=True, key="dc_arc_source",
@@ -2677,23 +2616,23 @@ def render_data_centers():
     working_distance_mm = DEFAULT_WORKING_DISTANCE_MM
     if arc_source == "label":
         label_incident_energy_cal = st.number_input(
-            "Énergie incidente sur l'étiquette (cal/cm²)" if fr else "Incident energy on the label (cal/cm²)",
+            _tx("Énergie incidente sur l'étiquette (cal/cm²)", 'Incident energy on the label (cal/cm²)', lang),
             min_value=0.0, max_value=200.0, value=None, step=0.1, key="dc_label_ie",
-            placeholder="ex. 6.4" if fr else "e.g. 6.4")
+            placeholder=_tx('ex. 6.4', 'e.g. 6.4', lang))
     elif arc_source == "lee":
         c1, c2, c3, c4 = st.columns(4)
-        voltage_kv = c1.number_input("Tension (kV)" if fr else "Voltage (kV)", 0.208, 35.0, 0.48, 0.001,
+        voltage_kv = c1.number_input(_tx('Tension (kV)', 'Voltage (kV)', lang), 0.208, 35.0, 0.48, 0.001,
                                      format="%.3f", key="dc_v")
-        fault_current_ka = c2.number_input("Courant de défaut franc (kA)" if fr else "Bolted fault current (kA)",
+        fault_current_ka = c2.number_input(_tx('Courant de défaut franc (kA)', 'Bolted fault current (kA)', lang),
                                            0.5, 120.0, 25.0, 0.5, key="dc_isc")
-        clearing_time_s = c3.number_input("Temps de coupure (s)" if fr else "Clearing time (s)",
+        clearing_time_s = c3.number_input(_tx('Temps de coupure (s)', 'Clearing time (s)', lang),
                                           0.01, 2.0, 0.1, 0.01, key="dc_t")
-        working_distance_mm = c4.number_input("Distance de travail (mm)" if fr else "Working distance (mm)",
+        working_distance_mm = c4.number_input(_tx('Distance de travail (mm)', 'Working distance (mm)', lang),
                                               300.0, 2000.0, DEFAULT_WORKING_DISTANCE_MM, 5.0, key="dc_d")
     c1, c2 = st.columns(2)
-    cold_aisle_temp_c = c1.number_input("Consigne allée froide (°C)" if fr else "Cold-aisle setpoint (°C)",
+    cold_aisle_temp_c = c1.number_input(_tx('Consigne allée froide (°C)', 'Cold-aisle setpoint (°C)', lang),
                                         15.0, 32.0, 22.0, 0.5, key="dc_cold")
-    energized_work_planned = c2.checkbox("Travaux sous tension prévus" if fr else "Energized work planned",
+    energized_work_planned = c2.checkbox(_tx('Travaux sous tension prévus', 'Energized work planned', lang),
                                          value=True, key="dc_energized")
 
     st.subheader(t("confined_clean_agent_label", lang))
@@ -2746,13 +2685,9 @@ def render_data_centers():
 
         col1, col2, col3 = st.columns(3)
         if result["arc_flash_energy_cal"] is None:
-            col1.metric(t("arc_flash_energy_label", lang), "Inconnue" if lang == "fr" else "Unknown")
+            col1.metric(t("arc_flash_energy_label", lang), _tx('Inconnue', 'Unknown', lang))
             st.error(
-                "⚡ Énergie incidente inconnue : aucun travail sous tension tant que l'étiquette ou une étude "
-                "d'arc électrique (IEEE 1584) n'a pas confirmé l'énergie et la tenue EPI requise."
-                if lang == "fr" else
-                "⚡ Incident energy unknown: no energized work until the equipment label or an arc-flash study "
-                "(IEEE 1584) confirms the incident energy and the required arc rating."
+                _tx("⚡ Énergie incidente inconnue : aucun travail sous tension tant que l'étiquette ou une étude d'arc électrique (IEEE 1584) n'a pas confirmé l'énergie et la tenue EPI requise.", '⚡ Incident energy unknown: no energized work until the equipment label or an arc-flash study (IEEE 1584) confirms the incident energy and the required arc rating.', lang)
             )
         else:
             col1.metric(t("arc_flash_energy_label", lang), f"{result['arc_flash_energy_cal']} cal/cm²",
@@ -3233,7 +3168,5 @@ except analytics.PersistenceError:
     # with an explicit error. Nothing was saved anywhere else, and no empty
     # or cached data is shown in place of the real records.
     st.error("🛑 " + analytics.CRITICAL_DB_ERROR_MESSAGE)
-    st.markdown("**Rien n'a été enregistré. Réessayez dans quelques minutes.**"
-                if st.session_state.get("lang", "fr") == "fr" else
-                "**Nothing was saved. Please try again in a few minutes.**")
+    st.markdown(_tx("**Rien n'a été enregistré. Réessayez dans quelques minutes.**", '**Nothing was saved. Please try again in a few minutes.**', st.session_state.get("lang", "fr")))
     st.stop()
