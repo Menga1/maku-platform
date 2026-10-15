@@ -41,6 +41,14 @@ function configureIos() {
     ["NSCameraUsageDescription",
      "<string>MAKU uses the camera to attach site photos to your HSE inspection report.</string>"],
     ["UIBackgroundModes", "<array>\n\t\t<string>remote-notification</string>\n\t</array>"],
+    // Required by App Store Connect (ITMS-90683): the Camera plugin can open the
+    // photo library, and the Geolocation plugin references "always" location APIs.
+    ["NSPhotoLibraryUsageDescription",
+     "<string>MAKU lets you choose existing site photos from your library to attach to your HSE inspection report.</string>"],
+    ["NSPhotoLibraryAddUsageDescription",
+     "<string>MAKU saves site photos you take for an inspection to your photo library when you choose to keep them.</string>"],
+    ["NSLocationAlwaysAndWhenInUseUsageDescription",
+     "<string>MAKU uses your location only while you use the app, to select the nearest site, local weather and the safety regulations that apply where you are working.</string>"],
     ["ITSAppUsesNonExemptEncryption", "<false/>"],
     ["FirebaseMessagingAutoInitEnabled", "<false/>"],
   ];
