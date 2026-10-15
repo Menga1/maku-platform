@@ -1,7 +1,7 @@
 /*
  * MAKU native shell (Capacitor 8)
  * ================================
- * The hosted MAKU app (https://maku.ae) runs inside a full-screen iframe.
+ * The hosted MAKU app (MAKU_CONFIG.APP_ORIGIN) runs inside a full-screen iframe.
  * This shell adds what a website alone cannot do, through a narrow,
  * origin-checked postMessage bridge:
  *
@@ -170,6 +170,7 @@
     $("loading-text").textContent = t("loading");
     const url = new URL(path || "/", CFG.APP_ORIGIN);
     url.searchParams.set("shell", platform);
+    url.searchParams.set("embed", "true");   // Streamlit Cloud: hide its own toolbar and badges
     clearTimeout(state.loadTimer);
     state.loadTimer = setTimeout(() => { if (!state.frameLoaded) showOffline("serverDown"); }, CFG.LOAD_TIMEOUT_MS);
     frame.src = url.toString();

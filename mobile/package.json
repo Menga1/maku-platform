@@ -2,7 +2,7 @@
   "name": "maku-mobile",
   "version": "1.0.0",
   "private": true,
-  "description": "MAKU native shell for iOS and Android (Capacitor 8). Hosts https://maku.ae and adds native GPS, camera, push alerts and an offline view.",
+  "description": "MAKU native shell for iOS and Android (Capacitor 8). Hosts the MAKU web app and adds native GPS, camera, push alerts and an offline view.",
   "scripts": {
     "check": "node scripts/check-config.mjs",
     "assets": "npx @capacitor/assets generate --iconBackgroundColor '#0c5c63' --iconBackgroundColorDark '#0c5c63' --splashBackgroundColor '#0c5c63' --splashBackgroundColorDark '#0c5c63'",
