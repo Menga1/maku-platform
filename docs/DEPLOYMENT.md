@@ -16,6 +16,42 @@ From an empty cloud account to a live `https://maku.ae` and signed iOS and Andro
 
 ---
 
+## 0. No-server option: Streamlit Community Cloud + Neon (US$0 per month)
+
+Use this while no server is available (for example when Oracle's free ARM
+capacity is full). The app stays on Streamlit Community Cloud; the data lives in
+a free Neon PostgreSQL database with the same row-level security as the Docker
+stack.
+
+**Limits.**
+- The address is `<name>.streamlit.app`; Streamlit's free plan has no custom domain.
+- The app sleeps when idle and wakes in a few seconds.
+- Neon's free plan is 1 GB per project, 100 compute-hours a month, and pauses after 5 minutes idle.
+- Data is stored in the Neon region you choose (outside the UAE). Say so in the privacy policy.
+
+**Neon**
+1. On neon.com, sign up (Google sign-in is fine) and create a project named `maku`. Choose the region closest to the app: Streamlit Community Cloud runs in the US.
+2. Open **Connect**, turn **Connection pooling OFF** and copy the connection string. It looks like `postgresql://neondb_owner:...@ep-....neon.tech/neondb?sslmode=require`. This is the **owner** string.
+
+**GitHub** (repository → Settings → Secrets and variables → Actions → New repository secret)
+- `MIGRATION_DATABASE_URL`: the owner string, unchanged.
+- `DATABASE_URL`: the same string with the user changed to `maku_app` and the password changed to a new one you make up (letters and digits only, 24 or more characters): `postgresql://maku_app:NEWPASSWORD@ep-....neon.tech/neondb?sslmode=require`.
+
+Then **Actions → Database migrate → Run workflow**. A green run means:
+- the `maku_app` role exists;
+- all migrations, including row-level security, are applied;
+- the app role was verified not to bypass RLS.
+
+**Streamlit Community Cloud** (app → Settings → Secrets). Add at the top level, above `[auth.users]`:
+
+```toml
+MAKU_ENV = "production"
+DATABASE_URL = "postgresql://maku_app:NEWPASSWORD@ep-....neon.tech/neondb?sslmode=require"
+```
+
+Save; the app restarts. Re-run the workflow after every release that adds a migration.
+Never put the owner string in Streamlit.
+
 ## 1. Server and domain: Oracle Cloud Always Free (US$0 per month)
 
 The free server has 2 ARM CPU cores, 12 GB of memory and up to 200 GB of disk. That is enough for MAKU, PostgreSQL, Caddy and backups. Every MAKU component has an ARM (aarch64) build, so steps 2–9 are unchanged.
