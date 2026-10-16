@@ -356,6 +356,8 @@ def require_login() -> None:
 
         st.caption(f"[Politique de confidentialité / Privacy policy]({accounts.PRIVACY_POLICY_URL})")
 
+        _render_self_signup()
+
         if submitted:
             username = (username or "").strip()
             client_ip = get_client_ip()
@@ -375,19 +377,7 @@ def require_login() -> None:
                 st.stop()
 
             if _verify_credentials(username, password):
-                try:
-                    accounts.record_login_attempt(username, client_ip, succeeded=True)
-                    if st.session_state.get("_auth_source") == "database":
-                        accounts.mark_login(username)
-                except accounts.AccountStoreUnavailable:
-                    pass
-                st.session_state["authenticated"] = True
-                st.session_state["_auth_username"] = username
-                st.session_state["_auth_login_at"] = time.time()
-                st.session_state["_auth_last_seen"] = time.time()
-                _audit(_analytics.AUDIT_EVENT_LOGIN_SUCCESS if _analytics else "LOGIN_SUCCESS",
-                       actor=username, detail=f"ip={client_ip}")
-                st.rerun()
+                _complete_sign_in(username, client_ip)
             else:
                 try:
                     accounts.record_login_attempt(username or "(empty)", client_ip, succeeded=False)
@@ -404,6 +394,92 @@ def require_login() -> None:
                     st.error("Identifiant ou mot de passe incorrect. / Incorrect username or password.")
 
     st.stop()
+
+
+def _complete_sign_in(username: str, client_ip: str | None) -> None:
+    """Shared tail of a successful sign-in (login form or new sign-up):
+    records it, starts the session clock and reruns into the app."""
+    try:
+        accounts.record_login_attempt(username, client_ip, succeeded=True)
+        if st.session_state.get("_auth_source") == "database":
+            accounts.mark_login(username)
+    except accounts.AccountStoreUnavailable:
+        pass
+    st.session_state["authenticated"] = True
+    st.session_state["_auth_username"] = username
+    st.session_state["_auth_login_at"] = time.time()
+    st.session_state["_auth_last_seen"] = time.time()
+    _audit(_analytics.AUDIT_EVENT_LOGIN_SUCCESS if _analytics else "LOGIN_SUCCESS",
+           actor=username, detail=f"ip={client_ip}")
+    st.rerun()
+
+
+def _render_self_signup() -> None:
+    """'Create a free account' on the login screen. The new account is a
+    regular user with its own private workspace (tenancy.create_personal_
+    workspace), and is signed in straight away. Hidden when the account
+    database is unavailable or MAKU_ALLOW_SIGNUP=0."""
+    try:
+        if not accounts.self_signup_enabled():
+            return
+        accounts.list_users()   # the account store must be reachable
+    except Exception:   # never let the sign-up offer break the login page
+        return
+    with st.expander("🆕 Créer un compte gratuit / Create a free account"):
+        st.caption("Gratuit, sans carte bancaire. Votre espace de travail est privé. / "
+                   "Free, no card needed. Your workspace is private.")
+        with st.form("signup_form", clear_on_submit=False):
+            new_user = st.text_input("Identifiant / Username", key="signup_username",
+                                     help="3-64 caractères : lettres, chiffres, . _ - @ / "
+                                          "3-64 characters: letters, digits, . _ - @")
+            new_email = st.text_input("E-mail (facultatif / optional)", key="signup_email")
+            new_pw = st.text_input("Mot de passe / Password", type="password", key="signup_password",
+                                   autocomplete="new-password",
+                                   help=f"≥ {accounts.MIN_PASSWORD_LENGTH} caractères, 3 types (majuscules, "
+                                        "minuscules, chiffres, symboles) / "
+                                        f"≥ {accounts.MIN_PASSWORD_LENGTH} characters, 3 kinds "
+                                        "(upper, lower, digits, symbols)")
+            new_pw2 = st.text_input("Confirmer / Confirm password", type="password",
+                                    key="signup_password_confirm", autocomplete="new-password")
+            agreed = st.checkbox("J'accepte la politique de confidentialité / "
+                                 "I accept the privacy policy", key="signup_agree")
+            created = st.form_submit_button("Créer mon compte / Create my account", type="primary",
+                                            width="stretch")
+        if not created:
+            return
+        if not agreed:
+            st.error("Veuillez accepter la politique de confidentialité. / Please accept the privacy policy.")
+            return
+        if new_pw != new_pw2:
+            st.error("Les mots de passe ne correspondent pas. / Passwords do not match.")
+            return
+        if (new_user or "").strip() in _configured_users():
+            st.error("Cet identifiant existe déjà. / That username already exists.")
+            return
+        client_ip = get_client_ip()
+        try:
+            username = accounts.register_self_service(new_user, new_pw, new_email, client_ip)
+        except accounts.AccountError as exc:
+            st.error(f"{exc}")
+            return
+        except accounts.AccountStoreUnavailable:
+            st.error("Service indisponible, réessayez plus tard. / Service unavailable, please try again later.")
+            return
+        try:
+            import tenancy
+            tenancy.create_personal_workspace(username)
+        except Exception:   # roll back: never leave an account without a workspace
+            logger.exception("Personal workspace creation failed; rolling back the new account")
+            try:
+                accounts.erase_account_data(username, requested_via="signup_rollback")
+            except Exception:
+                logger.exception("Sign-up rollback failed")
+            st.error("Le compte n'a pas pu être créé. Réessayez plus tard. / "
+                     "The account could not be created. Please try again later.")
+            return
+        if _verify_credentials(username, new_pw):
+            _complete_sign_in(username, client_ip)
+        st.success("Compte créé - connectez-vous ci-dessus. / Account created - sign in above.")
 
 
 def render_deprecated_credential_banner(st_module) -> None:
