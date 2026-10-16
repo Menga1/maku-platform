@@ -258,51 +258,6 @@ def create_user(username: str, password: str, role: str = DEFAULT_ROLE,
                                detail=f"user={username} role={role}")
 
 
-# Self-service sign-up ("Create a free account" on the login screen).
-# On by default; set MAKU_ALLOW_SIGNUP=0 to turn it off for a private
-# deployment. Each client IP may create at most SIGNUP_MAX_PER_IP accounts
-# per SIGNUP_WINDOW_SECONDS (recorded in login_attempts as succeeded=1 so it
-# never counts toward the sign-in lockout).
-SIGNUP_USERNAME_MARKER = "(signup)"
-SIGNUP_MAX_PER_IP = int(os.environ.get("MAKU_SIGNUP_MAX_PER_IP", "5"))
-SIGNUP_WINDOW_SECONDS = int(os.environ.get("MAKU_SIGNUP_WINDOW_SECONDS", "3600"))
-
-
-def self_signup_enabled() -> bool:
-    return os.environ.get("MAKU_ALLOW_SIGNUP", "1").strip().lower() not in ("0", "false", "no", "off")
-
-
-def signup_rate_limited(client_ip: str | None, now: float | None = None) -> bool:
-    if not client_ip:
-        return False
-    now = time.time() if now is None else now
-    with _conn() as conn:
-        cur = conn.execute(
-            "SELECT COUNT(*) FROM login_attempts WHERE username = ? AND client_ip = ? AND attempted_at >= ?",
-            (SIGNUP_USERNAME_MARKER, client_ip, now - SIGNUP_WINDOW_SECONDS),
-        )
-        count = cur.fetchone()[0]
-    return count >= SIGNUP_MAX_PER_IP
-
-
-def register_self_service(username: str, password: str, email: str | None, client_ip: str | None) -> str:
-    """Creates a regular (supervisor) account for someone signing up on
-    their own. Returns the normalized username. Raises AccountError for an
-    invalid/taken username, a weak password, sign-up turned off, or too
-    many sign-ups from this address."""
-    if not self_signup_enabled():
-        raise AccountError("Sign-up is turned off on this MAKU server.")
-    if signup_rate_limited(client_ip):
-        raise AccountError("Too many accounts were created from this network. Please try again later.")
-    username = _validate_username(username)
-    email = (email or "").strip() or None
-    if email and ("@" not in email or len(email) > 254):
-        raise AccountError("Please enter a valid email address or leave it empty.")
-    create_user(username, password, role="supervisor", created_by="self_signup", email=email)
-    record_login_attempt(SIGNUP_USERNAME_MARKER, client_ip, succeeded=True)
-    return username
-
-
 def change_password(username: str, current_password: str, new_password: str) -> None:
     user = get_user(username)
     if not user or not verify_password(user["password_hash"], current_password):

@@ -179,26 +179,6 @@ def _create_organization(actor: Principal, name: str) -> int:
     return org_id
 
 
-SYSTEM_PRINCIPAL = Principal("system", True)
-
-
-def create_personal_workspace(username: str) -> int:
-    """A private organization for a self-registered user, who becomes its
-    org_admin - so a new account can use every module straight away and
-    still only ever sees its own data. The name carries no personal data
-    (a random suffix), so nothing identifying remains after the account
-    is deleted."""
-    import secrets
-    with _analytics().acting_as(SYSTEM_PRINCIPAL):
-        for _ in range(5):
-            name = f"Personal workspace {secrets.token_hex(4)}"
-            if organization_id_by_name(name) is None:
-                break
-        org_id = _create_organization(SYSTEM_PRINCIPAL, name)
-        _set_membership(SYSTEM_PRINCIPAL, username, org_id, "org_admin")
-    return org_id
-
-
 def organization_id_by_name(name: str) -> int | None:
     a = _analytics()
     with a._get_connection() as conn:
