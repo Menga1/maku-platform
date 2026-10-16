@@ -18,6 +18,14 @@
  * Messages are accepted ONLY from MAKU_CONFIG.APP_ORIGIN, and replies are
  * posted ONLY to that origin. Nothing here ever evaluates code from the page.
  *
+ * iOS: WebKit blocks the cookies Streamlit Community Cloud needs inside a
+ * cross-site iframe, so on iOS the shell does NOT use the iframe. Once the
+ * server answers, it navigates the WebView itself to MAKU (top-level page,
+ * allowed by server.allowNavigation). Capacitor injects its native bridge
+ * into that page, and mobile_bridge.py calls the same plugins directly with
+ * the same request/reply shapes. If that navigation fails, Capacitor loads
+ * server.errorPath (this page) again, which then shows the offline view.
+ *
  * Offline: the shell watches connectivity (Network plugin) and probes the
  * server; with no network or no server it shows the last assessments cached
  * on the device (Preferences plugin). The iframe is kept alive underneath,
@@ -35,6 +43,10 @@
           Filesystem, Share, FirebaseMessaging } = Plugins;
 
   const HISTORY_KEY = "maku.assessments.v1";
+  // iOS: open MAKU as the main page instead of in the iframe (see header).
+  const TOP_LEVEL = platform === "ios";
+  const NAV_KEY = "maku.navStartedAt";
+  const NAV_RETRY_WINDOW_MS = 90000;
   const PUSH_TOKEN_KEY = "maku.pushToken";
 
   const $ = (id) => document.getElementById(id);
@@ -164,13 +176,34 @@
     } catch (_) { return false; }
   }
 
+  function navStartedRecently() {
+    try {
+      const at = Number(window.sessionStorage.getItem(NAV_KEY) || 0);
+      return at > 0 && Date.now() - at < NAV_RETRY_WINDOW_MS;
+    } catch (_) { return false; }
+  }
+
+  function markNavStarted(value) {
+    try {
+      if (value) window.sessionStorage.setItem(NAV_KEY, String(Date.now()));
+      else window.sessionStorage.removeItem(NAV_KEY);
+    } catch (_) { /* no sessionStorage - a failed load just retries */ }
+  }
+
   async function loadApp(path) {
     if (!(await serverReachable())) { showOffline("serverDown"); return; }
+    hideOffline();
     loading.classList.remove("hidden");
     $("loading-text").textContent = t("loading");
     const url = new URL(path || "/", CFG.APP_ORIGIN);
     url.searchParams.set("shell", platform);
     url.searchParams.set("embed", "true");   // Streamlit Cloud: hide its own toolbar and badges
+    if (TOP_LEVEL) {
+      markNavStarted(true);
+      await hideSplash();
+      window.location.replace(url.toString());
+      return;
+    }
     clearTimeout(state.loadTimer);
     state.loadTimer = setTimeout(() => { if (!state.frameLoaded) showOffline("serverDown"); }, CFG.LOAD_TIMEOUT_MS);
     frame.src = url.toString();
@@ -301,6 +334,7 @@
   // ------------------------------------------------------------- startup
   async function init() {
     $("retry").addEventListener("click", async () => {
+      markNavStarted(false);
       $("loading-text").textContent = t("reconnecting");
       if (state.frameLoaded) await setOnline(true); else await loadApp("/");
     });
@@ -354,7 +388,11 @@
       window.addEventListener("offline", () => setOnline(false));
     }
     state.online = connected;
-    if (connected) await loadApp("/"); else await showOffline("offlineBody");
+    if (!connected) await showOffline("offlineBody");
+    // iOS: we are back here right after a navigation to MAKU failed
+    // (server.errorPath) - show the offline view instead of looping.
+    else if (TOP_LEVEL && navStartedRecently()) { markNavStarted(false); await showOffline("serverDown"); }
+    else await loadApp("/");
 
     setTimeout(hideSplash, 6000); // never leave the splash up
   }

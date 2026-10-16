@@ -6,10 +6,16 @@ shell loads https://<domain>/?shell=ios|android in an iframe and answers a
 small set of postMessage requests with native device features.
 
 From Python, each request is a promise evaluated by streamlit_js_eval in a
-same-origin component iframe:
+same-origin component iframe. Two transports, same request/reply shapes:
 
-    component iframe --postMessage--> shell (window.top)
-    component iframe <--postMessage-- shell replies to event.source
+* iframe mode (Android): the shell page is window.top and answers
+      component iframe --postMessage--> shell (window.top)
+      component iframe <--postMessage-- shell replies to event.source
+* top-level mode (iOS): WebKit blocks Streamlit Cloud's cookies inside a
+  cross-site iframe, so the iOS shell opens MAKU as the WebView's main page.
+  Capacitor then injects its native bridge into that page (window.top is
+  this same-origin MAKU page), and _NATIVE_HANDLER_JS calls the plugins
+  directly - mirroring the handlers in mobile/www/js/app.js.
 
 Like every streamlit_js_eval call, a request returns None on the first run
 and the shell's reply on the automatic rerun that follows. Outside the shell
@@ -58,14 +64,120 @@ def in_mobile_shell() -> bool:
     return shell_platform() in SUPPORTED_PLATFORMS
 
 
+# Keep in sync with mobile/www/js/app.js (handlers + HISTORY_KEY + limits):
+# the offline view of the shell reads the same Preferences entry.
+_NATIVE_HANDLER_JS = r"""
+async (Cap, msg) => {
+  const P = Cap.Plugins || {};
+  const platform = (Cap.getPlatform && Cap.getPlatform()) || "ios";
+  const HISTORY_KEY = "maku.assessments.v1", HISTORY_LIMIT = 10, MAX_FILE_BYTES = 15 * 1024 * 1024;
+  const s = (v, n = 200) => (v == null ? "" : String(v)).slice(0, n);
+  switch (msg.type) {
+    case "hello":
+      return { type: "hello", platform, native: true, version: "top-level",
+               capabilities: { location: !!P.Geolocation, camera: !!P.Camera,
+                               push: !!P.FirebaseMessaging, share: !!(P.Filesystem && P.Share) } };
+    case "request-location": {
+      const G = P.Geolocation;
+      if (!G) return { type: "location", error: { code: 2, message: "unavailable" } };
+      try {
+        let perm = await G.checkPermissions();
+        if (perm.location !== "granted" && perm.coarseLocation !== "granted")
+          perm = await G.requestPermissions({ permissions: ["location", "coarseLocation"] });
+        if (perm.location !== "granted" && perm.coarseLocation !== "granted")
+          return { type: "location", error: { code: 1, message: "permission denied" } };
+        const pos = await G.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+        return { type: "location", timestamp: pos.timestamp,
+                 coords: { latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy } };
+      } catch (err) {
+        const m = String((err && err.message) || err);
+        const code = /denied|permission/i.test(m) ? 1 : /timeout/i.test(m) ? 3 : 2;
+        return { type: "location", error: { code, message: code === 1 ? "permission denied" : code === 3 ? "timeout" : "unavailable" } };
+      }
+    }
+    case "request-photo": {
+      if (!P.Camera) return { type: "photo", error: "unavailable" };
+      try {
+        const photo = await P.Camera.getPhoto({ quality: 70, width: 1600, correctOrientation: true,
+                                                resultType: "dataUrl", source: "CAMERA", saveToGallery: false });
+        return { type: "photo", dataUrl: photo.dataUrl, format: photo.format };
+      } catch (err) {
+        return { type: "photo", error: /cancel/i.test(String(err && err.message)) ? "cancelled" : "unavailable" };
+      }
+    }
+    case "request-push-token": {
+      const F = P.FirebaseMessaging;
+      if (!F) return { type: "push-token", error: "unavailable" };
+      try {
+        let perm = await F.checkPermissions();
+        if (perm.receive === "prompt" || perm.receive === "prompt-with-rationale") perm = await F.requestPermissions();
+        if (perm.receive !== "granted") return { type: "push-token", error: "denied" };
+        const { token } = await F.getToken();
+        if (P.Preferences) await P.Preferences.set({ key: "maku.pushToken", value: token });
+        return { type: "push-token", token, platform };
+      } catch (_) { return { type: "push-token", error: "unavailable" }; }
+    }
+    case "assessment": {
+      if (!P.Preferences) return { type: "ack" };
+      const raw = msg.payload || {};
+      const entry = {
+        module: s(raw.module, 80), risk_band: s(raw.risk_band, 20).toUpperCase(),
+        safety_override: !!raw.safety_override, key_metric_label: s(raw.key_metric_label, 80),
+        key_metric_value: s(raw.key_metric_value, 40), site: s(raw.site, 120),
+        data_provenance: s(raw.data_provenance, 20),
+        controls: Array.isArray(raw.controls) ? raw.controls.slice(0, 5).map((c) => s(c, 300)) : [],
+        timestamp: s(raw.timestamp, 40) || new Date().toISOString()
+      };
+      let history = [];
+      try { history = JSON.parse((await P.Preferences.get({ key: HISTORY_KEY })).value || "[]"); } catch (_) { history = []; }
+      history = (Array.isArray(history) ? history : []).filter((h) => h && h.timestamp !== entry.timestamp);
+      history.unshift(entry);
+      await P.Preferences.set({ key: HISTORY_KEY, value: JSON.stringify(history.slice(0, HISTORY_LIMIT)) });
+      return { type: "ack" };
+    }
+    case "save-file": {
+      if (!P.Filesystem || !P.Share) return { type: "file", error: "unavailable" };
+      const b64 = String(msg.base64 || "");
+      if (!b64 || b64.length * 0.75 > MAX_FILE_BYTES) return { type: "file", error: "too-large" };
+      let path = String(msg.name || "maku-report").replace(/[^A-Za-z0-9._-]+/g, "_").slice(0, 80);
+      if (!/\.(pdf|xlsx|csv|html|json)$/i.test(path)) path += ".pdf";
+      const title = String(msg.title || "MAKU report").slice(0, 120);
+      try {
+        const written = await P.Filesystem.writeFile({ path, data: b64, directory: "CACHE" });
+        await P.Share.share({ title, url: written.uri, dialogTitle: title });
+        return { type: "file", ok: true };
+      } catch (err) {
+        return { type: "file", error: /cancel/i.test(String(err && err.message)) ? "cancelled" : "failed" };
+      }
+    }
+  }
+  return { error: "unsupported" };
+}
+"""
+
+
 def _request_js(message_type: str, payload: dict | None, timeout_ms: int) -> str:
     message = json.dumps({"source": "maku-app", "type": message_type, **(payload or {})})
     origins = json.dumps(list(SHELL_ORIGINS))
     return f"""
 new Promise((resolve) => {{
-  if (window.top === window.parent) {{ resolve({{error: "not-in-shell"}}); return; }}
   const id = Math.random().toString(36).slice(2) + Date.now().toString(36);
   const msg = Object.assign({message}, {{id}});
+  // Top-level mode (iOS): MAKU itself is the WebView's main page and carries
+  // the Capacitor bridge. Cross-origin (iframe mode) access throws -> skipped.
+  let nativeCap = null;
+  try {{
+    const C = window.top.Capacitor;
+    if (C && C.isNativePlatform && C.isNativePlatform() && C.Plugins) nativeCap = C;
+  }} catch (_) {{ nativeCap = null; }}
+  if (nativeCap) {{
+    const t = setTimeout(() => resolve({{error: "timeout"}}), {int(timeout_ms)});
+    ({_NATIVE_HANDLER_JS.strip()})(nativeCap, msg)
+      .then((v) => {{ clearTimeout(t); resolve(Object.assign({{source: "maku-shell", replyTo: id}}, v)); }},
+            () => {{ clearTimeout(t); resolve({{error: "unavailable"}}); }});
+    return;
+  }}
+  if (window.top === window.parent) {{ resolve({{error: "not-in-shell"}}); return; }}
   const done = (value) => {{ window.removeEventListener("message", onMsg); clearTimeout(timer); resolve(value); }};
   const onMsg = (e) => {{
     if (!{origins}.includes(e.origin)) return;

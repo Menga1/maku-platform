@@ -5,11 +5,18 @@
   "loggingBehavior": "production",
   "server": {
     "androidScheme": "https",
-    "iosScheme": "capacitor"
+    "iosScheme": "capacitor",
+    "errorPath": "index.html",
+    "allowNavigation": [
+      "maku-platform-kn2dmt4u75pyb2ck5dtkbd.streamlit.app",
+      "*.streamlit.app",
+      "share.streamlit.io",
+      "*.streamlit.io"
+    ]
   },
   "ios": {
     "contentInset": "never",
-    "scrollEnabled": false,
+    "scrollEnabled": true,
     "backgroundColor": "#0c5c63",
     "limitsNavigationsToAppBoundDomains": false
   },

@@ -12,6 +12,12 @@ const html = fs.readFileSync("www/index.html", "utf8");
 if (!origin || !origin.startsWith("https://")) errors.push("APP_ORIGIN in www/js/config.js must be an https:// URL");
 if (origin && !html.includes(`frame-src ${origin}`)) errors.push(`index.html CSP frame-src must be ${origin}`);
 if (origin && origin.endsWith("/")) errors.push("APP_ORIGIN must not end with '/'");
+// iOS opens MAKU as the main page (cookies are blocked in cross-site iframes):
+// the host must be allowed to load inside the WebView, and a failed load must
+// come back to the shell's offline view.
+if (origin && !(cap.server?.allowNavigation || []).includes(new URL(origin).host))
+  errors.push(`capacitor.config.json server.allowNavigation must include ${new URL(origin).host}`);
+if (cap.server?.errorPath !== "index.html") errors.push("capacitor.config.json server.errorPath must be index.html");
 
 const wk = "../deploy/well-known";
 if (fs.existsSync(wk)) {

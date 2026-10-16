@@ -2500,6 +2500,17 @@ class TestMobileIntegration:
         assert "capacitor://localhost" in js and "https://localhost" in js
         assert '"*"' not in js  # never a wildcard target origin
 
+    def test_bridge_js_calls_native_plugins_in_top_level_mode(self):
+        """iOS opens MAKU as the main page: the bridge must call the Capacitor
+        plugins directly and keep the offline-history key shared with app.js."""
+        import mobile_bridge
+        js = mobile_bridge._request_js("assessment", {"payload": {}}, 1000)
+        assert "window.top.Capacitor" in js and "isNativePlatform" in js
+        assert '"maku.assessments.v1"' in js
+        from pathlib import Path
+        shell_js = (Path(__file__).parent / "mobile" / "www" / "js" / "app.js").read_text(encoding="utf-8")
+        assert '"maku.assessments.v1"' in shell_js
+
     @staticmethod
     def _acme_member(username):
         admin = tenancy.Principal("test.admin", platform_admin=True)
