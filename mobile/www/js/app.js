@@ -46,7 +46,9 @@
   // iOS: open MAKU as the main page instead of in the iframe (see header).
   const TOP_LEVEL = platform === "ios";
   const NAV_KEY = "maku.navStartedAt";
+  const NAV_FAILS_KEY = "maku.navFailures";
   const NAV_RETRY_WINDOW_MS = 90000;
+  const NAV_AUTO_RETRIES = 1;
   const PUSH_TOKEN_KEY = "maku.pushToken";
 
   const $ = (id) => document.getElementById(id);
@@ -54,7 +56,8 @@
   const loading = $("loading");
   const offline = $("offline");
 
-  const state = { online: true, frameLoaded: false, loadTimer: null, pushToken: null, splashHidden: false };
+  const state = { online: true, frameLoaded: false, loadTimer: null, pushToken: null, splashHidden: false,
+                  loading: null, navigating: false };
 
   // ------------------------------------------------------------------ utils
   function toast(message, ms = 3500) {
@@ -155,8 +158,12 @@
     }
   }
 
-  async function showOffline(reasonKey) {
+  // `detail` is a short technical code shown in small print so a screenshot
+  // of the offline screen is enough to tell what failed.
+  async function showOffline(reasonKey, detail) {
     $("offline-reason").textContent = t(reasonKey || "offlineBody");
+    const d = $("offline-detail");
+    if (d) d.textContent = detail ? `${detail} · ${platform} · shell ${CFG.SHELL_VERSION}` : "";
     await renderHistory();
     offline.classList.remove("hidden");
     loading.classList.add("hidden");
@@ -166,15 +173,19 @@
   function hideOffline() { offline.classList.add("hidden"); }
 
   // ---------------------------------------------------------- app loading
-  async function serverReachable() {
+  // Returns "" when the server answered, otherwise a short error code.
+  async function probeServer() {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
     try {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 8000);
       await fetch(CFG.APP_ORIGIN + CFG.HEALTH_PATH, { mode: "no-cors", cache: "no-store", signal: ctrl.signal });
-      clearTimeout(timer);
-      return true;
-    } catch (_) { return false; }
+      return "";
+    } catch (err) {
+      return ctrl.signal.aborted ? "E-PROBE timeout" : `E-PROBE ${String((err && err.message) || err).slice(0, 60)}`;
+    } finally { clearTimeout(timer); }
   }
+
+  async function serverReachable() { return (await probeServer()) === ""; }
 
   function navStartedRecently() {
     try {
@@ -190,8 +201,29 @@
     } catch (_) { /* no sessionStorage - a failed load just retries */ }
   }
 
-  async function loadApp(path) {
-    if (!(await serverReachable())) { showOffline("serverDown"); return; }
+  function navFailures(next) {
+    try {
+      if (next === undefined) return Number(window.sessionStorage.getItem(NAV_FAILS_KEY) || 0);
+      window.sessionStorage.setItem(NAV_FAILS_KEY, String(next));
+    } catch (_) { /* ignore */ }
+    return next || 0;
+  }
+
+  // Only ONE load may run at a time. On iOS the Network plugin reports the
+  // current status right after addListener, which used to start a second
+  // navigation that cancelled the first one (NSURLErrorCancelled) - Capacitor
+  // then loaded server.errorPath and the user saw "No connection".
+  function loadApp(path) {
+    if (state.navigating) return Promise.resolve();
+    if (!state.loading) state.loading = doLoadApp(path).finally(() => { state.loading = null; });
+    return state.loading;
+  }
+
+  async function doLoadApp(path) {
+    const probe = await probeServer();
+    // iOS: the probe is advisory only - a real failure of the page load comes
+    // back through server.errorPath and is reported there.
+    if (probe && !TOP_LEVEL) { showOffline("serverDown", probe); return; }
     hideOffline();
     loading.classList.remove("hidden");
     $("loading-text").textContent = t("loading");
@@ -199,13 +231,14 @@
     url.searchParams.set("shell", platform);
     url.searchParams.set("embed", "true");   // Streamlit Cloud: hide its own toolbar and badges
     if (TOP_LEVEL) {
+      state.navigating = true;
       markNavStarted(true);
       await hideSplash();
       window.location.replace(url.toString());
       return;
     }
     clearTimeout(state.loadTimer);
-    state.loadTimer = setTimeout(() => { if (!state.frameLoaded) showOffline("serverDown"); }, CFG.LOAD_TIMEOUT_MS);
+    state.loadTimer = setTimeout(() => { if (!state.frameLoaded) showOffline("serverDown", "E-FRAME timeout"); }, CFG.LOAD_TIMEOUT_MS);
     frame.src = url.toString();
   }
 
@@ -221,11 +254,15 @@
   async function setOnline(connected) {
     const was = state.online;
     state.online = connected;
-    if (!connected) { showOffline("offlineBody"); return; }
+    if (!connected) { showOffline("offlineBody", "E-OFFLINE"); return; }
+    // Only react to a real change: iOS repeats the current status right after
+    // addListener, and that echo must not start a second load.
+    if (was) return;
     if (!state.frameLoaded) { await loadApp("/"); return; }
     if (!was) {
-      if (await serverReachable()) { hideOffline(); toast(t("backOnline")); }
-      else showOffline("serverDown");
+      const probe = await probeServer();
+      if (!probe) { hideOffline(); toast(t("backOnline")); }
+      else showOffline("serverDown", probe);
     }
   }
 
@@ -335,6 +372,7 @@
   async function init() {
     $("retry").addEventListener("click", async () => {
       markNavStarted(false);
+      navFailures(0);
       $("loading-text").textContent = t("reconnecting");
       if (state.frameLoaded) await setOnline(true); else await loadApp("/");
     });
@@ -388,11 +426,18 @@
       window.addEventListener("offline", () => setOnline(false));
     }
     state.online = connected;
-    if (!connected) await showOffline("offlineBody");
+    if (!connected) await showOffline("offlineBody", "E-OFFLINE");
     // iOS: we are back here right after a navigation to MAKU failed
-    // (server.errorPath) - show the offline view instead of looping.
-    else if (TOP_LEVEL && navStartedRecently()) { markNavStarted(false); await showOffline("serverDown"); }
-    else await loadApp("/");
+    // (server.errorPath). Retry once automatically (a cancelled or
+    // interrupted load is often transient), then show the offline view
+    // instead of looping.
+    else if (TOP_LEVEL && navStartedRecently()) {
+      markNavStarted(false);
+      const fails = navFailures(navFailures() + 1);
+      if (fails <= NAV_AUTO_RETRIES) await loadApp("/");
+      else await showOffline("serverDown", `E-LOAD x${fails}`);
+    }
+    else { navFailures(0); await loadApp("/"); }
 
     setTimeout(hideSplash, 6000); // never leave the splash up
   }

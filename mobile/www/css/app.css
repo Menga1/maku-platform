@@ -49,3 +49,4 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
   line-height: 1.4; }
 html[dir="rtl"] .controls { padding-left: 0; padding-right: 18px; }
 html[dir="rtl"] .emergency { border-left: 0; border-right: 4px solid var(--critical); }
+.diag { font-size: 11px; margin-top: 16px; opacity: .7; }
