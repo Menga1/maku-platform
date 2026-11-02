@@ -1,0 +1,63 @@
+# Opens the mobile shell (www/) in a headless browser the way Android does:
+# MAKU inside an iframe, from a fresh profile with no cookies. Fails if the
+# shell shows "No connection" or the MAKU sign-in page never appears.
+name: Shell smoke test
+
+on:
+  push:
+    branches: [main]
+    paths: ["mobile/www/**", ".github/workflows/shell-smoke.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null
+          npm install playwright@1.48.2 >/dev/null
+          npx playwright install --with-deps chromium >/dev/null
+      - name: Open the shell and wait for the MAKU sign-in page
+        run: |
+          (cd mobile/www && python3 -m http.server 8080 >/dev/null 2>&1 &)
+          sleep 2
+          cat > smoke.mjs <<'EOF'
+          import { chromium } from "playwright";
+          const browser = await chromium.launch();
+          const ctx = await browser.newContext({
+            viewport: { width: 400, height: 860 },
+            userAgent: "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36 wv",
+          });
+          const page = await ctx.newPage();
+          page.on("console", (m) => console.log("console:", m.text()));
+          await page.goto("http://localhost:8080/index.html");
+          const deadline = Date.now() + 120000;
+          let result = "";
+          while (Date.now() < deadline && !result) {
+            await page.waitForTimeout(3000);
+            const offline = await page.locator("#offline:not(.hidden)").count();
+            if (offline) result = "OFFLINE: " + (await page.locator("#offline-detail").innerText().catch(() => "?"));
+            for (const f of page.frames()) {
+              if (await f.getByText(/Secure access|Accès sécurisé/i).count().catch(() => 0)) result = "OK: sign-in page shown in " + f.url();
+            }
+          }
+          console.log(result || "TIMEOUT: sign-in page never appeared");
+          await page.screenshot({ path: "shell.png" });
+          await browser.close();
+          if (!result.startsWith("OK")) process.exit(1);
+          EOF
+          node smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shell-screenshot
+          path: shell.png

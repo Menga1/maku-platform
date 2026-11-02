@@ -49,7 +49,9 @@ platform :android do
 
     # Version code: one above anything on any track (Play rejects reuse forever).
     if build_only
-      version_code = 1
+      # Without the Play API we cannot read the codes in use; the CI run number
+      # always grows, so it is above the hand-uploaded 1.
+      version_code = Integer(ENV["PLAY_VERSION_CODE"] || ENV["GITHUB_RUN_NUMBER"] || "1")
     else
       used = %w[internal alpha beta production].flat_map do |t|
         google_play_track_version_codes(package_name: APP_ID, track: t, json_key_data: json_key)

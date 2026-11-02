@@ -178,7 +178,13 @@
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 8000);
     try {
-      await fetch(CFG.APP_ORIGIN + CFG.HEALTH_PATH, { mode: "no-cors", cache: "no-store", signal: ctrl.signal });
+      // redirect "manual": a first visit to *.streamlit.app answers with a redirect
+      // to share.streamlit.io to set a cookie; following it from the shell (no
+      // cookies) fails as "Failed to fetch". Any answer, redirect included,
+      // means the server is up. A dead host still throws.
+      await fetch(CFG.APP_ORIGIN + CFG.HEALTH_PATH, {
+        mode: "no-cors", cache: "no-store", credentials: "omit", redirect: "manual", signal: ctrl.signal,
+      });
       return "";
     } catch (err) {
       return ctrl.signal.aborted ? "E-PROBE timeout" : `E-PROBE ${String((err && err.message) || err).slice(0, 60)}`;

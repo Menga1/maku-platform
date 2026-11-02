@@ -128,6 +128,11 @@ jobs:
           else
             echo "::warning::GOOGLE_SERVICES_JSON not set - this build has push notifications disabled"
           fi
+          # allowNavigation/errorPath are for iOS (MAKU opens as the main page there).
+          # On Android, MAKU stays in an iframe; a host in allowNavigation would be
+          # routed through Capacitor's HTML proxy, which cannot follow Streamlit
+          # Cloud's cookie redirect. Drop both for the Android build.
+          node -e 'const f="capacitor.config.json";const c=JSON.parse(require("fs").readFileSync(f));delete c.server.allowNavigation;delete c.server.errorPath;require("fs").writeFileSync(f,JSON.stringify(c,null,2))'
           npx cap sync android
 
       - name: Restore the upload keystore
