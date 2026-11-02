@@ -1,0 +1,56 @@
+# Keeps the hosted Streamlit app awake.
+# Streamlit Community Cloud puts an app to sleep after a period without
+# visitors; the mobile apps then show "No connection" (E-PROBE) until someone
+# clicks "Yes, get this app back up!" in a browser. This job opens the app in
+# a real browser every 3 hours and clicks that button if the app is asleep.
+name: Keep MAKU awake
+
+on:
+  schedule:
+    - cron: "17 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null
+          npm install playwright@1.48.2 >/dev/null
+          npx playwright install --with-deps chromium >/dev/null
+      - name: Visit the app and wake it if needed
+        env:
+          APP_URL: https://maku-platform-kn2dmt4u75pyb2ck5dtkbd.streamlit.app/
+        run: |
+          cat > ping.mjs <<'EOF'
+          import { chromium } from "playwright";
+          const browser = await chromium.launch();
+          const page = await browser.newPage();
+          await page.goto(process.env.APP_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
+          await page.waitForTimeout(8000);
+          const wake = page.getByRole("button", { name: /get this app back up/i });
+          if (await wake.count()) {
+            console.log("App was asleep - waking it");
+            await wake.first().click();
+            await page.waitForTimeout(90000);
+          } else {
+            console.log("App is awake");
+          }
+          // Streamlit renders inside an iframe on *.streamlit.app; look in every frame.
+          let ok = false;
+          for (const f of page.frames()) {
+            if (await f.getByText(/Secure access|Accès sécurisé/i).count().catch(() => 0)) ok = true;
+          }
+          console.log(ok ? "Login page is showing" : "Login page not found yet");
+          await browser.close();
+          if (!ok) process.exit(1);
+          EOF
+          node ping.mjs
