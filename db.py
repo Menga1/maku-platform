@@ -12,7 +12,7 @@ original analytics.py did.
     database's connection limit.
         MAKU_DB_POOL_SIZE      default 5   persistent connections per process
         MAKU_DB_MAX_OVERFLOW   default 10  burst connections above the pool
-        MAKU_DB_POOL_RECYCLE   default 1800 seconds
+        MAKU_DB_POOL_RECYCLE   default 240 seconds (below Neon's ~5 min idle suspend)
         MAKU_DB_CONNECT_TIMEOUT default 5 seconds
   * SQLite (local development / tests): NullPool - a SQLite file connection
     is cheap and must not be shared across Streamlit's worker threads.
@@ -137,10 +137,19 @@ def get_engine(url: str) -> sa.Engine:
                 pool_size=_env_int("MAKU_DB_POOL_SIZE", 5),
                 max_overflow=_env_int("MAKU_DB_MAX_OVERFLOW", 10),
                 pool_pre_ping=True,
-                pool_recycle=_env_int("MAKU_DB_POOL_RECYCLE", 1800),
+                # Serverless PostgreSQL (Neon) suspends after ~5 min idle and drops
+                # its connections without the client noticing. Recycle before that,
+                # and let the OS detect a dead socket (keepalives, tcp_user_timeout)
+                # so a query on it fails fast instead of hanging the page forever.
+                pool_recycle=_env_int("MAKU_DB_POOL_RECYCLE", 240),
                 pool_timeout=10,
                 connect_args={"connect_timeout": _env_int("MAKU_DB_CONNECT_TIMEOUT", 5),
-                              "application_name": "maku"},
+                              "application_name": "maku",
+                              "keepalives": 1,
+                              "keepalives_idle": 30,
+                              "keepalives_interval": 10,
+                              "keepalives_count": 3,
+                              "tcp_user_timeout": _env_int("MAKU_DB_TCP_USER_TIMEOUT_MS", 20000)},
             )
         else:
             engine = sa.create_engine(
