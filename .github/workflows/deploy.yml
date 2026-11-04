@@ -123,6 +123,7 @@ jobs:
           npm ci --no-audit --no-fund
           npm run check
           npm run add:android
+          npm run assets -- --android   # MAKU launcher icon + splash (otherwise Capacitor's placeholder)
           if [ -n "$GOOGLE_SERVICES_JSON" ]; then
             printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
           else
@@ -221,6 +222,7 @@ jobs:
           npm ci --no-audit --no-fund
           npm run check
           npm run add:ios
+          npm run assets -- --ios       # MAKU app icon + splash (Apple rejects placeholder icons, 2.3.8)
           if [ -n "$GOOGLE_SERVICE_INFO_PLIST" ]; then
             printf '%s' "$GOOGLE_SERVICE_INFO_PLIST" > ios/App/App/GoogleService-Info.plist
           else

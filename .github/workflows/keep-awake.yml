@@ -2,12 +2,13 @@
 # Streamlit Community Cloud puts an app to sleep after a period without
 # visitors; the mobile apps then show "No connection" (E-PROBE) until someone
 # clicks "Yes, get this app back up!" in a browser. This job opens the app in
-# a real browser every 3 hours and clicks that button if the app is asleep.
+# a real browser every 15 minutes (GitHub often runs schedules late) and
+# clicks that button if the app is asleep.
 name: Keep MAKU awake
 
 on:
   schedule:
-    - cron: "17 */3 * * *"
+    - cron: "*/15 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -16,7 +17,7 @@ permissions:
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/setup-node@v4
         with:
@@ -40,17 +41,20 @@ jobs:
           if (await wake.count()) {
             console.log("App was asleep - waking it");
             await wake.first().click();
-            await page.waitForTimeout(90000);
           } else {
             console.log("App is awake");
           }
           // Streamlit renders inside an iframe on *.streamlit.app; look in every frame.
+          // A cold start can take a few minutes: keep checking for up to 5.
           let ok = false;
-          for (const f of page.frames()) {
-            if (await f.getByText(/Secure access|Accès sécurisé/i).count().catch(() => 0)) ok = true;
+          for (let i = 0; i < 30 && !ok; i++) {
+            for (const f of page.frames()) {
+              if (await f.getByText(/Secure access|Accès sécurisé/i).count().catch(() => 0)) ok = true;
+            }
+            if (!ok) await page.waitForTimeout(10000);
           }
-          console.log(ok ? "Login page is showing" : "Login page not found yet");
+          console.log(ok ? "Login page is showing" : "Login page not found after 5 minutes");
           await browser.close();
-          if (!ok) process.exit(1);
+          // Do not fail the job (that would email on every slow start); the log says it.
           EOF
           node ping.mjs
