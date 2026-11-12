@@ -1,0 +1,22 @@
+ae.maku.app: 30681
+.234 App[30681:95791] DiskCookieStorage changing policy from 2 to 0, cookie file: file:///Users/runner/Library/Developer/CoreSimulator/Devices/4F9CFA74-8394-4088-9D94-7C09457158B8/data/Containers/Data/Application/DFA2935B-5F48-4A0D-A7F9-9CB124102132/Library/Cookies/ae.maku.app.binarycookies
+[FirebaseMessaging] Firebase was not configured: GoogleService-Info.plist is missing from the app bundle.
+Loading network plugin
+⚡️  Loading app at capacitor://localhost...
+Reachable via WiFi
+⚡️  To Native ->  StatusBar setBackgroundColor 47740465
+⚡️  TO JS undefined
+⚡️  WebView loaded
+⚡️  To Native ->  App addListener 47740466
+⚡️  To Native ->  App addListener 47740467
+⚡️  To Native ->  App addListener 47740468
+⚡️  To Native ->  FirebaseMessaging addListener 47740469
+⚡️  To Native ->  FirebaseMessaging addListener 47740470
+⚡️  To Native ->  Network getStatus 47740471
+⚡️  TO JS {"connectionType":"wifi","connected":true}
+⚡️  To Native ->  Network addListener 47740472
+⚡️  To Native ->  SplashScreen hide 47740473
+⚡️  TO JS undefined
+⚡️  WebView loaded
+⚡️  [log] - INITIAL -> (5, 0, ) -> RUNNING
+ae.maku.app: 30681
