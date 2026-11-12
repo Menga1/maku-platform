@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write   # pushes screenshots to the ci-screenshots branch
 
 jobs:
   smoke:
@@ -53,7 +53,7 @@ jobs:
               --predicate 'process == "App"' > "../out/${TAG}_log.txt" 2>&1 &
             LOGPID=$!
             sleep 2
-            xcrun simctl launch "$UDID" ae.maku.app
+            xcrun simctl launch --console-pty "$UDID" ae.maku.app > "../out/${TAG}_console.txt" 2>&1 &
             for s in 5 15 30 60 90; do
               sleep_for=$s; [ "$s" -gt 5 ] && sleep_for=$((s - prev)); prev=$s
               sleep "$sleep_for"
@@ -61,9 +61,21 @@ jobs:
             done
             prev=0
             kill $LOGPID || true
-            grep -E "⚡️|To Native|Error|error|WebContent|Navigat|SplashScreen|JS Eval|console" "../out/${TAG}_log.txt" | head -150 || true
+            echo "--- app console (${TAG})"; cat "../out/${TAG}_console.txt" | head -200
             xcrun simctl shutdown "$UDID" || true
           done
+      - name: Publish screenshots to the ci-screenshots branch
+        if: always()
+        working-directory: .
+        run: |
+          for f in out/*.png; do sips -Z 700 "$f" >/dev/null; done
+          rm -f out/*_log.txt
+          git config user.name "ci"; git config user.email "ci@users.noreply.github.com"
+          git checkout --orphan ci-screenshots
+          git rm -rfq --cached . >/dev/null
+          git add -f out/
+          git commit -qm "iOS simulator screenshots ${GITHUB_RUN_ID}"
+          git push -fq origin ci-screenshots
       - uses: actions/upload-artifact@v4
         if: always()
         with:
