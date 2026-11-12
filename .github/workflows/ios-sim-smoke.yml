@@ -39,7 +39,7 @@ jobs:
           APP=$(ls -d build/Build/Products/Debug-iphonesimulator/*.app | head -1)
           mkdir -p ../out
           xcrun simctl list devices available | grep -E "iPad|iPhone" | head -40
-          for pattern in "iPad Air 11-inch" "iPhone 1[67]"; do
+          for pattern in "iPad Air 11-inch \\(M3\\)" "iPad \\(A16\\)" "iPad Pro 11-inch"; do
             UDID=$(xcrun simctl list devices available | grep -E "$pattern" | head -1 | grep -oE '[0-9A-F-]{36}')
             NAME=$(xcrun simctl list devices available | grep -E "$pattern" | head -1 | sed 's/ (.*//;s/^ *//')
             [ -z "$UDID" ] && { echo "no simulator for $pattern"; continue; }
@@ -52,8 +52,13 @@ jobs:
             xcrun simctl spawn "$UDID" log stream --style compact --level debug \
               --predicate 'process == "App"' > "../out/${TAG}_log.txt" 2>&1 &
             LOGPID=$!
-            sleep 2
-            xcrun simctl launch --console-pty "$UDID" ae.maku.app > "../out/${TAG}_console.txt" 2>&1 &
+            sleep 20   # let SpringBoard settle; launching right after boot can fail with "server died"
+            for attempt in 1 2 3; do
+              xcrun simctl launch --console-pty "$UDID" ae.maku.app > "../out/${TAG}_console.txt" 2>&1 &
+              sleep 4
+              if xcrun simctl spawn "$UDID" launchctl list | grep -q "ae.maku.app"; then echo "launched (attempt $attempt)"; break; fi
+              echo "launch attempt $attempt failed:"; cat "../out/${TAG}_console.txt"; sleep 10
+            done
             for s in 5 15 30 60 90; do
               sleep_for=$s; [ "$s" -gt 5 ] && sleep_for=$((s - prev)); prev=$s
               sleep "$sleep_for"
