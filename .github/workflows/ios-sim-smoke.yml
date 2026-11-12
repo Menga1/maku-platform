@@ -1,0 +1,71 @@
+# Builds the iOS shell for the Simulator, installs it on a fresh iPad and
+# iPhone, launches it the way App Review does, and uploads screenshots and the
+# app's console log. Used to reproduce "stuck on the splash screen" reports.
+name: iOS simulator smoke test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: macos-26
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - name: Generate the iOS project
+        run: |
+          npm ci --no-audit --no-fund
+          npm run add:ios
+          npm run assets -- --ios
+      - name: Build for the Simulator (Debug, unsigned)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -5
+          ls build/Build/Products/Debug-iphonesimulator/
+      - name: Launch on iPad and iPhone
+        run: |
+          APP=$(ls -d build/Build/Products/Debug-iphonesimulator/*.app | head -1)
+          mkdir -p ../out
+          xcrun simctl list devices available | grep -E "iPad|iPhone" | head -40
+          for pattern in "iPad Air 11-inch" "iPhone 1[67]"; do
+            UDID=$(xcrun simctl list devices available | grep -E "$pattern" | head -1 | grep -oE '[0-9A-F-]{36}')
+            NAME=$(xcrun simctl list devices available | grep -E "$pattern" | head -1 | sed 's/ (.*//;s/^ *//')
+            [ -z "$UDID" ] && { echo "no simulator for $pattern"; continue; }
+            TAG=$(echo "$NAME" | tr -c 'A-Za-z0-9' '_')
+            echo "=== $NAME ($UDID)"
+            xcrun simctl erase "$UDID" || true
+            xcrun simctl boot "$UDID"
+            xcrun simctl bootstatus "$UDID" -b
+            xcrun simctl install "$UDID" "$APP"
+            xcrun simctl spawn "$UDID" log stream --style compact --level debug \
+              --predicate 'process == "App"' > "../out/${TAG}_log.txt" 2>&1 &
+            LOGPID=$!
+            sleep 2
+            xcrun simctl launch "$UDID" ae.maku.app
+            for s in 5 15 30 60 90; do
+              sleep_for=$s; [ "$s" -gt 5 ] && sleep_for=$((s - prev)); prev=$s
+              sleep "$sleep_for"
+              xcrun simctl io "$UDID" screenshot "../out/${TAG}_${s}s.png" >/dev/null 2>&1 || true
+            done
+            prev=0
+            kill $LOGPID || true
+            grep -E "⚡️|To Native|Error|error|WebContent|Navigat|SplashScreen|JS Eval|console" "../out/${TAG}_log.txt" | head -150 || true
+            xcrun simctl shutdown "$UDID" || true
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-sim-smoke
+          path: out/
